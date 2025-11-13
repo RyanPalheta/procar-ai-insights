@@ -1,1 +1,10 @@
 project_id = "hhxqmvkzhzrxzlirzlis"
+
+[functions.ingest-lead]
+verify_jwt = false
+
+[functions.ingest-call]
+verify_jwt = false
+
+[functions.ingest-interaction]
+verify_jwt = false
