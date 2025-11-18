@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     console.log('Received lead data:', JSON.stringify(body, null, 2));
 
     // Validação básica
-    const requiredFields = ['channel'];
+    const requiredFields = ['lead_id', 'channel'];
     const missingFields = requiredFields.filter(field => !body[field]);
     
     if (missingFields.length > 0) {
@@ -38,8 +38,57 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validar que lead_id é um número inteiro
+    const leadId = parseInt(body.lead_id);
+    if (isNaN(leadId)) {
+      console.error('Invalid lead_id: must be an integer');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid lead_id', 
+          message: 'lead_id must be an integer' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Verificar se o lead_id já existe no banco
+    const { data: existingLead, error: checkError } = await supabase
+      .from('lead_db')
+      .select('session_id')
+      .eq('session_id', leadId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing lead:', checkError);
+      return new Response(
+        JSON.stringify({ error: checkError.message }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (existingLead) {
+      console.error('Lead already exists with lead_id:', leadId);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Lead already exists', 
+          lead_id: leadId 
+        }),
+        { 
+          status: 409, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Preparar dados para inserção
     const leadData = {
+      session_id: leadId,
       lead_language: body.lead_language || null,
       lead_price: body.lead_price ? parseFloat(body.lead_price) : null,
       sales_person_id: body.sales_person_id || null,
@@ -77,6 +126,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
+        lead_id: data.session_id,
         session_id: data.session_id,
         message: 'Lead created successfully'
       }),
