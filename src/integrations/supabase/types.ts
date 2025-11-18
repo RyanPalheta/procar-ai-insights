@@ -60,35 +60,26 @@ export type Database = {
       }
       interaction_db: {
         Row: {
-          ai_tags: string[] | null
           channel: string | null
           interaction_id: string
           message_text: string | null
-          processed: boolean | null
           sender_type: string | null
-          sentiment: string | null
           session_id: number | null
           timestamp: string
         }
         Insert: {
-          ai_tags?: string[] | null
           channel?: string | null
           interaction_id?: string
           message_text?: string | null
-          processed?: boolean | null
           sender_type?: string | null
-          sentiment?: string | null
           session_id?: number | null
           timestamp?: string
         }
         Update: {
-          ai_tags?: string[] | null
           channel?: string | null
           interaction_id?: string
           message_text?: string | null
-          processed?: boolean | null
           sender_type?: string | null
-          sentiment?: string | null
           session_id?: number | null
           timestamp?: string
         }
@@ -104,6 +95,7 @@ export type Database = {
       }
       lead_db: {
         Row: {
+          ai_tags: string[] | null
           ai_version: string | null
           channel: string | null
           created_at: string
@@ -113,13 +105,16 @@ export type Database = {
           lead_language: string | null
           lead_price: number | null
           lead_score: number | null
+          processed: boolean | null
           sales_person_id: string | null
           sales_status: string | null
+          sentiment: string | null
           service_desired: string | null
           session_id: number
           upsell_opportunity: string | null
         }
         Insert: {
+          ai_tags?: string[] | null
           ai_version?: string | null
           channel?: string | null
           created_at?: string
@@ -129,13 +124,16 @@ export type Database = {
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
+          processed?: boolean | null
           sales_person_id?: string | null
           sales_status?: string | null
+          sentiment?: string | null
           service_desired?: string | null
           session_id: number
           upsell_opportunity?: string | null
         }
         Update: {
+          ai_tags?: string[] | null
           ai_version?: string | null
           channel?: string | null
           created_at?: string
@@ -145,8 +143,10 @@ export type Database = {
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
+          processed?: boolean | null
           sales_person_id?: string | null
           sales_status?: string | null
+          sentiment?: string | null
           service_desired?: string | null
           session_id?: number
           upsell_opportunity?: string | null

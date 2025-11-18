@@ -71,6 +71,15 @@ Deno.serve(async (req) => {
     if (body.ai_version !== undefined) {
       updateData.ai_version = body.ai_version
     }
+    if (body.sentiment !== undefined) {
+      updateData.sentiment = body.sentiment
+    }
+    if (body.ai_tags !== undefined) {
+      updateData.ai_tags = body.ai_tags
+    }
+    if (body.processed !== undefined) {
+      updateData.processed = body.processed
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 

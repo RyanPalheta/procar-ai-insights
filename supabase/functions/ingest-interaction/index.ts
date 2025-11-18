@@ -64,9 +64,6 @@ Deno.serve(async (req) => {
       channel: body.channel,
       message_text: body.message_text || null,
       sender_type: body.sender_type || null,
-      ai_tags: body.ai_tags || null,
-      sentiment: body.sentiment || null,
-      processed: body.processed !== undefined ? body.processed : false,
     };
 
     console.log('Inserting interaction:', interactionData);
