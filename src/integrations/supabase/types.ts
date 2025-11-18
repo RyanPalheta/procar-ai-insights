@@ -23,7 +23,7 @@ export type Database = {
           call_tag: string | null
           created_at: string
           lead_score: number | null
-          session_id: string | null
+          session_id: number | null
           type: string | null
         }
         Insert: {
@@ -34,7 +34,7 @@ export type Database = {
           call_tag?: string | null
           created_at?: string
           lead_score?: number | null
-          session_id?: string | null
+          session_id?: number | null
           type?: string | null
         }
         Update: {
@@ -45,7 +45,7 @@ export type Database = {
           call_tag?: string | null
           created_at?: string
           lead_score?: number | null
-          session_id?: string | null
+          session_id?: number | null
           type?: string | null
         }
         Relationships: [
@@ -67,7 +67,7 @@ export type Database = {
           processed: boolean | null
           sender_type: string | null
           sentiment: string | null
-          session_id: string | null
+          session_id: number | null
           timestamp: string
         }
         Insert: {
@@ -78,7 +78,7 @@ export type Database = {
           processed?: boolean | null
           sender_type?: string | null
           sentiment?: string | null
-          session_id?: string | null
+          session_id?: number | null
           timestamp?: string
         }
         Update: {
@@ -89,7 +89,7 @@ export type Database = {
           processed?: boolean | null
           sender_type?: string | null
           sentiment?: string | null
-          session_id?: string | null
+          session_id?: number | null
           timestamp?: string
         }
         Relationships: [
@@ -116,7 +116,7 @@ export type Database = {
           sales_person_id: string | null
           sales_status: string | null
           service_desired: string | null
-          session_id: string
+          session_id: number
           upsell_opportunity: string | null
         }
         Insert: {
@@ -132,7 +132,7 @@ export type Database = {
           sales_person_id?: string | null
           sales_status?: string | null
           service_desired?: string | null
-          session_id?: string
+          session_id: number
           upsell_opportunity?: string | null
         }
         Update: {
@@ -148,7 +148,7 @@ export type Database = {
           sales_person_id?: string | null
           sales_status?: string | null
           service_desired?: string | null
-          session_id?: string
+          session_id?: number
           upsell_opportunity?: string | null
         }
         Relationships: []
