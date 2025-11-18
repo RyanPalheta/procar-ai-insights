@@ -1,6 +1,7 @@
 import { LayoutDashboard, Users, Phone, MessageSquare, Settings, FileText } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import logo from "@/assets/logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 
 const items = [
@@ -31,6 +33,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className={collapsed ? "w-16" : "w-64"}>
+      <SidebarHeader className="border-b px-4 py-4">
+        <div className="flex items-center gap-3">
+          <img 
+            src={logo} 
+            alt="PROCAR Logo" 
+            className={collapsed ? "h-8 w-8" : "h-10 w-10"}
+          />
+          {!collapsed && (
+            <div>
+              <h2 className="font-bold text-lg">PROCAR</h2>
+              <p className="text-xs text-muted-foreground">Dashboard</p>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
