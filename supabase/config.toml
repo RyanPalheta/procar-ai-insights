@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ingest-interaction]
 verify_jwt = false
+
+[functions.update-lead]
+verify_jwt = false
