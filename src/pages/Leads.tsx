@@ -12,9 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["leads"],
@@ -81,11 +85,16 @@ export default function Leads() {
                     <TableHead>Serviço</TableHead>
                     <TableHead>Upsell</TableHead>
                     <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLeads.map((lead) => (
-                    <TableRow key={lead.session_id}>
+                    <TableRow 
+                      key={lead.session_id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/leads/${lead.session_id}`)}
+                    >
                       <TableCell className="font-medium">
                         {lead.sales_person_id || "N/A"}
                       </TableCell>
@@ -100,6 +109,18 @@ export default function Leads() {
                       <TableCell>{lead.upsell_opportunity || "N/A"}</TableCell>
                       <TableCell>
                         {new Date(lead.created_at).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/leads/${lead.session_id}`);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
