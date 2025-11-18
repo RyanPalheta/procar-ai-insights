@@ -18,7 +18,14 @@ export default function Interactions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("interaction_db")
-        .select("*")
+        .select(`
+          *,
+          lead:lead_db!interaction_db_session_id_fkey(
+            sentiment,
+            ai_tags,
+            processed
+          )
+        `)
         .order("timestamp", { ascending: false });
       if (error) throw error;
       return data;
@@ -51,10 +58,10 @@ export default function Interactions() {
     }
   };
 
-  // Calculate sentiment distribution
+  // Calculate sentiment distribution from lead data
   const sentimentData = interactions?.reduce(
     (acc: any, int) => {
-      const sentiment = int.sentiment?.toLowerCase() || "neutro";
+      const sentiment = int.lead?.sentiment?.toLowerCase() || "neutro";
       acc[sentiment] = (acc[sentiment] || 0) + 1;
       return acc;
     },
@@ -105,7 +112,7 @@ export default function Interactions() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {interactions?.filter((i) => i.processed).length || 0}
+              {interactions?.filter((i) => i.lead?.processed).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -144,15 +151,15 @@ export default function Interactions() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getSentimentIcon(interaction.sentiment)}
-                          <Badge variant={getSentimentColor(interaction.sentiment) as any}>
-                            {interaction.sentiment || "N/A"}
+                          {getSentimentIcon(interaction.lead?.sentiment)}
+                          <Badge variant={getSentimentColor(interaction.lead?.sentiment) as any}>
+                            {interaction.lead?.sentiment || "N/A"}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {interaction.ai_tags?.map((tag, idx) => (
+                          {interaction.lead?.ai_tags?.map((tag, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
@@ -160,8 +167,8 @@ export default function Interactions() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={interaction.processed ? "success" : "secondary"}>
-                          {interaction.processed ? "Sim" : "Não"}
+                        <Badge variant={interaction.lead?.processed ? "success" : "secondary"}>
+                          {interaction.lead?.processed ? "Sim" : "Não"}
                         </Badge>
                       </TableCell>
                       <TableCell>
