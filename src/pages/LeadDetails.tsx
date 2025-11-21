@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,12 +26,17 @@ import {
   Target,
   ThumbsUp,
   ThumbsDown,
-  Minus
+  Minus,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 
 export default function LeadDetails() {
   const { leadId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const sessionId = parseInt(leadId || "0");
 
   // Buscar dados do lead
@@ -73,6 +80,37 @@ export default function LeadDetails() {
       return data;
     },
   });
+
+  const handleAnalyzeThisLead = async () => {
+    setIsAnalyzing(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-lead', {
+        body: { session_id: sessionId }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ Análise Concluída",
+        description: "Lead analisado com sucesso! Atualizando dados..."
+      });
+      
+      // Refetch todos os dados do lead
+      queryClient.invalidateQueries({ queryKey: ["lead", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["lead-interactions", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["lead-calls", sessionId] });
+      
+    } catch (error: any) {
+      toast({
+        title: "❌ Erro na Análise",
+        description: error.message || "Não foi possível analisar o lead",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const getSentimentIcon = (sentiment: string | null) => {
     switch (sentiment?.toLowerCase()) {
@@ -145,9 +183,31 @@ export default function LeadDetails() {
             Detalhes completos do lead e histórico de interações
           </p>
         </div>
-        <Badge variant={getStatusColor(lead.sales_status) as any} className="text-lg px-4 py-2">
-          {lead.sales_status || "N/A"}
-        </Badge>
+        
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleAnalyzeThisLead}
+            disabled={isAnalyzing}
+            size="lg"
+            className="bg-primary"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Analisando Lead...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5 mr-2" />
+                🔍 Analisar Este Lead
+              </>
+            )}
+          </Button>
+          
+          <Badge variant={getStatusColor(lead.sales_status) as any} className="text-lg px-4 py-2">
+            {lead.sales_status || "N/A"}
+          </Badge>
+        </div>
       </div>
 
       {/* Informações principais do lead */}
