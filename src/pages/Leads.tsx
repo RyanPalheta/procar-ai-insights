@@ -30,7 +30,7 @@ export default function Leads() {
   });
 
   const filteredLeads = leads?.filter((lead) =>
-    lead.sales_person_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.session_id?.toString().includes(searchTerm) ||
     lead.channel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lead.sales_status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -64,7 +64,7 @@ export default function Leads() {
         <CardHeader>
           <CardTitle>Lista de Leads</CardTitle>
           <Input
-            placeholder="Buscar por vendedor, canal ou status..."
+            placeholder="Buscar por lead ID, canal ou status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
@@ -78,7 +78,7 @@ export default function Leads() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vendedor</TableHead>
+                    <TableHead>Lead ID</TableHead>
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Score</TableHead>
@@ -96,7 +96,7 @@ export default function Leads() {
                       onClick={() => navigate(`/leads/${lead.session_id}`)}
                     >
                       <TableCell className="font-medium">
-                        {lead.sales_person_id || "N/A"}
+                        {lead.session_id || "N/A"}
                       </TableCell>
                       <TableCell>{lead.channel || "N/A"}</TableCell>
                       <TableCell>
