@@ -105,6 +105,10 @@ export type Database = {
           lead_language: string | null
           lead_price: number | null
           lead_score: number | null
+          playbook_compliance_score: number | null
+          playbook_steps_completed: string[] | null
+          playbook_steps_missing: string[] | null
+          playbook_violations: string | null
           processed: boolean | null
           sales_person_id: string | null
           sales_status: string | null
@@ -124,6 +128,10 @@ export type Database = {
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
+          playbook_compliance_score?: number | null
+          playbook_steps_completed?: string[] | null
+          playbook_steps_missing?: string[] | null
+          playbook_violations?: string | null
           processed?: boolean | null
           sales_person_id?: string | null
           sales_status?: string | null
@@ -143,6 +151,10 @@ export type Database = {
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
+          playbook_compliance_score?: number | null
+          playbook_steps_completed?: string[] | null
+          playbook_steps_missing?: string[] | null
+          playbook_violations?: string | null
           processed?: boolean | null
           sales_person_id?: string | null
           sales_status?: string | null
@@ -150,6 +162,57 @@ export type Database = {
           service_desired?: string | null
           session_id?: number
           upsell_opportunity?: string | null
+        }
+        Relationships: []
+      }
+      playbooks: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          product_type: string
+          steps: Json | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          product_type: string
+          steps?: Json | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          product_type?: string
+          steps?: Json | null
+          title?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_name: string
+          product_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_name: string
+          product_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_name?: string
+          product_type?: string
         }
         Relationships: []
       }
