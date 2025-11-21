@@ -37,6 +37,24 @@ export default function Dashboard() {
     },
   });
 
+  const { data: products } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: playbooks } = useQuery({
+    queryKey: ["playbooks"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("playbooks").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Calculate KPIs
   const totalLeads = leads?.length || 0;
   const processedLeads = leads?.filter(lead => lead.processed === true).length || 0;
@@ -106,21 +124,44 @@ export default function Dashboard() {
     ? Object.entries(sentimentData).map(([name, value]) => ({ name, value }))
     : [];
 
-  // Playbook compliance by product type (group by service_desired)
-  const complianceByProduct = leads
+  // Helper function to map service_desired to playbook title
+  const mapServiceToPlaybookTitle = (serviceDesired: string): string => {
+    if (!products || !playbooks) return "Produto Não Identificado";
+    
+    // Try exact match first
+    const exactProduct = products.find(p => 
+      p.product_name.toLowerCase() === serviceDesired.toLowerCase()
+    );
+    
+    // Try partial match if exact fails
+    const partialProduct = exactProduct || products.find(p => 
+      serviceDesired.toLowerCase().includes(p.product_name.toLowerCase()) ||
+      p.product_name.toLowerCase().includes(serviceDesired.toLowerCase())
+    );
+    
+    if (partialProduct) {
+      const playbook = playbooks.find(pb => pb.product_type === partialProduct.product_type);
+      return playbook?.title || "Produto Não Identificado";
+    }
+    
+    return "Produto Não Identificado";
+  };
+
+  // Playbook compliance by playbook title
+  const complianceByPlaybook = leads
     ?.filter(lead => lead.service_desired && lead.playbook_compliance_score !== null)
     .reduce((acc: any, lead) => {
-      const product = lead.service_desired!;
-      if (!acc[product]) {
-        acc[product] = { total: 0, count: 0 };
+      const playbookTitle = mapServiceToPlaybookTitle(lead.service_desired!);
+      if (!acc[playbookTitle]) {
+        acc[playbookTitle] = { total: 0, count: 0 };
       }
-      acc[product].total += lead.playbook_compliance_score!;
-      acc[product].count += 1;
+      acc[playbookTitle].total += lead.playbook_compliance_score!;
+      acc[playbookTitle].count += 1;
       return acc;
     }, {});
 
-  const complianceRankingData = complianceByProduct
-    ? Object.entries(complianceByProduct)
+  const complianceRankingData = complianceByPlaybook
+    ? Object.entries(complianceByPlaybook)
         .map(([name, data]: [string, any]) => ({
           name,
           compliance: Number((data.total / data.count).toFixed(1)),
