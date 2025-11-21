@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, CheckCircle, Clock } from "lucide-react";
 import * as XLSX from "xlsx";
+import mammoth from "mammoth";
 
 const PRODUCT_TYPES = [
   "WINDOW TINT",
@@ -107,9 +108,27 @@ export default function AdminPlaybooks() {
 
     setUploadingPlaybook(productType);
     try {
-      // Read file content
-      const text = await file.text();
+      let text: string;
       
+      // Extract text based on file type
+      if (file.name.endsWith('.docx')) {
+        // Use mammoth to extract text from .docx files
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+        
+        if (result.messages && result.messages.length > 0) {
+          console.log('Mammoth warnings:', result.messages);
+        }
+      } else {
+        // For .txt files, read as plain text
+        text = await file.text();
+      }
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error('O arquivo está vazio ou não pôde ser lido');
+      }
+
       const { data, error } = await supabase.functions.invoke('seed-data/playbook', {
         body: {
           product_type: productType,
@@ -134,7 +153,7 @@ export default function AdminPlaybooks() {
       console.error('Error uploading playbook:', error);
       toast({
         title: "Erro",
-        description: `Erro ao importar playbook ${productType}`,
+        description: `Erro ao importar playbook ${productType}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
