@@ -37,23 +37,79 @@ export default function AdminPlaybooks() {
 
     setProductsFile(file);
 
-    // Parse Excel file
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const data = new Uint8Array(event.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+    try {
+      // Parse Excel file
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-      // Transform to products format
-      const products = jsonData.map((row: any) => ({
-        product_name: row['PRODUTO'] || row['produto'] || row['Product'],
-        product_type: row['TIPO'] || row['tipo'] || row['Type']
-      })).filter(p => p.product_name && p.product_type);
+          console.log('Excel data parsed:', jsonData.slice(0, 3)); // Log primeiras linhas
 
-      setProductsPreview(products);
-    };
-    reader.readAsArrayBuffer(file);
+          // Transform to products format - try different column name variations
+          const products = jsonData.map((row: any) => {
+            const productName = row['PRODUTO'] || row['produto'] || row['Product'] || row['PRODUCT'] || 
+                               row['Nome'] || row['nome'] || row['Name'] || row['name'];
+            const productType = row['TIPO'] || row['tipo'] || row['Type'] || row['TYPE'] ||
+                               row['Tipo'] || row['Category'] || row['category'];
+            
+            return {
+              product_name: productName,
+              product_type: productType
+            };
+          }).filter(p => p.product_name && p.product_type);
+
+          console.log('Transformed products:', products.length, products.slice(0, 3));
+
+          if (products.length === 0) {
+            toast({
+              title: "Erro",
+              description: "Nenhum produto encontrado. Verifique se as colunas têm nomes como 'PRODUTO' e 'TIPO'",
+              variant: "destructive"
+            });
+            setProductsFile(null);
+            return;
+          }
+
+          setProductsPreview(products);
+          toast({
+            title: "Arquivo lido!",
+            description: `${products.length} produtos encontrados`
+          });
+        } catch (parseError) {
+          console.error('Error parsing Excel:', parseError);
+          toast({
+            title: "Erro ao ler arquivo",
+            description: parseError instanceof Error ? parseError.message : "Erro desconhecido",
+            variant: "destructive"
+          });
+          setProductsFile(null);
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        toast({
+          title: "Erro ao ler arquivo",
+          description: "Não foi possível ler o arquivo",
+          variant: "destructive"
+        });
+        setProductsFile(null);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error('Error handling file:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao processar arquivo",
+        variant: "destructive"
+      });
+      setProductsFile(null);
+    }
   };
 
   const handleUploadProducts = async () => {
@@ -68,11 +124,18 @@ export default function AdminPlaybooks() {
 
     setUploadingProducts(true);
     try {
+      console.log('Uploading products:', productsPreview.length);
+      
       const { data, error } = await supabase.functions.invoke('seed-data/products', {
         body: { products: productsPreview }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Upload response:', data);
 
       toast({
         title: "Sucesso!",
@@ -85,7 +148,7 @@ export default function AdminPlaybooks() {
       console.error('Error uploading products:', error);
       toast({
         title: "Erro",
-        description: "Erro ao importar produtos",
+        description: `Erro ao importar produtos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
