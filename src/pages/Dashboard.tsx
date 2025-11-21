@@ -124,7 +124,10 @@ export default function Dashboard() {
   const productData = leads?.reduce((acc: any, lead) => {
     if (lead.service_desired) {
       const playbookTitle = mapServiceToPlaybookTitle(lead.service_desired);
-      acc[playbookTitle] = (acc[playbookTitle] || 0) + 1;
+      // Filtrar produtos não identificados
+      if (playbookTitle !== "Produto Não Identificado") {
+        acc[playbookTitle] = (acc[playbookTitle] || 0) + 1;
+      }
     }
     return acc;
   }, {});
@@ -153,11 +156,14 @@ export default function Dashboard() {
     ?.filter(lead => lead.service_desired && lead.playbook_compliance_score !== null)
     .reduce((acc: any, lead) => {
       const playbookTitle = mapServiceToPlaybookTitle(lead.service_desired!);
-      if (!acc[playbookTitle]) {
-        acc[playbookTitle] = { total: 0, count: 0 };
+      // Filtrar produtos não identificados
+      if (playbookTitle !== "Produto Não Identificado") {
+        if (!acc[playbookTitle]) {
+          acc[playbookTitle] = { total: 0, count: 0 };
+        }
+        acc[playbookTitle].total += lead.playbook_compliance_score!;
+        acc[playbookTitle].count += 1;
       }
-      acc[playbookTitle].total += lead.playbook_compliance_score!;
-      acc[playbookTitle].count += 1;
       return acc;
     }, {});
 
