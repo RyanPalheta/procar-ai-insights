@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Phone, MessageSquare, Settings, FileText } from "lucide-react";
+import { LayoutDashboard, Users, Phone, MessageSquare, Settings, FileText, BookOpen } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
@@ -20,6 +20,7 @@ const items = [
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Chamadas", url: "/calls", icon: Phone },
   { title: "Interações", url: "/interactions", icon: MessageSquare },
+  { title: "Playbooks", url: "/admin/playbooks", icon: BookOpen },
   { title: "Configurações", url: "/settings", icon: Settings },
   { title: "Logs", url: "/logs", icon: FileText },
 ];

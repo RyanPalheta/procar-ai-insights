@@ -80,6 +80,19 @@ Deno.serve(async (req) => {
     if (body.processed !== undefined) {
       updateData.processed = body.processed
     }
+    // Playbook analysis fields
+    if (body.playbook_compliance_score !== undefined) {
+      updateData.playbook_compliance_score = parseFloat(body.playbook_compliance_score)
+    }
+    if (body.playbook_steps_completed !== undefined) {
+      updateData.playbook_steps_completed = body.playbook_steps_completed
+    }
+    if (body.playbook_steps_missing !== undefined) {
+      updateData.playbook_steps_missing = body.playbook_steps_missing
+    }
+    if (body.playbook_violations !== undefined) {
+      updateData.playbook_violations = body.playbook_violations
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 
