@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { differenceInHours } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -155,6 +156,22 @@ export default function Leads() {
       default:
         return "secondary";
     }
+  };
+
+  const getComplianceColor = (score: number | null) => {
+    if (score === null) return "secondary";
+    if (score >= 80) return "success";
+    if (score >= 50) return "warning";
+    return "destructive";
+  };
+
+  const isHighQualityLead = (score: number | null) => {
+    return score !== null && score >= 8;
+  };
+
+  const isNewLead = (createdAt: string) => {
+    const hoursSinceCreation = differenceInHours(new Date(), new Date(createdAt));
+    return hoursSinceCreation <= 24;
   };
 
   return (
@@ -308,6 +325,11 @@ export default function Leads() {
                               ✓
                             </Badge>
                           )}
+                          {isNewLead(lead.created_at) && (
+                            <Badge variant="default" className="text-xs">
+                              Novo
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{lead.channel || "N/A"}</TableCell>
@@ -316,12 +338,19 @@ export default function Leads() {
                           {lead.sales_status || "N/A"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{lead.lead_score || "N/A"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {lead.lead_score || "N/A"}
+                          {isHighQualityLead(lead.lead_score) && (
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {lead.playbook_compliance_score !== null ? (
-                          <span className="font-medium">
+                          <Badge variant={getComplianceColor(lead.playbook_compliance_score) as any}>
                             {lead.playbook_compliance_score}%
-                          </span>
+                          </Badge>
                         ) : (
                           "N/A"
                         )}
