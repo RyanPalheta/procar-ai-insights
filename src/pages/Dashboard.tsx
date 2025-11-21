@@ -97,6 +97,29 @@ export default function Dashboard() {
     ? Object.entries(statusData).map(([name, value]) => ({ name, value }))
     : [];
 
+  // Helper function to map service_desired to playbook title
+  const mapServiceToPlaybookTitle = (serviceDesired: string): string => {
+    if (!products || !playbooks) return "Produto Não Identificado";
+    
+    // Try exact match first
+    const exactProduct = products.find(p => 
+      p.product_name.toLowerCase() === serviceDesired.toLowerCase()
+    );
+    
+    // Try partial match if exact fails
+    const partialProduct = exactProduct || products.find(p => 
+      serviceDesired.toLowerCase().includes(p.product_name.toLowerCase()) ||
+      p.product_name.toLowerCase().includes(serviceDesired.toLowerCase())
+    );
+    
+    if (partialProduct) {
+      const playbook = playbooks.find(pb => pb.product_type === partialProduct.product_type);
+      return playbook?.title || "Produto Não Identificado";
+    }
+    
+    return "Produto Não Identificado";
+  };
+
   // Top 5 desired products (mapped to playbook titles)
   const productData = leads?.reduce((acc: any, lead) => {
     if (lead.service_desired) {
@@ -124,29 +147,6 @@ export default function Dashboard() {
   const sentimentChartData = sentimentData
     ? Object.entries(sentimentData).map(([name, value]) => ({ name, value }))
     : [];
-
-  // Helper function to map service_desired to playbook title
-  const mapServiceToPlaybookTitle = (serviceDesired: string): string => {
-    if (!products || !playbooks) return "Produto Não Identificado";
-    
-    // Try exact match first
-    const exactProduct = products.find(p => 
-      p.product_name.toLowerCase() === serviceDesired.toLowerCase()
-    );
-    
-    // Try partial match if exact fails
-    const partialProduct = exactProduct || products.find(p => 
-      serviceDesired.toLowerCase().includes(p.product_name.toLowerCase()) ||
-      p.product_name.toLowerCase().includes(serviceDesired.toLowerCase())
-    );
-    
-    if (partialProduct) {
-      const playbook = playbooks.find(pb => pb.product_type === partialProduct.product_type);
-      return playbook?.title || "Produto Não Identificado";
-    }
-    
-    return "Produto Não Identificado";
-  };
 
   // Playbook compliance by playbook title
   const complianceByPlaybook = leads
