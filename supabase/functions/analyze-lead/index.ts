@@ -105,17 +105,39 @@ serve(async (req) => {
       console.error('[analyze-lead] Error fetching calls:', callsError);
     }
 
-    // Step 4: Identify product if service_desired is empty
-    let identifiedProduct = lead.service_desired;
+    // Step 4: Fetch all valid products first
+    const { data: allProducts } = await supabase
+      .from('products')
+      .select('product_name, product_type');
+    
+    const validProductNames = allProducts?.map(p => p.product_name) || [];
+    const productList = validProductNames.join('\n- ');
+    
+    // Helper function to validate and find exact product match
+    const findValidProduct = (productText: string | null | undefined): string | null => {
+      if (!productText) return null;
+      
+      // Exact match (case insensitive)
+      const exactMatch = validProductNames.find(
+        p => p.toLowerCase() === productText.toLowerCase()
+      );
+      if (exactMatch) return exactMatch;
+      
+      // Partial match (product name contains or is contained in the text)
+      const partialMatch = validProductNames.find(p => 
+        productText.toLowerCase().includes(p.toLowerCase()) ||
+        p.toLowerCase().includes(productText.toLowerCase())
+      );
+      if (partialMatch) return partialMatch;
+      
+      return null;
+    };
+    
+    // Step 5: Identify product if service_desired is empty
+    let identifiedProduct = findValidProduct(lead.service_desired);
     
     if (!identifiedProduct && interactions && interactions.length > 0) {
       console.log('[analyze-lead] Identifying product with AI...');
-      
-      const { data: allProducts } = await supabase
-        .from('products')
-        .select('product_name');
-      
-      const productList = allProducts?.map(p => p.product_name).join(', ') || '';
       
       const conversationText = interactions
         .map(i => `[${i.sender_type}]: ${i.message_text}`)
@@ -126,10 +148,16 @@ serve(async (req) => {
 INTERAÇÕES:
 ${conversationText}
 
-PRODUTOS DISPONÍVEIS:
-${productList}
+PRODUTOS VÁLIDOS (escolha APENAS UM da lista abaixo):
+- ${productList}
 
-Retorne APENAS o nome exato do produto da lista acima. Se não conseguir identificar, retorne "NÃO IDENTIFICADO".`;
+INSTRUÇÕES CRÍTICAS:
+- Retorne APENAS o nome EXATO de um dos produtos listados acima
+- Se não conseguir identificar claramente, retorne: null
+- NÃO invente produtos ou retorne textos descritivos
+- NÃO retorne "NÃO IDENTIFICADO" ou frases explicativas
+
+FORMATO DA RESPOSTA: Nome do produto OU null`;
 
       const identifyResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -140,7 +168,7 @@ Retorne APENAS o nome exato do produto da lista acima. Se não conseguir identif
         body: JSON.stringify({
           model: 'gpt-5-mini-2025-08-07',
           messages: [
-            { role: 'system', content: 'Você é um assistente que identifica produtos baseado em conversas.' },
+            { role: 'system', content: 'Você SEMPRE retorna APENAS o nome exato do produto da lista fornecida, ou a palavra "null". Nada mais.' },
             { role: 'user', content: identifyPrompt }
           ],
           max_completion_tokens: 50
@@ -151,20 +179,20 @@ Retorne APENAS o nome exato do produto da lista acima. Se não conseguir identif
         console.error('[analyze-lead] OpenAI error identifying product:', await identifyResponse.text());
       } else {
         const identifyData = await identifyResponse.json();
-        identifiedProduct = identifyData.choices[0].message.content.trim();
-        console.log(`[analyze-lead] Product identified: ${identifiedProduct}`);
+        const rawProduct = identifyData.choices[0].message.content.trim();
+        console.log(`[analyze-lead] Raw AI response: ${rawProduct}`);
+        
+        // Validate the identified product
+        identifiedProduct = findValidProduct(rawProduct);
+        console.log(`[analyze-lead] Validated product: ${identifiedProduct || 'null'}`);
       }
     }
 
-    // Step 5: Map product to playbook
+    // Step 6: Map product to playbook
     let playbook = null;
     
-    if (identifiedProduct && identifiedProduct !== 'NÃO IDENTIFICADO') {
-      const { data: product } = await supabase
-        .from('products')
-        .select('product_type')
-        .eq('product_name', identifiedProduct)
-        .single();
+    if (identifiedProduct) {
+      const product = allProducts?.find(p => p.product_name === identifiedProduct);
 
       if (product) {
         console.log(`[analyze-lead] Product type: ${product.product_type}`);
@@ -180,7 +208,7 @@ Retorne APENAS o nome exato do produto da lista acima. Se não conseguir identif
       }
     }
 
-    // Step 6: Perform AI analysis
+    // Step 7: Perform AI analysis
     const conversationText = interactions
       ?.map(i => `[${i.sender_type} - ${i.timestamp}]: ${i.message_text}`)
       .join('\n') || 'Sem interações registradas';
@@ -201,6 +229,15 @@ ${conversationText}
 CHAMADAS REALIZADAS:
 ${callsText}
 
+PRODUTOS VÁLIDOS:
+- ${productList}
+
+INSTRUÇÕES IMPORTANTES:
+- Para service_desired: retorne APENAS um dos produtos da lista acima ou deixe null se não identificar
+- NÃO invente nomes de produtos ou use textos descritivos
+- Se houver playbook, avalie compliance honestamente (0-100)
+- Se NÃO houver playbook, deixe compliance como 0
+
 Forneça uma análise completa seguindo a estrutura da ferramenta.`
       : `Você é um auditor de vendas. Analise a conversa abaixo e forneça insights sobre o atendimento.
 
@@ -209,6 +246,14 @@ ${conversationText}
 
 CHAMADAS REALIZADAS:
 ${callsText}
+
+PRODUTOS VÁLIDOS:
+- ${productList}
+
+INSTRUÇÕES IMPORTANTES:
+- Para service_desired: retorne APENAS um dos produtos da lista acima ou deixe null se não identificar
+- NÃO invente nomes de produtos ou use textos descritivos
+- Deixe playbook_compliance_score como 0 (sem playbook para comparar)
 
 Forneça uma análise completa seguindo a estrutura da ferramenta.`;
 
@@ -259,7 +304,8 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                 },
                 service_desired: { 
                   type: "string",
-                  description: "Produto ou serviço identificado"
+                  description: "Nome EXATO do produto da lista fornecida, ou null se não identificado. NÃO use textos descritivos.",
+                  nullable: true
                 },
                 ai_tags: { 
                   type: "array", 
@@ -309,9 +355,13 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       analysisData.choices[0].message.tool_calls[0].function.arguments
     );
 
-    console.log('[analyze-lead] Analysis complete:', analysisResult);
+    console.log('[analyze-lead] Raw analysis result:', analysisResult);
 
-    // Step 7: Update lead via update-lead function
+    // Step 8: Validate and normalize the service_desired field
+    let finalServiceDesired = findValidProduct(analysisResult.service_desired) || identifiedProduct;
+    console.log('[analyze-lead] Final service_desired after validation:', finalServiceDesired || 'null');
+
+    // Step 9: Update lead via update-lead function
     const updatePayload = {
       session_id: session_id,
       sentiment: analysisResult.sentiment,
@@ -319,14 +369,14 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       improvement_point: analysisResult.improvement_point,
       sales_status: analysisResult.sales_status,
       upsell_opportunity: analysisResult.upsell_opportunity,
-      service_desired: analysisResult.service_desired || identifiedProduct,
+      service_desired: finalServiceDesired,
       ai_tags: analysisResult.ai_tags,
-      playbook_compliance_score: analysisResult.playbook_compliance_score,
-      playbook_steps_completed: analysisResult.playbook_steps_completed,
-      playbook_steps_missing: analysisResult.playbook_steps_missing,
+      playbook_compliance_score: analysisResult.playbook_compliance_score || 0,
+      playbook_steps_completed: analysisResult.playbook_steps_completed || [],
+      playbook_steps_missing: analysisResult.playbook_steps_missing || [],
       playbook_violations: analysisResult.playbook_violations,
       processed: true,
-      ai_version: 'gpt-5-playbook-audit-v1'
+      ai_version: 'gpt-5-playbook-audit-v2'
     };
 
     const { data: updateData, error: updateError } = await supabase.functions.invoke('update-lead', {
