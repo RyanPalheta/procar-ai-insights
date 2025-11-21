@@ -11,15 +11,30 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2 } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [analyzingLeads, setAnalyzingLeads] = useState<Set<number>>(new Set());
+  const [processedFilter, setProcessedFilter] = useState<string>("all");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [sentimentFilter, setSentimentFilter] = useState<string>("all");
+  const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -33,11 +48,64 @@ export default function Leads() {
     },
   });
 
-  const filteredLeads = leads?.filter((lead) =>
-    lead.session_id?.toString().includes(searchTerm) ||
-    lead.channel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.sales_status?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Extract unique products and sentiments for filters
+  const uniqueProducts = useMemo(() => {
+    const products = new Set<string>();
+    leads?.forEach(lead => {
+      if (lead.service_desired) products.add(lead.service_desired);
+    });
+    return Array.from(products).sort();
+  }, [leads]);
+
+  const uniqueSentiments = useMemo(() => {
+    const sentiments = new Set<string>();
+    leads?.forEach(lead => {
+      if (lead.sentiment) sentiments.add(lead.sentiment);
+    });
+    return Array.from(sentiments).sort();
+  }, [leads]);
+
+  const filteredLeads = leads?.filter((lead) => {
+    // Search filter
+    const matchesSearch = 
+      lead.session_id?.toString().includes(searchTerm) ||
+      lead.channel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.sales_status?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    // Processed filter
+    if (processedFilter === "processed" && !lead.processed) return false;
+    if (processedFilter === "unprocessed" && lead.processed) return false;
+
+    // Product filter
+    if (productFilter !== "all" && lead.service_desired !== productFilter) return false;
+
+    // Sentiment filter
+    if (sentimentFilter !== "all" && lead.sentiment !== sentimentFilter) return false;
+
+    // Compliance filter
+    if (lead.playbook_compliance_score !== null) {
+      const score = lead.playbook_compliance_score;
+      if (score < complianceRange[0] || score > complianceRange[1]) return false;
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setProcessedFilter("all");
+    setProductFilter("all");
+    setSentimentFilter("all");
+    setComplianceRange([0, 100]);
+  };
+
+  const hasActiveFilters = 
+    processedFilter !== "all" ||
+    productFilter !== "all" ||
+    sentimentFilter !== "all" ||
+    complianceRange[0] !== 0 ||
+    complianceRange[1] !== 100;
 
   const handleAnalyzeLead = async (sessionId: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,13 +168,111 @@ export default function Leads() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Leads</CardTitle>
+          <div className="flex items-center justify-between mb-4">
+            <CardTitle>Lista de Leads</CardTitle>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar Filtros
+                </Button>
+              )}
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="h-8"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", complianceRange[0] !== 0 || complianceRange[1] !== 100].filter(Boolean).length})`}
+              </Button>
+            </div>
+          </div>
+          
           <Input
             placeholder="Buscar por lead ID, canal ou status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
+
+          {showFilters && (
+            <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Status de Análise */}
+                <div className="space-y-2">
+                  <Label>Status de Análise</Label>
+                  <Tabs value={processedFilter} onValueChange={setProcessedFilter}>
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="all">Todos</TabsTrigger>
+                      <TabsTrigger value="processed">Processados</TabsTrigger>
+                      <TabsTrigger value="unprocessed">Pendentes</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                {/* Produto Desejado */}
+                <div className="space-y-2">
+                  <Label>Produto Desejado</Label>
+                  <Select value={productFilter} onValueChange={setProductFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os produtos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os produtos</SelectItem>
+                      {uniqueProducts.map(product => (
+                        <SelectItem key={product} value={product}>
+                          {product}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sentimento */}
+                <div className="space-y-2">
+                  <Label>Sentimento</Label>
+                  <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os sentimentos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os sentimentos</SelectItem>
+                      {uniqueSentiments.map(sentiment => (
+                        <SelectItem key={sentiment} value={sentiment}>
+                          {sentiment}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Compliance Score */}
+                <div className="space-y-2">
+                  <Label>Compliance Score: {complianceRange[0]}% - {complianceRange[1]}%</Label>
+                  <Slider
+                    value={complianceRange}
+                    onValueChange={(value) => setComplianceRange(value as [number, number])}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <p className="text-sm text-muted-foreground">
+                  {filteredLeads?.length || 0} lead(s) encontrado(s)
+                </p>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -120,8 +286,9 @@ export default function Leads() {
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Score</TableHead>
+                    <TableHead>Compliance</TableHead>
+                    <TableHead>Sentimento</TableHead>
                     <TableHead>Serviço</TableHead>
-                    <TableHead>Upsell</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -134,7 +301,14 @@ export default function Leads() {
                       onClick={() => navigate(`/leads/${lead.session_id}`)}
                     >
                       <TableCell className="font-medium">
-                        {lead.session_id || "N/A"}
+                        <div className="flex items-center gap-2">
+                          {lead.session_id || "N/A"}
+                          {lead.processed && (
+                            <Badge variant="outline" className="text-xs">
+                              ✓
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{lead.channel || "N/A"}</TableCell>
                       <TableCell>
@@ -143,8 +317,23 @@ export default function Leads() {
                         </Badge>
                       </TableCell>
                       <TableCell>{lead.lead_score || "N/A"}</TableCell>
+                      <TableCell>
+                        {lead.playbook_compliance_score !== null ? (
+                          <span className="font-medium">
+                            {lead.playbook_compliance_score}%
+                          </span>
+                        ) : (
+                          "N/A"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {lead.sentiment ? (
+                          <Badge variant="outline">{lead.sentiment}</Badge>
+                        ) : (
+                          "N/A"
+                        )}
+                      </TableCell>
                       <TableCell>{lead.service_desired || "N/A"}</TableCell>
-                      <TableCell>{lead.upsell_opportunity || "N/A"}</TableCell>
                       <TableCell>
                         {new Date(lead.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
