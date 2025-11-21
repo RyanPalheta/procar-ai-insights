@@ -145,15 +145,16 @@ export default function Dashboard() {
     : [];
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-8 pb-8">
+      <div className="space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Visão Geral</h2>
         <p className="text-muted-foreground">
           Panorama completo das suas operações comerciais
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* KPIs Principais */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Total de Leads"
           value={totalLeads}
@@ -184,7 +185,8 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* KPIs Secundários */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Chamadas"
           value={totalCalls}
@@ -213,29 +215,39 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      {/* Análise de Produtos e Sentimento */}
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Top 5 Produtos Mais Desejados</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topProductsData} layout="vertical">
+              <BarChart data={topProductsData} layout="vertical" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip />
-                <Bar dataKey="value" fill="hsl(var(--chart-1))" />
+                <YAxis 
+                  dataKey="name" 
+                  type="category" 
+                  width={150}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
+                />
+                <Tooltip 
+                  contentStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Distribuição de Sentimento</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -243,8 +255,8 @@ export default function Dashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => entry.name}
-                  outerRadius={80}
+                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -252,49 +264,65 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip wrapperStyle={{ zIndex: 1000 }} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      {/* Análise de Compliance e Timeline */}
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Ranking de Playbooks por Compliance</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={complianceRankingData} layout="vertical">
+              <BarChart data={complianceRankingData} layout="vertical" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip />
-                <Bar dataKey="compliance" fill="hsl(var(--chart-2))" />
+                <YAxis 
+                  dataKey="name" 
+                  type="category" 
+                  width={150}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
+                />
+                <Tooltip 
+                  contentStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                  formatter={(value) => [`${value}%`, 'Compliance']}
+                />
+                <Bar dataKey="compliance" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Timeline de Análises (Últimos 14 dias)</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineChartData}>
+              <LineChart data={timelineChartData} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Line 
                   type="monotone" 
                   dataKey="count" 
                   stroke="hsl(var(--chart-3))" 
-                  strokeWidth={2}
+                  strokeWidth={3}
                   name="Análises"
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -302,29 +330,33 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      {/* Leads por Canal e Status */}
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Leads por Canal</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={chartData} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="hsl(var(--primary))" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ zIndex: 1000 }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
             <CardTitle>Status de Vendas</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -332,8 +364,8 @@ export default function Dashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => entry.name}
-                  outerRadius={80}
+                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -341,7 +373,7 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip wrapperStyle={{ zIndex: 1000 }} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
