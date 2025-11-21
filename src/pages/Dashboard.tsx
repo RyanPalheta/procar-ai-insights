@@ -97,10 +97,11 @@ export default function Dashboard() {
     ? Object.entries(statusData).map(([name, value]) => ({ name, value }))
     : [];
 
-  // Top 5 desired products
+  // Top 5 desired products (mapped to playbook titles)
   const productData = leads?.reduce((acc: any, lead) => {
     if (lead.service_desired) {
-      acc[lead.service_desired] = (acc[lead.service_desired] || 0) + 1;
+      const playbookTitle = mapServiceToPlaybookTitle(lead.service_desired);
+      acc[playbookTitle] = (acc[playbookTitle] || 0) + 1;
     }
     return acc;
   }, {});
