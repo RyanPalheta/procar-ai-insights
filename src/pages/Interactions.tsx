@@ -72,6 +72,7 @@ export default function Interactions() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Lead ID</TableHead>
                     <TableHead>Canal</TableHead>
                     <TableHead>Remetente</TableHead>
                     <TableHead>Mensagem</TableHead>
@@ -82,6 +83,9 @@ export default function Interactions() {
                 <TableBody>
                   {interactions.map((interaction) => (
                     <TableRow key={interaction.interaction_id}>
+                      <TableCell className="font-medium">
+                        {interaction.session_id || "N/A"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{interaction.channel || "N/A"}</Badge>
                       </TableCell>
