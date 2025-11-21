@@ -62,9 +62,20 @@ export default function AdminPlaybooks() {
             };
           }).filter(p => p.product_name && p.product_type);
 
-          console.log('Transformed products:', products.length, products.slice(0, 3));
+          // Remove duplicates by product_name (keep first occurrence)
+          const uniqueProducts = products.reduce((acc: any[], product) => {
+            const exists = acc.find(p => p.product_name === product.product_name);
+            if (!exists) {
+              acc.push(product);
+            }
+            return acc;
+          }, []);
 
-          if (products.length === 0) {
+          const duplicatesCount = products.length - uniqueProducts.length;
+
+          console.log('Transformed products:', products.length, 'Unique:', uniqueProducts.length);
+
+          if (uniqueProducts.length === 0) {
             toast({
               title: "Erro",
               description: "Nenhum produto encontrado. Verifique se as colunas têm nomes como 'PRODUTO' e 'TIPO'",
@@ -74,10 +85,15 @@ export default function AdminPlaybooks() {
             return;
           }
 
-          setProductsPreview(products);
+          setProductsPreview(uniqueProducts);
+          
+          const message = duplicatesCount > 0 
+            ? `${uniqueProducts.length} produtos únicos encontrados (${duplicatesCount} duplicados removidos)`
+            : `${uniqueProducts.length} produtos encontrados`;
+            
           toast({
             title: "Arquivo lido!",
-            description: `${products.length} produtos encontrados`
+            description: message
           });
         } catch (parseError) {
           console.error('Error parsing Excel:', parseError);
@@ -126,8 +142,19 @@ export default function AdminPlaybooks() {
     try {
       console.log('Uploading products:', productsPreview.length);
       
+      // Double-check for duplicates before sending
+      const uniqueProducts = productsPreview.reduce((acc: any[], product) => {
+        const exists = acc.find(p => p.product_name === product.product_name);
+        if (!exists) {
+          acc.push(product);
+        }
+        return acc;
+      }, []);
+
+      console.log('Sending unique products:', uniqueProducts.length);
+      
       const { data, error } = await supabase.functions.invoke('seed-data/products', {
-        body: { products: productsPreview }
+        body: { products: uniqueProducts }
       });
 
       if (error) {
