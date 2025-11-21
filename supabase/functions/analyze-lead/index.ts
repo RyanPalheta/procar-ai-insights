@@ -7,13 +7,43 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to log events to audit_logs
+async function logEvent(
+  supabase: any,
+  eventType: string,
+  functionName: string,
+  status: string,
+  sessionId?: number,
+  eventDetails?: any,
+  executionTimeMs?: number,
+  errorMessage?: string
+) {
+  try {
+    await supabase.from('audit_logs').insert({
+      session_id: sessionId,
+      event_type: eventType,
+      function_name: functionName,
+      event_details: eventDetails,
+      status: status,
+      execution_time_ms: executionTimeMs,
+      error_message: errorMessage
+    });
+  } catch (error) {
+    console.error('[audit_logs] Failed to log event:', error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let sessionId: number | undefined;
+
   try {
     const { session_id } = await req.json();
+    sessionId = session_id;
     
     if (!session_id) {
       return new Response(
@@ -28,6 +58,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Log start of analysis
+    await logEvent(
+      supabase,
+      'ai_analysis_started',
+      'analyze-lead',
+      'pending',
+      session_id,
+      { action: 'start_analysis' }
+    );
 
     // Step 1: Fetch lead data
     const { data: lead, error: leadError } = await supabase
@@ -303,6 +343,24 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
 
     console.log('[analyze-lead] Lead updated successfully');
 
+    const executionTime = Date.now() - startTime;
+
+    // Log successful completion
+    await logEvent(
+      supabase,
+      'ai_analysis_completed',
+      'analyze-lead',
+      'success',
+      session_id,
+      {
+        sentiment: analysisResult.sentiment,
+        lead_score: analysisResult.lead_score,
+        compliance_score: analysisResult.playbook_compliance_score,
+        playbook_used: playbook?.title || null
+      },
+      executionTime
+    );
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -315,9 +373,31 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
 
   } catch (error) {
     console.error('[analyze-lead] Unexpected error:', error);
+    
+    const executionTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    // Log error
+    if (sessionId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await logEvent(
+        supabase,
+        'ai_analysis_error',
+        'analyze-lead',
+        'error',
+        sessionId,
+        { error: errorMessage },
+        executionTime,
+        errorMessage
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

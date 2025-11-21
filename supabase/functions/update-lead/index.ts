@@ -5,11 +5,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 }
 
+// Helper function to log events to audit_logs
+async function logEvent(
+  supabase: any,
+  eventType: string,
+  functionName: string,
+  status: string,
+  sessionId?: number,
+  eventDetails?: any,
+  executionTimeMs?: number,
+  errorMessage?: string
+) {
+  try {
+    await supabase.from('audit_logs').insert({
+      session_id: sessionId,
+      event_type: eventType,
+      function_name: functionName,
+      event_details: eventDetails,
+      status: status,
+      execution_time_ms: executionTimeMs,
+      error_message: errorMessage
+    });
+  } catch (error) {
+    console.error('[audit_logs] Failed to log event:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
+  let sessionId: number | undefined;
 
   try {
     const supabaseClient = createClient(
@@ -18,6 +47,7 @@ Deno.serve(async (req) => {
     )
 
     const body = await req.json()
+    sessionId = body.session_id;
     console.log('Received update request:', JSON.stringify(body, null, 2))
 
     // Validate required field
@@ -112,6 +142,23 @@ Deno.serve(async (req) => {
     }
 
     console.log('Lead updated successfully:', data[0].session_id)
+    
+    const executionTime = Date.now() - startTime;
+
+    // Log successful update
+    await logEvent(
+      supabaseClient,
+      'lead_update',
+      'update-lead',
+      'success',
+      body.session_id,
+      {
+        updated_fields: Object.keys(updateData),
+        has_ai_data: !!body.sentiment || !!body.playbook_compliance_score
+      },
+      executionTime
+    );
+
     return new Response(
       JSON.stringify({ 
         message: 'Lead updated successfully',
@@ -124,6 +171,28 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    
+    const executionTime = Date.now() - startTime;
+
+    // Log error
+    if (sessionId) {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      
+      await logEvent(
+        supabaseClient,
+        'lead_update_error',
+        'update-lead',
+        'error',
+        sessionId,
+        { error: errorMessage },
+        executionTime,
+        errorMessage
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

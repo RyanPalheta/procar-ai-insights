@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_details: Json | null
+          event_type: string
+          execution_time_ms: number | null
+          function_name: string | null
+          id: string
+          session_id: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_details?: Json | null
+          event_type: string
+          execution_time_ms?: number | null
+          function_name?: string | null
+          id?: string
+          session_id?: number | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_details?: Json | null
+          event_type?: string
+          execution_time_ms?: number | null
+          function_name?: string | null
+          id?: string
+          session_id?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       call_db: {
         Row: {
           ai_analysis_status: string | null
