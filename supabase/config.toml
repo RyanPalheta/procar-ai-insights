@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.update-lead]
 verify_jwt = false
+
+[functions.analyze-lead]
+verify_jwt = false
+
+[functions.seed-data]
+verify_jwt = false
