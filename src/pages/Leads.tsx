@@ -199,7 +199,8 @@ export default function Leads() {
     });
     const sentimentData = Array.from(sentimentCounts.entries())
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
 
     // Top 5 products
     const productCounts = new Map<string, number>();
