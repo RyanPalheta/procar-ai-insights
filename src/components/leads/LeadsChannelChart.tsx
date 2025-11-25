@@ -5,13 +5,15 @@ interface LeadsChannelChartProps {
   data: { name: string; value: number }[];
 }
 
-const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))"
-];
+const CHANNEL_COLORS: Record<string, string> = {
+  "WhatsApp": "hsl(142, 71%, 45%)", // Verde
+  "Facebook": "hsl(217, 91%, 60%)", // Azul
+  "Instagram": "hsl(330, 81%, 56%)", // Rosa
+};
+
+const getChannelColor = (channelName: string): string => {
+  return CHANNEL_COLORS[channelName] || "hsl(var(--muted))";
+};
 
 export function LeadsChannelChart({ data }: LeadsChannelChartProps) {
   return (
@@ -33,7 +35,7 @@ export function LeadsChannelChart({ data }: LeadsChannelChartProps) {
               dataKey="value"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={getChannelColor(entry.name)} />
               ))}
             </Pie>
             <Tooltip />

@@ -145,11 +145,13 @@ export default function Leads() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // Language distribution
+    // Language distribution (excluding N/A)
     const languageCounts = new Map<string, number>();
     leads.forEach(l => {
-      const language = l.lead_language || "N/A";
-      languageCounts.set(language, (languageCounts.get(language) || 0) + 1);
+      if (l.lead_language && l.lead_language !== "N/A") {
+        const language = l.lead_language;
+        languageCounts.set(language, (languageCounts.get(language) || 0) + 1);
+      }
     });
     const languageData = Array.from(languageCounts.entries())
       .map(([name, value]) => ({ name, value }))
