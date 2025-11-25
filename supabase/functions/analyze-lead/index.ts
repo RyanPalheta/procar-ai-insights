@@ -294,10 +294,6 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                   type: "string",
                   description: "Principal ponto de melhoria no atendimento"
                 },
-                sales_status: { 
-                  type: "string",
-                  description: "Status atual do lead no funil de vendas"
-                },
                 upsell_opportunity: { 
                   type: "string",
                   description: "Oportunidades identificadas de cross-sell ou upsell"
@@ -333,7 +329,7 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                   description: "Descrição de violações graves do playbook (se houver)"
                 }
               },
-              required: ["sentiment", "lead_score", "improvement_point", "sales_status"]
+              required: ["sentiment", "lead_score", "improvement_point"]
             }
           }
         }],
