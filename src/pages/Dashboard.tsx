@@ -86,16 +86,6 @@ export default function Dashboard() {
     ? Object.entries(channelData).map(([name, value]) => ({ name, value }))
     : [];
 
-  // Sales status distribution
-  const statusData = leads?.reduce((acc: any, lead) => {
-    const status = lead.sales_status || "Sem status";
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const statusChartData = statusData
-    ? Object.entries(statusData).map(([name, value]) => ({ name, value }))
-    : [];
 
   // Helper function to map service_desired to playbook title
   const mapServiceToPlaybookTitle = (serviceDesired: string): string => {
@@ -378,55 +368,26 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Leads por Canal e Status */}
-      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle>Leads por Canal</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  contentStyle={{ fontSize: '12px' }}
-                  wrapperStyle={{ zIndex: 1000 }}
-                />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle>Status de Vendas</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => `${entry.name}: ${entry.value}`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip wrapperStyle={{ zIndex: 1000 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Leads por Canal */}
+      <Card className="animate-fade-in">
+        <CardHeader>
+          <CardTitle>Leads por Canal</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[350px] pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip 
+                contentStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ zIndex: 1000 }}
+              />
+              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }
