@@ -367,7 +367,6 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       sentiment: analysisResult.sentiment,
       lead_score: analysisResult.lead_score,
       improvement_point: analysisResult.improvement_point,
-      sales_status: analysisResult.sales_status,
       upsell_opportunity: analysisResult.upsell_opportunity,
       service_desired: finalServiceDesired,
       ai_tags: analysisResult.ai_tags,
