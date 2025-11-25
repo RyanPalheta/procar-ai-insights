@@ -13,9 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { differenceInHours } from "date-fns";
+import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -41,6 +41,8 @@ export default function Leads() {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -210,6 +212,23 @@ export default function Leads() {
       if (score < complianceRange[0] || score > complianceRange[1]) return false;
     }
 
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const leadDate = parseISO(lead.created_at);
+      
+      if (dateFrom && dateTo) {
+        const fromDate = startOfDay(parseISO(dateFrom));
+        const toDate = endOfDay(parseISO(dateTo));
+        if (!isWithinInterval(leadDate, { start: fromDate, end: toDate })) return false;
+      } else if (dateFrom) {
+        const fromDate = startOfDay(parseISO(dateFrom));
+        if (leadDate < fromDate) return false;
+      } else if (dateTo) {
+        const toDate = endOfDay(parseISO(dateTo));
+        if (leadDate > toDate) return false;
+      }
+    }
+
     return true;
   });
 
@@ -218,6 +237,8 @@ export default function Leads() {
     setProductFilter("all");
     setSentimentFilter("all");
     setComplianceRange([0, 100]);
+    setDateFrom("");
+    setDateTo("");
   };
 
   const hasActiveFilters = 
@@ -225,7 +246,9 @@ export default function Leads() {
     productFilter !== "all" ||
     sentimentFilter !== "all" ||
     complianceRange[0] !== 0 ||
-    complianceRange[1] !== 100;
+    complianceRange[1] !== 100 ||
+    dateFrom !== "" ||
+    dateTo !== "";
 
   const handleAnalyzeLead = async (sessionId: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -338,7 +361,7 @@ export default function Leads() {
                 className="h-8"
               >
                 <Filter className="h-4 w-4 mr-1" />
-                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", complianceRange[0] !== 0 || complianceRange[1] !== 100].filter(Boolean).length})`}
+                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", complianceRange[0] !== 0 || complianceRange[1] !== 100, dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
               </Button>
             </div>
           </div>
@@ -352,6 +375,34 @@ export default function Leads() {
 
           {showFilters && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
+              {/* Date Range Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data Inicial
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    max={dateTo || undefined}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data Final
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    min={dateFrom || undefined}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Status de Análise */}
                 <div className="space-y-2">
