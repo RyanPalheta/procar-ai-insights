@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Trash2 } from "lucide-react";
+import { Upload, Trash2, Eye } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import mammoth from "mammoth";
 
@@ -28,6 +30,7 @@ export function PlaybookManager() {
   const [playbookFiles, setPlaybookFiles] = useState<{ [key: string]: File }>({});
   const [uploadingPlaybook, setUploadingPlaybook] = useState<string | null>(null);
   const [deletingPlaybook, setDeletingPlaybook] = useState<string | null>(null);
+  const [viewingPlaybook, setViewingPlaybook] = useState<any>(null);
 
   const { data: playbooks, isLoading } = useQuery({
     queryKey: ['playbooks'],
@@ -151,6 +154,26 @@ export function PlaybookManager() {
 
   return (
     <div className="space-y-6">
+      {/* Playbook Viewing Dialog */}
+      <Dialog open={!!viewingPlaybook} onOpenChange={(open) => !open && setViewingPlaybook(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Badge variant="secondary">{viewingPlaybook?.product_type}</Badge>
+              {viewingPlaybook?.title}
+            </DialogTitle>
+            <DialogDescription>
+              Criado em {viewingPlaybook?.created_at ? new Date(viewingPlaybook.created_at).toLocaleDateString('pt-BR') : '-'}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
+            <div className="whitespace-pre-wrap text-sm">
+              {viewingPlaybook?.content || 'Nenhum conteúdo disponível'}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       {/* Existing Playbooks Table */}
       <Card>
         <CardHeader>
@@ -169,12 +192,16 @@ export function PlaybookManager() {
                   <TableHead>Tipo de Produto</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead>Data</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {playbooks.map((playbook) => (
-                  <TableRow key={playbook.id}>
+                  <TableRow 
+                    key={playbook.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setViewingPlaybook(playbook)}
+                  >
                     <TableCell>
                       <Badge variant="secondary">{playbook.product_type}</Badge>
                     </TableCell>
@@ -182,34 +209,44 @@ export function PlaybookManager() {
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(playbook.created_at || '').toLocaleDateString('pt-BR')}
                     </TableCell>
-                    <TableCell>
-                      <AlertDialog>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {}}
-                          disabled={deletingPlaybook === playbook.id}
+                          onClick={() => setViewingPlaybook(playbook)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja remover o playbook <strong>{playbook.product_type}</strong>? Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeletePlaybook(playbook.id, playbook.product_type)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={deletingPlaybook === playbook.id}
                             >
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja remover o playbook <strong>{playbook.product_type}</strong>? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeletePlaybook(playbook.id, playbook.product_type)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
