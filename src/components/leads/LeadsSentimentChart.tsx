@@ -8,11 +8,12 @@ interface LeadsSentimentChartProps {
 const SENTIMENT_COLORS: Record<string, string> = {
   "Positivo": "hsl(var(--success))",
   "Neutro": "hsl(var(--warning))",
-  "Negativo": "hsl(var(--destructive))",
-  "N/A": "hsl(var(--muted))"
+  "Negativo": "hsl(var(--destructive))"
 };
 
 export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  
   return (
     <Card>
       <CardHeader>
@@ -26,8 +27,10 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
+              label={({ name, value, percent }) => 
+                `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
+              }
+              outerRadius={90}
               fill="hsl(var(--primary))"
               dataKey="value"
             >
@@ -38,7 +41,12 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
                 />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip 
+              formatter={(value: number) => [
+                `${value} leads (${((value / total) * 100).toFixed(1)}%)`,
+                ""
+              ]}
+            />
             <Legend />
           </PieChart>
         </ResponsiveContainer>

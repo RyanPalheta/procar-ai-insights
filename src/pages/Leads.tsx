@@ -115,6 +115,28 @@ export default function Leads() {
     };
   }, [leads]);
 
+  // Sentiment normalization function
+  const normalizeSentiment = (sentiment: string | null): string | null => {
+    if (!sentiment) return null;
+    const sentimentLower = sentiment.toLowerCase().trim();
+    
+    // Excluir valores inválidos
+    if (sentimentLower === "n/a" || sentimentLower === "") return null;
+    
+    // Mapeamento para categorias padronizadas
+    if (sentimentLower.includes("positiv")) {
+      return "Positivo";
+    }
+    if (sentimentLower.includes("neutr")) {
+      return "Neutro";
+    }
+    if (sentimentLower.includes("negativ")) {
+      return "Negativo";
+    }
+    
+    return null; // Retorna null se não foi reconhecido
+  };
+
   // Status normalization function
   const normalizeStatus = (status: string | null): string | null => {
     if (!status) return null;
@@ -191,15 +213,17 @@ export default function Leads() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // Sentiment distribution
-    const sentimentCounts = new Map<string, number>();
-    leads.forEach(l => {
-      const sentiment = l.sentiment || "N/A";
-      sentimentCounts.set(sentiment, (sentimentCounts.get(sentiment) || 0) + 1);
-    });
-    const sentimentData = Array.from(sentimentCounts.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+  // Sentiment distribution with normalization
+  const sentimentCounts = new Map<string, number>();
+  leads.forEach(l => {
+    const normalizedSentiment = normalizeSentiment(l.sentiment);
+    if (normalizedSentiment) {
+      sentimentCounts.set(normalizedSentiment, (sentimentCounts.get(normalizedSentiment) || 0) + 1);
+    }
+  });
+  const sentimentData = Array.from(sentimentCounts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 
     // Top 5 products
     const productCounts = new Map<string, number>();
