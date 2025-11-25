@@ -15,7 +15,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
+import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -250,6 +250,32 @@ export default function Leads() {
     dateFrom !== "" ||
     dateTo !== "";
 
+  // Quick date filters
+  const applyQuickDateFilter = (period: "today" | "last7days" | "last30days" | "lastMonth") => {
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+
+    switch (period) {
+      case "today":
+        setDateFrom(todayStr);
+        setDateTo(todayStr);
+        break;
+      case "last7days":
+        setDateFrom(format(subDays(today, 7), "yyyy-MM-dd"));
+        setDateTo(todayStr);
+        break;
+      case "last30days":
+        setDateFrom(format(subDays(today, 30), "yyyy-MM-dd"));
+        setDateTo(todayStr);
+        break;
+      case "lastMonth":
+        const lastMonth = subMonths(today, 1);
+        setDateFrom(format(startOfMonth(lastMonth), "yyyy-MM-dd"));
+        setDateTo(format(endOfMonth(lastMonth), "yyyy-MM-dd"));
+        break;
+    }
+  };
+
   const handleAnalyzeLead = async (sessionId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -376,6 +402,43 @@ export default function Leads() {
           {showFilters && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
               {/* Date Range Filter */}
+              <div className="space-y-4 pb-4 border-b">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Filtros Rápidos de Período
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyQuickDateFilter("today")}
+                  >
+                    Hoje
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyQuickDateFilter("last7days")}
+                  >
+                    Últimos 7 dias
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyQuickDateFilter("last30days")}
+                  >
+                    Últimos 30 dias
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyQuickDateFilter("lastMonth")}
+                  >
+                    Último mês
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
