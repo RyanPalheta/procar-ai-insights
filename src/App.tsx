@@ -11,7 +11,6 @@ import Calls from "./pages/Calls";
 import Interactions from "./pages/Interactions";
 import Settings from "./pages/Settings";
 import Logs from "./pages/Logs";
-import AdminPlaybooks from "./pages/AdminPlaybooks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,14 +75,6 @@ const App = () => (
             element={
               <AppLayout>
                 <Logs />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/admin/playbooks"
-            element={
-              <AppLayout>
-                <AdminPlaybooks />
               </AppLayout>
             }
           />
