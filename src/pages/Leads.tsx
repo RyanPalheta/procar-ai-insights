@@ -115,6 +115,37 @@ export default function Leads() {
     };
   }, [leads]);
 
+  // Status normalization function
+  const normalizeStatus = (status: string | null): string | null => {
+    if (!status) return null;
+    const statusLower = status.toLowerCase();
+    
+    // Excluir valores inválidos
+    if (["nda", "test"].includes(statusLower)) return null;
+    
+    // Mapeamento para categorias padronizadas
+    if (statusLower.includes("contato inicial") || statusLower.includes("novo lead") || statusLower.includes("dia 1")) {
+      return "Novo Lead";
+    }
+    if (statusLower.includes("qualified") || statusLower.includes("apontamentos") || statusLower.includes("oxigenação")) {
+      return "Em Qualificação";
+    }
+    if (statusLower.includes("negociação") || statusLower.includes("tomada de decisão") || statusLower.includes("dia 2") || statusLower.includes("dia 4")) {
+      return "Em Negociação";
+    }
+    if (statusLower.includes("follow-up") || statusLower.includes("recuperação de clientes")) {
+      return "Follow-up";
+    }
+    if (statusLower.includes("venda ganha") || statusLower.includes("won") || statusLower.includes("ganho")) {
+      return "Venda Ganha";
+    }
+    if (statusLower.includes("venda perdida") || statusLower.includes("lost") || statusLower.includes("perdido") || statusLower.includes("cancelamento")) {
+      return "Venda Perdida";
+    }
+    
+    return status; // Retorna o status original se não foi mapeado
+  };
+
   // Chart Data Calculations
   const chartData = useMemo(() => {
     if (!leads) return {
@@ -135,11 +166,13 @@ export default function Leads() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // Status distribution
+    // Status distribution with normalization
     const statusCounts = new Map<string, number>();
     leads.forEach(l => {
-      const status = l.sales_status || "N/A";
-      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+      const normalizedStatus = normalizeStatus(l.sales_status);
+      if (normalizedStatus) {
+        statusCounts.set(normalizedStatus, (statusCounts.get(normalizedStatus) || 0) + 1);
+      }
     });
     const statusData = Array.from(statusCounts.entries())
       .map(([name, value]) => ({ name, value }))
