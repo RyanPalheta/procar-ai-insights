@@ -237,6 +237,8 @@ INSTRUÇÕES IMPORTANTES:
 - NÃO invente nomes de produtos ou use textos descritivos
 - Se houver playbook, avalie compliance honestamente (0-100)
 - Se NÃO houver playbook, deixe compliance como 0
+- Para quoted_price: extraia qualquer valor monetário mencionado pelo vendedor (ex: "R$ 450,00" -> 450, "450 reais" -> 450). Se não houver valor, retorne null
+- Para has_quote: true se houve cotação formal/oficial, false se foi apenas estimativa/menção informal
 
 Forneça uma análise completa seguindo a estrutura da ferramenta.`
       : `Você é um auditor de vendas. Analise a conversa abaixo e forneça insights sobre o atendimento.
@@ -254,6 +256,8 @@ INSTRUÇÕES IMPORTANTES:
 - Para service_desired: retorne APENAS um dos produtos da lista acima ou deixe null se não identificar
 - NÃO invente nomes de produtos ou use textos descritivos
 - Deixe playbook_compliance_score como 0 (sem playbook para comparar)
+- Para quoted_price: extraia qualquer valor monetário mencionado pelo vendedor (ex: "R$ 450,00" -> 450, "450 reais" -> 450). Se não houver valor, retorne null
+- Para has_quote: true se houve cotação formal/oficial, false se foi apenas estimativa/menção informal
 
 Forneça uma análise completa seguindo a estrutura da ferramenta.`;
 
@@ -327,9 +331,18 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                 playbook_violations: { 
                   type: "string",
                   description: "Descrição de violações graves do playbook (se houver)"
+                },
+                quoted_price: { 
+                  type: "number",
+                  nullable: true,
+                  description: "Valor monetário do serviço cotado/mencionado nas interações (em reais). Retorne null se não houver valor mencionado. Converta valores como 'R$ 450,00' para 450."
+                },
+                has_quote: {
+                  type: "boolean",
+                  description: "Indica se foi apresentada uma cotação formal ao cliente (true) ou apenas estimativa/menção informal (false)"
                 }
               },
-              required: ["sentiment", "lead_score", "improvement_point"]
+              required: ["sentiment", "lead_score", "improvement_point", "has_quote"]
             }
           }
         }],
@@ -370,6 +383,7 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       playbook_steps_completed: analysisResult.playbook_steps_completed || [],
       playbook_steps_missing: analysisResult.playbook_steps_missing || [],
       playbook_violations: analysisResult.playbook_violations,
+      lead_price: analysisResult.quoted_price || null,
       processed: true,
       ai_version: 'gpt-5-playbook-audit-v2'
     };
