@@ -27,6 +27,12 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LeadsKPICards } from "@/components/leads/LeadsKPICards";
+import { LeadsChannelChart } from "@/components/leads/LeadsChannelChart";
+import { LeadsStatusChart } from "@/components/leads/LeadsStatusChart";
+import { LeadsLanguageChart } from "@/components/leads/LeadsLanguageChart";
+import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
+import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +70,119 @@ export default function Leads() {
       if (lead.sentiment) sentiments.add(lead.sentiment);
     });
     return Array.from(sentiments).sort();
+  }, [leads]);
+
+  // KPI Calculations
+  const kpiMetrics = useMemo(() => {
+    if (!leads) return {
+      totalLeads: 0,
+      conversionRate: 0,
+      avgScore: 0,
+      newLeads24h: 0,
+      leadsWithQuote: 0,
+      avgQuotedPrice: 0
+    };
+
+    const totalLeads = leads.length;
+    const wonLeads = leads.filter(l => 
+      l.sales_status?.toLowerCase() === "won" || 
+      l.sales_status?.toLowerCase() === "ganho"
+    ).length;
+    const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
+
+    const scoresWithValues = leads.filter(l => l.lead_score !== null);
+    const avgScore = scoresWithValues.length > 0
+      ? scoresWithValues.reduce((sum, l) => sum + (l.lead_score || 0), 0) / scoresWithValues.length
+      : 0;
+
+    const newLeads24h = leads.filter(l => differenceInHours(new Date(), new Date(l.created_at)) <= 24).length;
+
+    const leadsWithQuote = leads.filter(l => l.lead_price !== null).length;
+    const pricesWithValues = leads.filter(l => l.lead_price !== null);
+    const avgQuotedPrice = pricesWithValues.length > 0
+      ? pricesWithValues.reduce((sum, l) => sum + (l.lead_price || 0), 0) / pricesWithValues.length
+      : 0;
+
+    return {
+      totalLeads,
+      conversionRate,
+      avgScore,
+      newLeads24h,
+      leadsWithQuote,
+      avgQuotedPrice
+    };
+  }, [leads]);
+
+  // Chart Data Calculations
+  const chartData = useMemo(() => {
+    if (!leads) return {
+      channelData: [],
+      statusData: [],
+      languageData: [],
+      sentimentData: [],
+      topProductsData: []
+    };
+
+    // Channel distribution
+    const channelCounts = new Map<string, number>();
+    leads.forEach(l => {
+      const channel = l.channel || "N/A";
+      channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
+    });
+    const channelData = Array.from(channelCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Status distribution
+    const statusCounts = new Map<string, number>();
+    leads.forEach(l => {
+      const status = l.sales_status || "N/A";
+      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+    });
+    const statusData = Array.from(statusCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Language distribution
+    const languageCounts = new Map<string, number>();
+    leads.forEach(l => {
+      const language = l.lead_language || "N/A";
+      languageCounts.set(language, (languageCounts.get(language) || 0) + 1);
+    });
+    const languageData = Array.from(languageCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Sentiment distribution
+    const sentimentCounts = new Map<string, number>();
+    leads.forEach(l => {
+      const sentiment = l.sentiment || "N/A";
+      sentimentCounts.set(sentiment, (sentimentCounts.get(sentiment) || 0) + 1);
+    });
+    const sentimentData = Array.from(sentimentCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Top 5 products
+    const productCounts = new Map<string, number>();
+    leads.forEach(l => {
+      if (l.service_desired) {
+        const product = l.service_desired;
+        productCounts.set(product, (productCounts.get(product) || 0) + 1);
+      }
+    });
+    const topProductsData = Array.from(productCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    return {
+      channelData,
+      statusData,
+      languageData,
+      sentimentData,
+      topProductsData
+    };
   }, [leads]);
 
   const filteredLeads = leads?.filter((lead) => {
@@ -183,6 +302,19 @@ export default function Leads() {
         </p>
       </div>
 
+      {/* KPI Cards Section */}
+      <LeadsKPICards {...kpiMetrics} />
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LeadsChannelChart data={chartData.channelData} />
+        <LeadsStatusChart data={chartData.statusData} />
+        <LeadsLanguageChart data={chartData.languageData} />
+        <LeadsSentimentChart data={chartData.sentimentData} />
+        <LeadsTopProductsChart data={chartData.topProductsData} />
+      </div>
+
+      {/* Leads Table Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
