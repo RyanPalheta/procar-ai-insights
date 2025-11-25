@@ -176,7 +176,8 @@ export default function Leads() {
     });
     const statusData = Array.from(statusCounts.entries())
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
 
     // Language distribution (excluding N/A)
     const languageCounts = new Map<string, number>();
