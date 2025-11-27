@@ -1,5 +1,5 @@
 import { LayoutDashboard, Users, Phone, MessageSquare, Settings, FileText } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Dock, DockIcon, DockItem, DockLabel } from "@/components/ui/dock";
 
 const items = [
@@ -12,7 +12,6 @@ const items = [
 ];
 
 export function NavigationDock() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -25,15 +24,14 @@ export function NavigationDock() {
           const active = isActive(item.url);
           
           return (
-            <DockItem
-              key={item.title}
-              className={`aspect-square rounded-full transition-colors cursor-pointer ${
-                active 
-                  ? 'bg-primary' 
-                  : 'bg-muted hover:bg-muted/80'
-              }`}
-            >
-              <div onClick={() => navigate(item.url)} className="w-full h-full">
+            <Link key={item.title} to={item.url}>
+              <DockItem
+                className={`aspect-square rounded-full transition-colors ${
+                  active 
+                    ? 'bg-primary' 
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
                 <DockLabel>{item.title}</DockLabel>
                 <DockIcon>
                   <Icon className={`h-full w-full ${
@@ -42,8 +40,8 @@ export function NavigationDock() {
                       : 'text-muted-foreground'
                   }`} />
                 </DockIcon>
-              </div>
-            </DockItem>
+              </DockItem>
+            </Link>
           );
         })}
       </Dock>
