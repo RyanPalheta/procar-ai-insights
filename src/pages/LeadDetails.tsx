@@ -27,9 +27,9 @@ import {
   ThumbsUp,
   ThumbsDown,
   Minus,
-  Sparkles,
-  Loader2
+  Sparkles
 } from "lucide-react";
+import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
 export default function LeadDetails() {
   const { leadId } = useParams();
@@ -37,6 +37,7 @@ export default function LeadDetails() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   const sessionId = parseInt(leadId || "0");
 
   // Buscar dados do lead
@@ -83,6 +84,7 @@ export default function LeadDetails() {
 
   const handleAnalyzeThisLead = async () => {
     setIsAnalyzing(true);
+    setShowAnalysisDialog(true);
     
     try {
       const { data, error } = await supabase.functions.invoke('analyze-lead', {
@@ -110,6 +112,10 @@ export default function LeadDetails() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleAnalysisComplete = () => {
+    // Called when animation completes, can be used for additional logic
   };
 
   const getSentimentIcon = (sentiment: string | null) => {
@@ -191,17 +197,8 @@ export default function LeadDetails() {
             size="lg"
             className="bg-primary"
           >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Analisando Lead...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                🔍 Analisar Este Lead
-              </>
-            )}
+            <Sparkles className="h-5 w-5 mr-2" />
+            🔍 Analisar Este Lead
           </Button>
           
           <Badge variant={getStatusColor(lead.sales_status) as any} className="text-lg px-4 py-2">
@@ -542,6 +539,14 @@ export default function LeadDetails() {
           )}
         </CardContent>
       </Card>
+
+      {/* AI Analysis Dialog */}
+      <AIAnalysisDialog
+        open={showAnalysisDialog}
+        onOpenChange={setShowAnalysisDialog}
+        isAnalyzing={isAnalyzing}
+        onComplete={handleAnalysisComplete}
+      />
     </div>
   );
 }
