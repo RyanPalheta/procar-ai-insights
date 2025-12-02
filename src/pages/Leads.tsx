@@ -33,6 +33,7 @@ import { LeadsStatusChart } from "@/components/leads/LeadsStatusChart";
 import { LeadsLanguageChart } from "@/components/leads/LeadsLanguageChart";
 import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
 import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart";
+import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -176,7 +177,8 @@ export default function Leads() {
       statusData: [],
       languageData: [],
       sentimentData: [],
-      topProductsData: []
+      topProductsData: [],
+      temperatureData: []
     };
 
     // Channel distribution
@@ -239,12 +241,29 @@ export default function Leads() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
+    // Temperature distribution
+    const temperatureCounts = new Map<string, number>();
+    leads.forEach(l => {
+      const temp = (l as any).lead_temperature;
+      if (temp) {
+        const normalizedTemp = temp.charAt(0).toUpperCase() + temp.slice(1).toLowerCase();
+        temperatureCounts.set(normalizedTemp, (temperatureCounts.get(normalizedTemp) || 0) + 1);
+      }
+    });
+    const temperatureData = Array.from(temperatureCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => {
+        const order = ["Quente", "Morno", "Frio"];
+        return order.indexOf(a.name) - order.indexOf(b.name);
+      });
+
     return {
       channelData,
       statusData,
       languageData,
       sentimentData,
-      topProductsData
+      topProductsData,
+      temperatureData
     };
   }, [leads]);
 
@@ -434,9 +453,10 @@ export default function Leads() {
       <LeadsKPICards {...kpiMetrics} />
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <LeadsChannelChart data={chartData.channelData} />
         <LeadsStatusChart data={chartData.statusData} />
+        <LeadsTemperatureChart data={chartData.temperatureData} />
         <LeadsLanguageChart data={chartData.languageData} />
         <LeadsSentimentChart data={chartData.sentimentData} />
         <LeadsTopProductsChart data={chartData.topProductsData} />
