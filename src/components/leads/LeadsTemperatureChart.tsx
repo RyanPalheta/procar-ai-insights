@@ -76,17 +76,21 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
             </div>
             
             <div className="relative flex flex-col items-center">
-              <div className="w-6 h-36 bg-muted/50 rounded-full overflow-hidden relative">
+              {/* Tube */}
+              <div className="w-6 h-36 bg-muted/50 rounded-t-full relative">
                 <div 
-                  className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-700"
+                  className="absolute bottom-0 left-0 right-0 transition-all duration-700"
                   style={{ 
                     height: `${Math.max(fillPercentage, 10)}%`,
-                    backgroundColor: temperatureColor
+                    backgroundColor: temperatureColor,
+                    borderTopLeftRadius: '9999px',
+                    borderTopRightRadius: '9999px'
                   }}
                 />
               </div>
+              {/* Bulb */}
               <div 
-                className="w-10 h-10 rounded-full -mt-2 transition-colors duration-700"
+                className="w-10 h-10 rounded-full -mt-3 relative z-10 transition-colors duration-700"
                 style={{ backgroundColor: temperatureColor }}
               />
             </div>
