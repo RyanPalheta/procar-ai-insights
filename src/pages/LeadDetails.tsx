@@ -27,7 +27,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   Minus,
-  Sparkles
+  Sparkles,
+  Flame,
+  Sun,
+  Snowflake,
+  Thermometer
 } from "lucide-react";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
@@ -148,6 +152,34 @@ export default function LeadDetails() {
     }
   };
 
+  const getTemperatureDisplay = (temperature: string | null) => {
+    switch (temperature?.toLowerCase()) {
+      case "quente":
+        return {
+          icon: <Flame className="h-4 w-4" />,
+          label: "Quente",
+          variant: "destructive" as const,
+          className: "bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+        };
+      case "morno":
+        return {
+          icon: <Sun className="h-4 w-4" />,
+          label: "Morno",
+          variant: "warning" as const,
+          className: "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-600"
+        };
+      case "frio":
+        return {
+          icon: <Snowflake className="h-4 w-4" />,
+          label: "Frio",
+          variant: "secondary" as const,
+          className: "bg-blue-500 text-white border-blue-500 hover:bg-blue-600"
+        };
+      default:
+        return null;
+    }
+  };
+
   if (loadingLead) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -209,6 +241,27 @@ export default function LeadDetails() {
 
       {/* Informações principais do lead */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Temperatura</CardTitle>
+            <Thermometer className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const temp = getTemperatureDisplay((lead as any).lead_temperature);
+              if (temp) {
+                return (
+                  <Badge className={`text-base px-3 py-1 ${temp.className}`}>
+                    {temp.icon}
+                    <span className="ml-1">{temp.label}</span>
+                  </Badge>
+                );
+              }
+              return <div className="text-2xl font-bold text-muted-foreground">N/A</div>;
+            })()}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Score do Lead</CardTitle>
