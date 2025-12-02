@@ -332,7 +332,12 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                   type: "string",
                   description: "Descrição de violações graves do playbook (se houver)"
                 },
-                quoted_price: { 
+                lead_temperature: { 
+                  type: "string", 
+                  enum: ["quente", "morno", "frio"],
+                  description: "Temperatura do lead: QUENTE = alta intenção (pede orçamento, quer agendar, responde rápido, urgência); MORNO = interessado mas indeciso (perguntas genéricas, demora a responder); FRIO = apenas pesquisando (poucas interações, sem urgência)"
+                },
+                quoted_price: {
                   type: "number",
                   nullable: true,
                   description: "Valor monetário do serviço cotado/mencionado nas interações (em reais). Retorne null se não houver valor mencionado. Converta valores como 'R$ 450,00' para 450."
@@ -384,6 +389,7 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       playbook_steps_missing: analysisResult.playbook_steps_missing || [],
       playbook_violations: analysisResult.playbook_violations,
       lead_price: analysisResult.quoted_price || null,
+      lead_temperature: analysisResult.lead_temperature || null,
       processed: true,
       ai_version: 'gpt-5-playbook-audit-v2'
     };

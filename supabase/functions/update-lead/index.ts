@@ -123,6 +123,9 @@ Deno.serve(async (req) => {
     if (body.playbook_violations !== undefined) {
       updateData.playbook_violations = body.playbook_violations
     }
+    if (body.lead_temperature !== undefined) {
+      updateData.lead_temperature = body.lead_temperature
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 
