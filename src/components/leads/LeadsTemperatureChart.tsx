@@ -86,8 +86,11 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
                 />
               </div>
               <div 
-                className="w-10 h-10 rounded-full -mt-2 transition-colors duration-700"
-                style={{ backgroundColor: temperatureColor }}
+                className="w-10 h-10 rounded-full -mt-2 transition-colors duration-700 animate-pulse"
+                style={{ 
+                  backgroundColor: temperatureColor,
+                  animationDuration: "2s"
+                }}
               />
             </div>
           </div>
