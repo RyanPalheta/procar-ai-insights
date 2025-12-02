@@ -75,7 +75,7 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
               {temperatureLabel}
             </div>
             
-            <div className="relative">
+            <div className="relative flex flex-col items-center">
               <div className="w-6 h-36 bg-muted/50 rounded-full overflow-hidden relative">
                 <div 
                   className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-700"
@@ -86,7 +86,7 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
                 />
               </div>
               <div 
-                className="w-10 h-10 rounded-full -mt-1 mx-auto transition-colors duration-700"
+                className="w-10 h-10 rounded-full -mt-2 transition-colors duration-700"
                 style={{ backgroundColor: temperatureColor }}
               />
             </div>
