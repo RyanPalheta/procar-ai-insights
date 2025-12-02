@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,7 @@ export default function Leads() {
   const [processedFilter, setProcessedFilter] = useState<string>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
+  const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
   const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
@@ -266,6 +267,9 @@ export default function Leads() {
     // Sentiment filter
     if (sentimentFilter !== "all" && lead.sentiment !== sentimentFilter) return false;
 
+    // Temperature filter
+    if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
+
     // Compliance filter
     if (lead.playbook_compliance_score !== null) {
       const score = lead.playbook_compliance_score;
@@ -296,6 +300,7 @@ export default function Leads() {
     setProcessedFilter("all");
     setProductFilter("all");
     setSentimentFilter("all");
+    setTemperatureFilter("all");
     setComplianceRange([0, 100]);
     setDateFrom("");
     setDateTo("");
@@ -305,10 +310,24 @@ export default function Leads() {
     processedFilter !== "all" ||
     productFilter !== "all" ||
     sentimentFilter !== "all" ||
+    temperatureFilter !== "all" ||
     complianceRange[0] !== 0 ||
     complianceRange[1] !== 100 ||
     dateFrom !== "" ||
     dateTo !== "";
+
+  const getTemperatureDisplay = (temperature: string | null) => {
+    switch (temperature?.toLowerCase()) {
+      case "quente":
+        return { icon: <Flame className="h-3 w-3" />, label: "Quente", className: "bg-orange-500 text-white border-orange-500" };
+      case "morno":
+        return { icon: <Sun className="h-3 w-3" />, label: "Morno", className: "bg-yellow-500 text-white border-yellow-500" };
+      case "frio":
+        return { icon: <Snowflake className="h-3 w-3" />, label: "Frio", className: "bg-blue-500 text-white border-blue-500" };
+      default:
+        return null;
+    }
+  };
 
   // Quick date filters
   const applyQuickDateFilter = (period: "today" | "last7days" | "last30days" | "lastMonth") => {
@@ -575,6 +594,34 @@ export default function Leads() {
                   </Select>
                 </div>
 
+                {/* Temperatura */}
+                <div className="space-y-2">
+                  <Label>Temperatura</Label>
+                  <Select value={temperatureFilter} onValueChange={setTemperatureFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as temperaturas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="quente">
+                        <span className="flex items-center gap-1">
+                          <Flame className="h-3 w-3 text-orange-500" /> Quente
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="morno">
+                        <span className="flex items-center gap-1">
+                          <Sun className="h-3 w-3 text-yellow-500" /> Morno
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="frio">
+                        <span className="flex items-center gap-1">
+                          <Snowflake className="h-3 w-3 text-blue-500" /> Frio
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Compliance Score */}
                 <div className="space-y-2">
                   <Label>Compliance Score: {complianceRange[0]}% - {complianceRange[1]}%</Label>
@@ -608,6 +655,7 @@ export default function Leads() {
                     <TableHead>Lead ID</TableHead>
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Temp.</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Compliance</TableHead>
                     <TableHead>Sentimento</TableHead>
@@ -643,6 +691,20 @@ export default function Leads() {
                         <Badge variant={getStatusColor(lead.sales_status) as any}>
                           {lead.sales_status || "N/A"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const temp = getTemperatureDisplay((lead as any).lead_temperature);
+                          if (temp) {
+                            return (
+                              <Badge className={`text-xs ${temp.className}`}>
+                                {temp.icon}
+                                <span className="ml-1">{temp.label}</span>
+                              </Badge>
+                            );
+                          }
+                          return <span className="text-muted-foreground">-</span>;
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
