@@ -62,7 +62,20 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
                     opacity: opacity,
                     filter: `drop-shadow(0 4px 8px ${config.color}40)`
                   }}
-                  whileHover={{ scale: 1.1 }}
+                  animate={index === 0 ? {
+                    scale: [1, 1.1, 1],
+                    filter: [
+                      `drop-shadow(0 4px 8px ${config.color}40)`,
+                      `drop-shadow(0 8px 16px ${config.color}60)`,
+                      `drop-shadow(0 4px 8px ${config.color}40)`
+                    ]
+                  } : {}}
+                  transition={index === 0 ? {
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  } : {}}
+                  whileHover={{ scale: 1.15 }}
                 >
                   {config.emoji}
                 </motion.div>
