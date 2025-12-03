@@ -157,7 +157,7 @@ All colors MUST be HSL.
   --glow-y: 50%;
   --glow-intensity: 0;
   --glow-radius: 200px;
-  --glow-color: 132, 0, 255;
+  --glow-color: 59, 130, 246;
 }
 
 .magic-bento-card--border-glow::after {

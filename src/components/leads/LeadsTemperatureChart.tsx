@@ -58,7 +58,7 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
   const frio = data.find(d => d.name === "Frio")?.value || 0;
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="132, 0, 255">
+    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg text-white">

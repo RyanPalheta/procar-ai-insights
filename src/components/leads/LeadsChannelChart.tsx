@@ -31,7 +31,7 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
   };
   
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="132, 0, 255">
+    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-white">{mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}</CardTitle>

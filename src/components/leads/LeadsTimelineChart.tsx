@@ -20,7 +20,7 @@ const chartConfig = {
 
 export function LeadsTimelineChart({ data, period, onPeriodChange }: LeadsTimelineChartProps) {
   return (
-    <MagicBentoCard className="rounded-lg col-span-full" glowColor="132, 0, 255">
+    <MagicBentoCard className="rounded-lg col-span-full" glowColor="59, 130, 246">
       <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2 text-white">

@@ -23,7 +23,7 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="132, 0, 255">
+    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
         <CardHeader>
           <CardTitle className="text-white">Leads por Status</CardTitle>
