@@ -196,7 +196,7 @@ export default function Leads() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // Channel distribution for closed sales only
+    // Channel distribution for closed sales only (with conversion rate)
     const closedChannelCounts = new Map<string, number>();
     leads.filter(l => normalizeStatus(l.sales_status) === "Venda Ganha").forEach(l => {
       if (l.channel) {
@@ -205,7 +205,11 @@ export default function Leads() {
       }
     });
     const closedChannelData = Array.from(closedChannelCounts.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => {
+        const totalForChannel = channelCounts.get(name) || 1;
+        const conversion = (value / totalForChannel) * 100;
+        return { name, value, conversion };
+      })
       .sort((a, b) => b.value - a.value);
 
     // Status distribution with normalization
