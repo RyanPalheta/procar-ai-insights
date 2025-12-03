@@ -1,5 +1,8 @@
 import { KPICard } from "@/components/dashboard/KPICard";
 import { Users, TrendingUp, Award, Clock, DollarSign, Receipt } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export type ScorePeriod = "all" | "7" | "30" | "90";
 
 interface LeadsKPICardsProps {
   totalLeads: number;
@@ -8,7 +11,16 @@ interface LeadsKPICardsProps {
   newLeads24h: number;
   leadsWithQuote: number;
   avgQuotedPrice: number;
+  scorePeriod: ScorePeriod;
+  onScorePeriodChange: (period: ScorePeriod) => void;
 }
+
+const periodLabels: Record<ScorePeriod, string> = {
+  "all": "Todos",
+  "7": "7 dias",
+  "30": "30 dias",
+  "90": "90 dias"
+};
 
 export function LeadsKPICards({
   totalLeads,
@@ -16,7 +28,9 @@ export function LeadsKPICards({
   avgScore,
   newLeads24h,
   leadsWithQuote,
-  avgQuotedPrice
+  avgQuotedPrice,
+  scorePeriod,
+  onScorePeriodChange
 }: LeadsKPICardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -36,13 +50,28 @@ export function LeadsKPICards({
         description="Leads ganhos vs total"
       />
       
-      <KPICard
-        title="Score Médio"
-        value={avgScore.toFixed(1)}
-        icon={Award}
-        variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-        description="Qualidade média dos leads"
-      />
+      <div className="relative">
+        <KPICard
+          title="Score Médio"
+          value={avgScore.toFixed(1)}
+          icon={Award}
+          variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
+          description={`Período: ${periodLabels[scorePeriod]}`}
+        />
+        <div className="absolute top-3 right-3">
+          <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
+            <SelectTrigger className="h-7 w-[90px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="7">7 dias</SelectItem>
+              <SelectItem value="30">30 dias</SelectItem>
+              <SelectItem value="90">90 dias</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       
       <KPICard
         title="Leads Novos (24h)"
