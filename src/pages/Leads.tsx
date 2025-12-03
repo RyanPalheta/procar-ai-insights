@@ -79,6 +79,16 @@ export default function Leads() {
     return Array.from(sentiments).sort();
   }, [leads]);
 
+  // Channel normalization function (fallback for consistency)
+  const normalizeChannel = (channel: string | null): string => {
+    if (!channel) return "N/A";
+    const lower = channel.toLowerCase();
+    if (lower === 'whatsapp') return 'WhatsApp';
+    if (lower === 'facebook') return 'Facebook';
+    if (lower.includes('instagram')) return 'Instagram';
+    return channel;
+  };
+
   // KPI Calculations
   const kpiMetrics = useMemo(() => {
     if (!leads) return {
@@ -186,10 +196,10 @@ export default function Leads() {
       timelineData: []
     };
 
-    // Channel distribution
+    // Channel distribution (with normalization)
     const channelCounts = new Map<string, number>();
     leads.forEach(l => {
-      const channel = l.channel || "N/A";
+      const channel = normalizeChannel(l.channel);
       channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
     });
     const channelData = Array.from(channelCounts.entries())
@@ -199,8 +209,8 @@ export default function Leads() {
     // Channel distribution for closed sales only (with conversion rate)
     const closedChannelCounts = new Map<string, number>();
     leads.filter(l => normalizeStatus(l.sales_status) === "Venda Ganha").forEach(l => {
-      if (l.channel) {
-        const channel = l.channel;
+      const channel = normalizeChannel(l.channel);
+      if (channel !== "N/A") {
         closedChannelCounts.set(channel, (closedChannelCounts.get(channel) || 0) + 1);
       }
     });
