@@ -8,6 +8,7 @@ interface LeadsKPICardsProps {
   totalLeads: number;
   conversionRate: number;
   avgScore: number;
+  scoreVariation: number | null;
   newLeads24h: number;
   leadsWithQuote: number;
   avgQuotedPrice: number;
@@ -26,6 +27,7 @@ export function LeadsKPICards({
   totalLeads,
   conversionRate,
   avgScore,
+  scoreVariation,
   newLeads24h,
   leadsWithQuote,
   avgQuotedPrice,
@@ -56,7 +58,11 @@ export function LeadsKPICards({
           value={avgScore.toFixed(1)}
           icon={Award}
           variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-          description={`Período: ${periodLabels[scorePeriod]}`}
+          description={scorePeriod === "all" ? "Período: Todos" : `Período: ${periodLabels[scorePeriod]}`}
+          trend={scoreVariation !== null && scorePeriod !== "all" ? {
+            value: Math.abs(parseFloat(scoreVariation.toFixed(1))),
+            isPositive: scoreVariation >= 0
+          } : undefined}
         />
         <div className="absolute top-3 right-3">
           <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
