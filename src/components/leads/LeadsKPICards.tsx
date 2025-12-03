@@ -1,4 +1,5 @@
 import { KPICard } from "@/components/dashboard/KPICard";
+import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { Users, TrendingUp, Award, Clock, DollarSign, Receipt } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -47,72 +48,78 @@ export function LeadsKPICards({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <KPICard
-        title="Total de Leads"
-        value={totalLeads}
-        icon={Users}
-        variant="default"
-        description={scorePeriod === "all" ? "Total acumulado" : `Período: ${periodLabels[scorePeriod]}`}
-        trend={getTrend(totalLeadsVariation)}
-      />
-      
-      <KPICard
-        title="Taxa de Conversão"
-        value={`${conversionRate.toFixed(1)}%`}
-        icon={TrendingUp}
-        variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
-        description="Leads ganhos vs total"
-      />
-      
-      <div className="relative">
+    <MagicBentoGrid
+      enableSpotlight={true}
+      spotlightRadius={300}
+      glowColor="132, 0, 255"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard
-          title="Score Médio"
-          value={avgScore.toFixed(1)}
-          icon={Award}
-          variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-          description={scorePeriod === "all" ? "Período: Todos" : `Período: ${periodLabels[scorePeriod]}`}
-          trend={getTrend(scoreVariation)}
+          title="Total de Leads"
+          value={totalLeads}
+          icon={Users}
+          variant="default"
+          description={scorePeriod === "all" ? "Total acumulado" : `Período: ${periodLabels[scorePeriod]}`}
+          trend={getTrend(totalLeadsVariation)}
         />
-        <div className="absolute top-3 right-3">
-          <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
-            <SelectTrigger className="h-7 w-[90px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="7">7 dias</SelectItem>
-              <SelectItem value="30">30 dias</SelectItem>
-              <SelectItem value="90">90 dias</SelectItem>
-            </SelectContent>
-          </Select>
+        
+        <KPICard
+          title="Taxa de Conversão"
+          value={`${conversionRate.toFixed(1)}%`}
+          icon={TrendingUp}
+          variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
+          description="Leads ganhos vs total"
+        />
+        
+        <div className="relative">
+          <KPICard
+            title="Score Médio"
+            value={avgScore.toFixed(1)}
+            icon={Award}
+            variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
+            description={scorePeriod === "all" ? "Período: Todos" : `Período: ${periodLabels[scorePeriod]}`}
+            trend={getTrend(scoreVariation)}
+          />
+          <div className="absolute top-3 right-3 z-10">
+            <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
+              <SelectTrigger className="h-7 w-[90px] text-xs bg-[#060010] border-[#392e4e] text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#060010] border-[#392e4e]">
+                <SelectItem value="all" className="text-white hover:bg-purple-900/30">Todos</SelectItem>
+                <SelectItem value="7" className="text-white hover:bg-purple-900/30">7 dias</SelectItem>
+                <SelectItem value="30" className="text-white hover:bg-purple-900/30">30 dias</SelectItem>
+                <SelectItem value="90" className="text-white hover:bg-purple-900/30">90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        
+        <KPICard
+          title="Leads Novos (24h)"
+          value={newLeads24h}
+          icon={Clock}
+          variant="default"
+          description="Criados recentemente"
+        />
+        
+        <KPICard
+          title="Leads com Cotação"
+          value={leadsWithQuote}
+          icon={Receipt}
+          variant="default"
+          description={scorePeriod === "all" ? "Com preço definido" : `Período: ${periodLabels[scorePeriod]}`}
+          trend={getTrend(leadsWithQuoteVariation)}
+        />
+        
+        <KPICard
+          title="Valor Médio Cotado"
+          value={avgQuotedPrice > 0 ? `R$ ${avgQuotedPrice.toFixed(2)}` : "N/A"}
+          icon={DollarSign}
+          variant="success"
+          description="Ticket médio"
+        />
       </div>
-      
-      <KPICard
-        title="Leads Novos (24h)"
-        value={newLeads24h}
-        icon={Clock}
-        variant="default"
-        description="Criados recentemente"
-      />
-      
-      <KPICard
-        title="Leads com Cotação"
-        value={leadsWithQuote}
-        icon={Receipt}
-        variant="default"
-        description={scorePeriod === "all" ? "Com preço definido" : `Período: ${periodLabels[scorePeriod]}`}
-        trend={getTrend(leadsWithQuoteVariation)}
-      />
-      
-      <KPICard
-        title="Valor Médio Cotado"
-        value={avgQuotedPrice > 0 ? `R$ ${avgQuotedPrice.toFixed(2)}` : "N/A"}
-        icon={DollarSign}
-        variant="success"
-        description="Ticket médio"
-      />
-    </div>
+    </MagicBentoGrid>
   );
 }
