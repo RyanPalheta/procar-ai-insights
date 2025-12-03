@@ -2,9 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface LeadsTimelineChartProps {
   data: Array<{ date: string; count: number }>;
+  period: "7" | "30" | "90";
+  onPeriodChange: (period: "7" | "30" | "90") => void;
 }
 
 const chartConfig = {
@@ -14,7 +17,7 @@ const chartConfig = {
   },
 };
 
-export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
+export function LeadsTimelineChart({ data, period, onPeriodChange }: LeadsTimelineChartProps) {
   return (
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -22,6 +25,16 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
           <TrendingUp className="h-4 w-4 text-primary" />
           Leads Novos por Período
         </CardTitle>
+        <ToggleGroup 
+          type="single" 
+          value={period} 
+          onValueChange={(value) => value && onPeriodChange(value as "7" | "30" | "90")}
+          size="sm"
+        >
+          <ToggleGroupItem value="7" className="text-xs px-3">7 dias</ToggleGroupItem>
+          <ToggleGroupItem value="30" className="text-xs px-3">30 dias</ToggleGroupItem>
+          <ToggleGroupItem value="90" className="text-xs px-3">90 dias</ToggleGroupItem>
+        </ToggleGroup>
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (

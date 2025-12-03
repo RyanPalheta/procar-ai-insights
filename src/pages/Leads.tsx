@@ -47,6 +47,7 @@ export default function Leads() {
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+  const [timelinePeriod, setTimelinePeriod] = useState<"7" | "30" | "90">("30");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -259,20 +260,21 @@ export default function Leads() {
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
 
-    // Timeline data - leads by date (last 30 days)
+    // Timeline data - leads by date (dynamic period)
+    const periodDays = parseInt(timelinePeriod);
     const timelineCounts = new Map<string, number>();
-    const last30Days = subDays(new Date(), 30);
+    const periodStart = subDays(new Date(), periodDays);
     leads.forEach(l => {
       const leadDate = parseISO(l.created_at);
-      if (leadDate >= last30Days) {
+      if (leadDate >= periodStart) {
         const dateKey = format(leadDate, "dd/MM");
         timelineCounts.set(dateKey, (timelineCounts.get(dateKey) || 0) + 1);
       }
     });
     
-    // Generate all dates for last 30 days to fill gaps
+    // Generate all dates for the period to fill gaps
     const timelineData: Array<{ date: string; count: number }> = [];
-    for (let i = 29; i >= 0; i--) {
+    for (let i = periodDays - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateKey = format(date, "dd/MM");
       timelineData.push({
@@ -290,7 +292,7 @@ export default function Leads() {
       temperatureData,
       timelineData
     };
-  }, [leads]);
+  }, [leads, timelinePeriod]);
 
   const filteredLeads = leads?.filter((lead) => {
     // Search filter
@@ -478,7 +480,11 @@ export default function Leads() {
       <LeadsKPICards {...kpiMetrics} />
 
       {/* Timeline Chart */}
-      <LeadsTimelineChart data={chartData.timelineData} />
+      <LeadsTimelineChart 
+        data={chartData.timelineData} 
+        period={timelinePeriod}
+        onPeriodChange={setTimelinePeriod}
+      />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
