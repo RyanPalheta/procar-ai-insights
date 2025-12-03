@@ -1,8 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface LeadsChannelChartProps {
   data: { name: string; value: number }[];
+  closedData: { name: string; value: number }[];
+  mode: "all" | "closed";
+  onModeChange: (mode: "all" | "closed") => void;
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -15,17 +19,28 @@ const getChannelColor = (channelName: string): string => {
   return CHANNEL_COLORS[channelName] || "hsl(var(--muted))";
 };
 
-export function LeadsChannelChart({ data }: LeadsChannelChartProps) {
+export function LeadsChannelChart({ data, closedData, mode, onModeChange }: LeadsChannelChartProps) {
+  const displayData = mode === "all" ? data : closedData;
+  
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Leads por Canal</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>{mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}</CardTitle>
+        <ToggleGroup 
+          type="single" 
+          value={mode} 
+          onValueChange={(value) => value && onModeChange(value as "all" | "closed")}
+          size="sm"
+        >
+          <ToggleGroupItem value="all" className="text-xs px-3">Todos</ToggleGroupItem>
+          <ToggleGroupItem value="closed" className="text-xs px-3">Vendas</ToggleGroupItem>
+        </ToggleGroup>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
-              data={data}
+              data={displayData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -34,7 +49,7 @@ export function LeadsChannelChart({ data }: LeadsChannelChartProps) {
               fill="hsl(var(--primary))"
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {displayData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getChannelColor(entry.name)} />
               ))}
             </Pie>

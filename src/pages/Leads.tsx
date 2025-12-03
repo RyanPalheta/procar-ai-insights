@@ -48,6 +48,7 @@ export default function Leads() {
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
   const [timelinePeriod, setTimelinePeriod] = useState<"7" | "30" | "90">("30");
+  const [channelMode, setChannelMode] = useState<"all" | "closed">("all");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -176,6 +177,7 @@ export default function Leads() {
   const chartData = useMemo(() => {
     if (!leads) return {
       channelData: [],
+      closedChannelData: [],
       statusData: [],
       languageData: [],
       sentimentData: [],
@@ -191,6 +193,18 @@ export default function Leads() {
       channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
     });
     const channelData = Array.from(channelCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Channel distribution for closed sales only
+    const closedChannelCounts = new Map<string, number>();
+    leads.filter(l => normalizeStatus(l.sales_status) === "Venda Ganha").forEach(l => {
+      if (l.channel) {
+        const channel = l.channel;
+        closedChannelCounts.set(channel, (closedChannelCounts.get(channel) || 0) + 1);
+      }
+    });
+    const closedChannelData = Array.from(closedChannelCounts.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
@@ -285,6 +299,7 @@ export default function Leads() {
 
     return {
       channelData,
+      closedChannelData,
       statusData,
       languageData,
       sentimentData,
@@ -488,7 +503,12 @@ export default function Leads() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <LeadsChannelChart data={chartData.channelData} />
+        <LeadsChannelChart 
+          data={chartData.channelData} 
+          closedData={chartData.closedChannelData}
+          mode={channelMode}
+          onModeChange={setChannelMode}
+        />
         <LeadsStatusChart data={chartData.statusData} />
         <LeadsTemperatureChart data={chartData.temperatureData} />
         <LeadsLanguageChart data={chartData.languageData} />
