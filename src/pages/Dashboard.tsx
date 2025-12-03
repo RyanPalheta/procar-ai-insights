@@ -4,7 +4,6 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
-import { LeadsLanguageMapChart } from "@/components/leads/LeadsLanguageMapChart";
 import { Users, TrendingUp, Phone, MessageSquare, Target, Award, CheckCircle, AlertCircle, PackageSearch, LineChart as LineChartIcon, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
@@ -152,18 +151,6 @@ export default function Dashboard() {
     name,
     value
   })).sort((a: any, b: any) => b.value - a.value).slice(0, 5) : [];
-
-  // Language distribution
-  const languageData = leads?.reduce((acc: any, lead) => {
-    if (lead.lead_language && lead.lead_language !== 'N/A' && lead.lead_language !== 'NDA') {
-      acc[lead.lead_language] = (acc[lead.lead_language] || 0) + 1;
-    }
-    return acc;
-  }, {});
-  const languageChartData = languageData ? Object.entries(languageData).map(([name, value]) => ({
-    name,
-    value: value as number
-  })).sort((a, b) => b.value - a.value) : [];
 
   // Sentiment distribution
   const sentimentData = leads?.reduce((acc: any, lead) => {
@@ -337,8 +324,29 @@ export default function Dashboard() {
           </Card>
         </MagicBentoCard>
 
-        {/* Language Distribution */}
-        <LeadsLanguageMapChart data={languageChartData} />
+        {/* Top 5 Products */}
+        <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Top 5 Produtos Desejados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topProductsData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" width={150} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <Tooltip contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
       </div>
 
       {/* Charts Row 2 */}
