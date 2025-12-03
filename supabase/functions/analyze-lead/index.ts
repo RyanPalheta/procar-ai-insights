@@ -285,7 +285,7 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
               properties: {
                 sentiment: { 
                   type: "string", 
-                  enum: ["positivo", "neutro", "negativo"],
+                  enum: ["Positivo", "Neutro", "Negativo"],
                   description: "Sentimento geral do lead baseado nas interações"
                 },
                 lead_score: { 

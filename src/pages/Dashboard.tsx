@@ -152,21 +152,10 @@ export default function Dashboard() {
     value
   })).sort((a: any, b: any) => b.value - a.value).slice(0, 5) : [];
 
-  // Normalize sentiment values for chart component
-  const normalizeSentiment = (sentiment: string | null): string | null => {
-    if (!sentiment) return null;
-    const lower = sentiment.toLowerCase();
-    if (lower === 'positivo' || lower === 'positive') return 'Positivo';
-    if (lower === 'neutro' || lower === 'neutral') return 'Neutro';
-    if (lower === 'negativo' || lower === 'negative') return 'Negativo';
-    return sentiment;
-  };
-
   // Sentiment distribution
   const sentimentData = leads?.reduce((acc: any, lead) => {
-    const sentiment = normalizeSentiment(lead.sentiment);
-    if (sentiment) {
-      acc[sentiment] = (acc[sentiment] || 0) + 1;
+    if (lead.sentiment) {
+      acc[lead.sentiment] = (acc[lead.sentiment] || 0) + 1;
     }
     return acc;
   }, {});
