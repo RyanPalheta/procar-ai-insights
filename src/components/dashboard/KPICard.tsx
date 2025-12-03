@@ -1,5 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
@@ -23,35 +24,45 @@ export function KPICard({
   variant = "default",
 }: KPICardProps) {
   const variantStyles = {
-    default: "text-primary",
-    success: "text-success",
-    warning: "text-warning",
-    destructive: "text-destructive",
+    default: "text-purple-400",
+    success: "text-emerald-400",
+    warning: "text-amber-400",
+    destructive: "text-red-400",
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-4 w-4", variantStyles[variant])} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-        {trend && (
-          <p
-            className={cn(
-              "text-xs mt-1",
-              trend.isPositive ? "text-success" : "text-destructive"
-            )}
-          >
-            {trend.isPositive ? "+" : ""}
-            {trend.value}% em relação ao período anterior
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <MagicBentoCard
+      enableStars={true}
+      enableBorderGlow={true}
+      enableTilt={true}
+      enableMagnetism={true}
+      clickEffect={true}
+      glowColor="132, 0, 255"
+      className="rounded-lg"
+    >
+      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-white/90">{title}</CardTitle>
+          <Icon className={cn("h-4 w-4", variantStyles[variant])} />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-white">{value}</div>
+          {description && (
+            <p className="text-xs text-white/60 mt-1">{description}</p>
+          )}
+          {trend && (
+            <p
+              className={cn(
+                "text-xs mt-1",
+                trend.isPositive ? "text-emerald-400" : "text-red-400"
+              )}
+            >
+              {trend.isPositive ? "+" : ""}
+              {trend.value}% em relação ao período anterior
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </MagicBentoCard>
   );
 }
