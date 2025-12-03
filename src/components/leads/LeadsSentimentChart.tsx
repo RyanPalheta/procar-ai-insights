@@ -33,9 +33,9 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
 
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+      <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle className="text-white">Distribuição de Sentimento</CardTitle>
+          <CardTitle>Distribuição de Sentimento</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center gap-6 py-8">
@@ -86,7 +86,7 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
                     >
                       {config.label}
                     </p>
-                    <p className="text-xs text-white/60">
+                    <p className="text-xs text-muted-foreground">
                       {item.value} ({percentage}%)
                     </p>
                   </div>
@@ -105,8 +105,8 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
 
               return (
                 <div key={item.name} className="flex items-center gap-2">
-                  <span className="text-sm w-20 text-white/80">{config.label}</span>
-                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                  <span className="text-sm w-20">{config.label}</span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       className="h-full rounded-full"
                       style={{ backgroundColor: config.color }}
@@ -115,7 +115,7 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
                       transition={{ duration: 0.8, ease: "easeOut" }}
                     />
                   </div>
-                  <span className="text-xs text-white/60 w-12 text-right">
+                  <span className="text-xs text-muted-foreground w-12 text-right">
                     {percentage.toFixed(0)}%
                   </span>
                 </div>

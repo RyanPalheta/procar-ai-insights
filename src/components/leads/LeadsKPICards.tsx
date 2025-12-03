@@ -82,14 +82,14 @@ export function LeadsKPICards({
           />
           <div className="absolute top-3 right-3 z-10">
             <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
-              <SelectTrigger className="h-7 w-[90px] text-xs bg-[#060010] border-[#392e4e] text-white">
+              <SelectTrigger className="h-7 w-[90px] text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#060010] border-[#392e4e]">
-                <SelectItem value="all" className="text-white hover:bg-purple-900/30">Todos</SelectItem>
-                <SelectItem value="7" className="text-white hover:bg-purple-900/30">7 dias</SelectItem>
-                <SelectItem value="30" className="text-white hover:bg-purple-900/30">30 dias</SelectItem>
-                <SelectItem value="90" className="text-white hover:bg-purple-900/30">90 dias</SelectItem>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="7">7 dias</SelectItem>
+                <SelectItem value="30">30 dias</SelectItem>
+                <SelectItem value="90">90 dias</SelectItem>
               </SelectContent>
             </Select>
           </div>

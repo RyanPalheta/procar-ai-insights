@@ -32,17 +32,17 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
   
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+      <Card className="bg-card border-border h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-white">{mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}</CardTitle>
+          <CardTitle>{mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}</CardTitle>
           <ToggleGroup 
             type="single" 
             value={mode} 
             onValueChange={(value) => value && onModeChange(value as "all" | "closed")}
             size="sm"
           >
-            <ToggleGroupItem value="all" className="text-xs px-3 data-[state=on]:bg-purple-600 data-[state=on]:text-white">Todos</ToggleGroupItem>
-            <ToggleGroupItem value="closed" className="text-xs px-3 data-[state=on]:bg-purple-600 data-[state=on]:text-white">Vendas</ToggleGroupItem>
+            <ToggleGroupItem value="all" className="text-xs px-3">Todos</ToggleGroupItem>
+            <ToggleGroupItem value="closed" className="text-xs px-3">Vendas</ToggleGroupItem>
           </ToggleGroup>
         </CardHeader>
         <CardContent>
@@ -62,8 +62,8 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
                   <Cell key={`cell-${index}`} fill={getChannelColor(entry.name)} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: "#1a1025", border: "1px solid #392e4e", color: "white" }} />
-              <Legend wrapperStyle={{ color: "white" }} />
+              <Tooltip />
+              <Legend />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>

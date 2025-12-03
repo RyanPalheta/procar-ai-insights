@@ -39,9 +39,9 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
 
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+      <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle className="text-white">Leads por Língua</CardTitle>
+          <CardTitle>Leads por Língua</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-6">
@@ -73,9 +73,9 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
                       {config.flag}
                     </motion.div>
                     <div className="text-center">
-                      <p className="text-xs font-medium text-white/60">{config.label}</p>
-                      <p className="text-lg font-bold text-white">{item.value}</p>
-                      <p className="text-xs text-white/60">{percentage}%</p>
+                      <p className="text-xs font-medium text-muted-foreground">{config.label}</p>
+                      <p className="text-lg font-bold">{item.value}</p>
+                      <p className="text-xs text-muted-foreground">{percentage}%</p>
                     </div>
                   </motion.div>
                 );
@@ -83,7 +83,7 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
             </div>
 
             {/* Progress Bars Section */}
-            <div className="w-full space-y-3 pt-4 border-t border-[#392e4e]">
+            <div className="w-full space-y-3 pt-4 border-t border-border">
               {sortedData.map((item, index) => {
                 const config = LANGUAGE_CONFIG[item.name] || DEFAULT_CONFIG;
                 const percentage = total > 0 ? (item.value / total) * 100 : 0;
@@ -93,10 +93,10 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
                     <span className="text-lg w-8">{config.flag}</span>
                     <div className="flex-1">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white/60">{config.label}</span>
-                        <span className="font-medium text-white">{percentage.toFixed(0)}%</span>
+                        <span className="text-muted-foreground">{config.label}</span>
+                        <span className="font-medium">{percentage.toFixed(0)}%</span>
                       </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <motion.div
                           className="h-full rounded-full"
                           style={{ backgroundColor: config.color }}

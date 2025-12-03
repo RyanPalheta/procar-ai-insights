@@ -24,27 +24,26 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
   
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+      <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle className="text-white">Leads por Status</CardTitle>
+          <CardTitle>Leads por Status</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#392e4e" />
-              <XAxis type="number" stroke="#9ca3af" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                stroke="#9ca3af" 
+                stroke="hsl(var(--muted-foreground))" 
                 width={120}
               />
               <Tooltip 
                 contentStyle={{
-                  backgroundColor: "#1a1025",
-                  border: "1px solid #392e4e",
-                  borderRadius: "8px",
-                  color: "white"
+                  backgroundColor: "hsl(var(--popover))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px"
                 }}
                 formatter={(value: number) => {
                   const percentage = ((value / total) * 100).toFixed(1);
@@ -58,7 +57,7 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
                 <LabelList 
                   dataKey="value" 
                   position="right" 
-                  fill="#9ca3af"
+                  fill="hsl(var(--muted-foreground))"
                   formatter={(value: number) => {
                     const percentage = ((value / total) * 100).toFixed(0);
                     return `${value} (${percentage}%)`;
