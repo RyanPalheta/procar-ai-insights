@@ -90,9 +90,27 @@ export default function Dashboard() {
   const avgServiceRating = leadsWithRating.length > 0 ? leadsWithRating.reduce((acc, lead) => acc + ((lead as any).service_rating || 0), 0) / leadsWithRating.length : 0;
   const avgStars = avgServiceRating / 2; // Convert 1-10 to 0-5 stars
 
+  // Channel normalization function
+  const normalizeChannel = (channel: string | null): string => {
+    if (!channel) return "Desconhecido";
+    const lower = channel.toLowerCase();
+    if (lower === 'whatsapp') return 'WhatsApp';
+    if (lower === 'facebook') return 'Facebook';
+    if (lower.includes('instagram')) return 'Instagram';
+    return channel;
+  };
+
+  // Channel colors
+  const CHANNEL_COLORS: Record<string, string> = {
+    "WhatsApp": "#25D366",
+    "Facebook": "#1877F2", 
+    "Instagram": "#E4405F",
+    "Desconhecido": "hsl(var(--muted))"
+  };
+
   // Channel distribution
   const channelData = leads?.reduce((acc: any, lead) => {
-    const channel = lead.channel || "Desconhecido";
+    const channel = normalizeChannel(lead.channel);
     acc[channel] = (acc[channel] || 0) + 1;
     return acc;
   }, {});
@@ -466,7 +484,11 @@ export default function Dashboard() {
             }} wrapperStyle={{
               zIndex: 1000
             }} />
-              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || "hsl(var(--primary))"} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
