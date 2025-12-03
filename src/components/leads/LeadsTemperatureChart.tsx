@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { Thermometer } from "lucide-react";
 import { useMemo } from "react";
 
@@ -57,68 +58,70 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
   const frio = data.find(d => d.name === "Frio")?.value || 0;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Thermometer className="h-5 w-5" />
-          Temperatura dos Leads
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-center gap-12 h-[280px]">
-          {/* Thermometer */}
-          <div className="flex flex-col items-center">
-            <div 
-              className="text-xl font-semibold mb-3"
-              style={{ color: temperatureColor }}
-            >
-              {temperatureLabel}
-            </div>
-            
-            <div className="relative flex flex-col items-center">
-              {/* Tube */}
-              <div className="w-6 h-36 bg-muted/50 rounded-t-full relative">
+    <MagicBentoCard className="rounded-lg" glowColor="132, 0, 255">
+      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg text-white">
+            <Thermometer className="h-5 w-5" />
+            Temperatura dos Leads
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center gap-12 h-[280px]">
+            {/* Thermometer */}
+            <div className="flex flex-col items-center">
+              <div 
+                className="text-xl font-semibold mb-3"
+                style={{ color: temperatureColor }}
+              >
+                {temperatureLabel}
+              </div>
+              
+              <div className="relative flex flex-col items-center">
+                {/* Tube */}
+                <div className="w-6 h-36 bg-white/10 rounded-t-full relative">
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 transition-all duration-700"
+                    style={{ 
+                      height: `${Math.max(fillPercentage, 10)}%`,
+                      backgroundColor: temperatureColor,
+                      borderTopLeftRadius: '9999px',
+                      borderTopRightRadius: '9999px'
+                    }}
+                  />
+                </div>
+                {/* Bulb */}
                 <div 
-                  className="absolute bottom-0 left-0 right-0 transition-all duration-700"
-                  style={{ 
-                    height: `${Math.max(fillPercentage, 10)}%`,
-                    backgroundColor: temperatureColor,
-                    borderTopLeftRadius: '9999px',
-                    borderTopRightRadius: '9999px'
-                  }}
+                  className="w-10 h-10 rounded-full -mt-3 relative z-10 transition-colors duration-700"
+                  style={{ backgroundColor: temperatureColor }}
                 />
               </div>
-              {/* Bulb */}
-              <div 
-                className="w-10 h-10 rounded-full -mt-3 relative z-10 transition-colors duration-700"
-                style={{ backgroundColor: temperatureColor }}
-              />
             </div>
-          </div>
 
-          {/* Legend */}
-          <div className="flex flex-col gap-4 text-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#f97316]" />
-              <span className="text-muted-foreground w-14">Quente</span>
-              <span className="font-medium">{quente}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]" />
-              <span className="text-muted-foreground w-14">Morno</span>
-              <span className="font-medium">{morno}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />
-              <span className="text-muted-foreground w-14">Frio</span>
-              <span className="font-medium">{frio}</span>
-            </div>
-            <div className="border-t border-border pt-3 mt-1 text-muted-foreground">
-              Total: <span className="font-medium text-foreground">{total}</span>
+            {/* Legend */}
+            <div className="flex flex-col gap-4 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#f97316]" />
+                <span className="text-white/60 w-14">Quente</span>
+                <span className="font-medium text-white">{quente}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]" />
+                <span className="text-white/60 w-14">Morno</span>
+                <span className="font-medium text-white">{morno}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />
+                <span className="text-white/60 w-14">Frio</span>
+                <span className="font-medium text-white">{frio}</span>
+              </div>
+              <div className="border-t border-[#392e4e] pt-3 mt-1 text-white/60">
+                Total: <span className="font-medium text-white">{total}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </MagicBentoCard>
   );
 }
