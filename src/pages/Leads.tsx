@@ -15,7 +15,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { differenceInHours, differenceInDays, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -49,6 +49,7 @@ export default function Leads() {
   const [showFilters, setShowFilters] = useState(false);
   const [timelinePeriod, setTimelinePeriod] = useState<"7" | "30" | "90">("30");
   const [channelMode, setChannelMode] = useState<"all" | "closed">("all");
+  const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("all");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -108,9 +109,18 @@ export default function Leads() {
     const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
 
     const scoresWithValues = leads.filter(l => l.lead_score !== null);
-    const avgScore = scoresWithValues.length > 0
+    const avgScoreAll = scoresWithValues.length > 0
       ? scoresWithValues.reduce((sum, l) => sum + (l.lead_score || 0), 0) / scoresWithValues.length
       : 0;
+
+    // Calculate avgScore based on scorePeriod
+    const periodDays = scorePeriod === "all" ? null : parseInt(scorePeriod);
+    const periodFilteredLeads = periodDays 
+      ? leads.filter(l => l.lead_score !== null && differenceInDays(new Date(), new Date(l.created_at)) <= periodDays)
+      : scoresWithValues;
+    const avgScore = periodFilteredLeads.length > 0
+      ? periodFilteredLeads.reduce((sum, l) => sum + (l.lead_score || 0), 0) / periodFilteredLeads.length
+      : avgScoreAll;
 
     const newLeads24h = leads.filter(l => differenceInHours(new Date(), new Date(l.created_at)) <= 24).length;
 
@@ -128,7 +138,7 @@ export default function Leads() {
       leadsWithQuote,
       avgQuotedPrice
     };
-  }, [leads]);
+  }, [leads, scorePeriod]);
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -506,7 +516,11 @@ export default function Leads() {
       </div>
 
       {/* KPI Cards Section */}
-      <LeadsKPICards {...kpiMetrics} />
+      <LeadsKPICards 
+        {...kpiMetrics} 
+        scorePeriod={scorePeriod}
+        onScorePeriodChange={setScorePeriod}
+      />
 
       {/* Timeline Chart */}
       <LeadsTimelineChart 
