@@ -217,7 +217,8 @@ export default function Dashboard() {
     leads: data.count,
     stars: Number((data.total / data.count / 2).toFixed(1)) // Convert to 5-star scale
   })).sort((a, b) => b.rating - a.rating).slice(0, 10) : [];
-  return <div className="space-y-8 pb-8">
+  return (
+    <div className="space-y-8 pb-8">
       <div className="space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Visão Geral</h2>
         <p className="text-muted-foreground">
@@ -242,257 +243,214 @@ export default function Dashboard() {
           <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 h-full">
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Nota Média de Atendimento</p>
+                <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-yellow-500" />
+                  <CardTitle className="text-sm font-medium">Avaliação Média</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map(star => {
-                    const filled = star <= Math.floor(avgStars);
-                    const partial = star === Math.ceil(avgStars) && avgStars % 1 !== 0;
-                    const fillPercent = partial ? avgStars % 1 * 100 : 0;
-                    return <div key={star} className="relative">
-                          <Star className={`h-6 w-6 ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} />
-                          {partial && <div className="absolute inset-0 overflow-hidden" style={{
-                        width: `${fillPercent}%`
-                      }}>
-                              <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                            </div>}
-                        </div>;
-                  })}
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{avgStars.toFixed(1)}</span>
-                    <span className="text-sm text-muted-foreground">/ 5.0</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {leadsWithRating.length} leads avaliados
-                  </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{avgStars.toFixed(1)}</span>
+                  <span className="text-sm text-muted-foreground">/ 5 estrelas</span>
                 </div>
+                <div className="flex gap-1 mt-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star key={star} className={`h-5 w-5 ${star <= Math.round(avgStars) ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/30"}`} />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {leadsWithRating.length} avaliações
+                </p>
               </CardContent>
             </Card>
           </MagicBentoCard>
-
-          <KPICard title="Chamadas" value={totalCalls} icon={Phone} variant="default" />
-          <KPICard title="Interações" value={totalInteractions} icon={MessageSquare} variant="default" />
-          <KPICard title="Leads Pendentes" value={unprocessedLeads} icon={AlertCircle} description="Aguardando análise de IA" variant="warning" />
-          <KPICard title="Produtos Identificados" value={Object.keys(productData || {}).length} icon={PackageSearch} description="Produtos desejados únicos" variant="default" />
+          
+          <KPICard title="Análises Pendentes" value={unprocessedLeads} icon={AlertCircle} description="Leads aguardando análise IA" variant="warning" />
+          <KPICard title="Total de Chamadas" value={totalCalls} icon={Phone} description="Ligações registradas" variant="default" />
+          <KPICard title="Total de Interações" value={totalInteractions} icon={MessageSquare} description="Mensagens trocadas" variant="default" />
+          <KPICard title="Produtos Cadastrados" value={products?.length || 0} icon={PackageSearch} description="Em análise de playbooks" variant="default" />
         </div>
       </MagicBentoGrid>
 
-      {/* Análise de Produtos e Sentimento */}
-      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+      {/* Charts Row 1 */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Leads por Canal - Donut Chart */}
         <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-          <Card className="animate-fade-in h-full">
-            <CardHeader>
-              <CardTitle>Top 5 Produtos Mais Desejados</CardTitle>
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Leads por Canal</CardTitle>
             </CardHeader>
-            <CardContent className="h-[350px] pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topProductsData} layout="vertical" margin={{
-                left: 10,
-                right: 10,
-                top: 5,
-                bottom: 5
-              }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={150} tick={{
-                  fontSize: 12
-                }} tickFormatter={value => value.length > 20 ? value.substring(0, 20) + '...' : value} />
+            <CardContent>
+              <div className="flex justify-center gap-6 mb-4">
+                {chartData.map((entry, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: CHANNEL_COLORS[entry.name] || "hsl(var(--primary))" }}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">{entry.name}</span>
+                      <span className="text-sm font-semibold">{entry.value as number}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="100%"
+                    startAngle={180}
+                    endAngle={0}
+                    innerRadius={80}
+                    outerRadius={120}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || "hsl(var(--primary))"} />
+                    ))}
+                  </Pie>
                   <Tooltip contentStyle={{
-                  fontSize: '12px'
-                }} wrapperStyle={{
-                  zIndex: 1000
-                }} />
-                  <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
-                </BarChart>
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} />
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </MagicBentoCard>
 
+        {/* Top 5 Products */}
         <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-          <Card className="animate-fade-in h-full">
-            <CardHeader>
-              <CardTitle>Distribuição de Sentimento</CardTitle>
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Top 5 Produtos Desejados</CardTitle>
             </CardHeader>
-            <CardContent className="h-[350px] pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={sentimentChartData} cx="50%" cy="50%" labelLine={false} label={entry => `${entry.name}: ${entry.value}`} outerRadius={100} fill="#8884d8" dataKey="value">
-                    {sentimentChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip wrapperStyle={{
-                  zIndex: 1000
-                }} />
-                </PieChart>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topProductsData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" width={150} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <Tooltip contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </MagicBentoCard>
       </div>
 
-      {/* Análise de Compliance e Timeline */}
-      <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+      {/* Charts Row 2 */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Sentiment Distribution */}
         <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-          <Card className="animate-fade-in h-full">
-            <CardHeader>
-              <CardTitle>Ranking de Playbooks por Compliance</CardTitle>
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Distribuição de Sentimento</CardTitle>
             </CardHeader>
-            <CardContent className="h-[350px] pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={complianceRankingData} layout="vertical" margin={{
-                left: 10,
-                right: 10,
-                top: 5,
-                bottom: 5
-              }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" width={150} tick={{
-                  fontSize: 12
-                }} tickFormatter={value => value.length > 20 ? value.substring(0, 20) + '...' : value} />
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={sentimentChartData} cx="50%" cy="50%" labelLine={false} outerRadius={100} fill="hsl(var(--primary))" dataKey="value" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                    {sentimentChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip contentStyle={{
-                  fontSize: '12px'
-                }} wrapperStyle={{
-                  zIndex: 1000
-                }} formatter={value => [`${value}%`, 'Compliance']} />
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        {/* Compliance Ranking */}
+        <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Ranking de Playbooks por Compliance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={complianceRankingData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" width={150} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                  <Tooltip contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} formatter={(value: number) => [`${value}%`, "Compliance"]} />
                   <Bar dataKey="compliance" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </MagicBentoCard>
-
-        <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-          <Card className="animate-fade-in h-full">
-            <CardHeader>
-              <CardTitle>Timeline de Análises (Últimos 14 dias)</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[350px] pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineChartData} margin={{
-                left: 10,
-                right: 10,
-                top: 5,
-                bottom: 5
-              }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{
-                  fontSize: 12
-                }} />
-                  <YAxis tick={{
-                  fontSize: 12
-                }} />
-                  <Tooltip contentStyle={{
-                  fontSize: '12px'
-                }} wrapperStyle={{
-                  zIndex: 1000
-                }} />
-                  <Legend wrapperStyle={{
-                  fontSize: '12px'
-                }} />
-                  <Line type="monotone" dataKey="count" stroke="hsl(var(--chart-3))" strokeWidth={3} name="Análises" dot={{
-                  r: 4
-                }} activeDot={{
-                  r: 6
-                }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </MagicBentoCard>
       </div>
 
-      {/* Ranking de Vendedores por Nota */}
+      {/* Timeline Chart */}
       <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              Ranking de Vendedores por Nota de Atendimento
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <LineChartIcon className="h-5 w-5" />
+              Timeline de Análises (Últimos 14 dias)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {salespersonRankingData.length > 0 ? <div className="space-y-4">
-                {salespersonRankingData.map((seller, index) => <div key={seller.name} className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                      {index + 1}º
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium truncate">{seller.name}</span>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          {seller.leads} lead{seller.leads > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map(star => {
-                      const filled = star <= Math.floor(seller.stars);
-                      const partial = star === Math.ceil(seller.stars) && seller.stars % 1 !== 0;
-                      const fillPercent = partial ? seller.stars % 1 * 100 : 0;
-                      return <div key={star} className="relative">
-                                <Star className={`h-4 w-4 ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} />
-                                {partial && <div className="absolute inset-0 overflow-hidden" style={{
-                          width: `${fillPercent}%`
-                        }}>
-                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                  </div>}
-                              </div>;
-                    })}
-                        </div>
-                        <span className="text-sm font-semibold">{seller.stars.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">({seller.rating.toFixed(1)}/10)</span>
-                    </div>
-                  </div>
-                </div>)}
-            </div> : <div className="text-center py-8 text-muted-foreground">
-              Nenhum vendedor com leads avaliados ainda
-            </div>}
-        </CardContent>
-      </Card>
-    </MagicBentoCard>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={timelineChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px"
+                }} />
+                <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </MagicBentoCard>
 
-      {/* Leads por Canal */}
+      {/* Salesperson Ranking */}
       <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle>Leads por Canal</CardTitle>
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Ranking de Vendedores por Avaliação</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{
-              left: 10,
-              right: 10,
-              top: 5,
-              bottom: 5
-            }}>
-                <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{
-              fontSize: 12
-            }} />
-              <YAxis tick={{
-              fontSize: 12
-            }} />
-              <Tooltip contentStyle={{
-              fontSize: '12px'
-            }} wrapperStyle={{
-              zIndex: 1000
-            }} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || "hsl(var(--primary))"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-    </MagicBentoCard>
-    </div>;
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={salespersonRankingData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                <XAxis type="number" domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis type="category" dataKey="name" width={120} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <Tooltip contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px"
+                }} formatter={(value: number) => [value.toFixed(1), "Avaliação"]} />
+                <Bar dataKey="rating" fill="hsl(var(--chart-4))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </MagicBentoCard>
+    </div>
+  );
 }
