@@ -4,7 +4,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface LeadsChannelChartProps {
   data: { name: string; value: number }[];
-  closedData: { name: string; value: number }[];
+  closedData: { name: string; value: number; conversion: number }[];
   mode: "all" | "closed";
   onModeChange: (mode: "all" | "closed") => void;
 }
@@ -21,6 +21,13 @@ const getChannelColor = (channelName: string): string => {
 
 export function LeadsChannelChart({ data, closedData, mode, onModeChange }: LeadsChannelChartProps) {
   const displayData = mode === "all" ? data : closedData;
+  
+  const renderLabel = ({ name, percent, conversion }: { name: string; percent: number; conversion?: number }) => {
+    if (mode === "closed" && conversion !== undefined) {
+      return `${name}: ${(percent * 100).toFixed(0)}% (${conversion.toFixed(0)}% conv.)`;
+    }
+    return `${name}: ${(percent * 100).toFixed(0)}%`;
+  };
   
   return (
     <Card>
@@ -44,7 +51,7 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              label={renderLabel}
               outerRadius={80}
               fill="hsl(var(--primary))"
               dataKey="value"
