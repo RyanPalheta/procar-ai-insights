@@ -9,6 +9,8 @@ interface LeadsKPICardsProps {
   conversionRate: number;
   avgScore: number;
   scoreVariation: number | null;
+  totalLeadsVariation: number | null;
+  leadsWithQuoteVariation: number | null;
   newLeads24h: number;
   leadsWithQuote: number;
   avgQuotedPrice: number;
@@ -28,12 +30,22 @@ export function LeadsKPICards({
   conversionRate,
   avgScore,
   scoreVariation,
+  totalLeadsVariation,
+  leadsWithQuoteVariation,
   newLeads24h,
   leadsWithQuote,
   avgQuotedPrice,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
+  const getTrend = (variation: number | null) => {
+    if (variation === null || scorePeriod === "all") return undefined;
+    return {
+      value: Math.abs(parseFloat(variation.toFixed(1))),
+      isPositive: variation >= 0
+    };
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <KPICard
@@ -41,7 +53,8 @@ export function LeadsKPICards({
         value={totalLeads}
         icon={Users}
         variant="default"
-        description="Total acumulado"
+        description={scorePeriod === "all" ? "Total acumulado" : `Período: ${periodLabels[scorePeriod]}`}
+        trend={getTrend(totalLeadsVariation)}
       />
       
       <KPICard
@@ -59,10 +72,7 @@ export function LeadsKPICards({
           icon={Award}
           variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
           description={scorePeriod === "all" ? "Período: Todos" : `Período: ${periodLabels[scorePeriod]}`}
-          trend={scoreVariation !== null && scorePeriod !== "all" ? {
-            value: Math.abs(parseFloat(scoreVariation.toFixed(1))),
-            isPositive: scoreVariation >= 0
-          } : undefined}
+          trend={getTrend(scoreVariation)}
         />
         <div className="absolute top-3 right-3">
           <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
@@ -92,7 +102,8 @@ export function LeadsKPICards({
         value={leadsWithQuote}
         icon={Receipt}
         variant="default"
-        description="Com preço definido"
+        description={scorePeriod === "all" ? "Com preço definido" : `Período: ${periodLabels[scorePeriod]}`}
+        trend={getTrend(leadsWithQuoteVariation)}
       />
       
       <KPICard
