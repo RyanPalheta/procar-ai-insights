@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
 import { Users, TrendingUp, Phone, MessageSquare, Target, Award, CheckCircle, AlertCircle, PackageSearch, LineChart as LineChartIcon, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
@@ -160,7 +161,7 @@ export default function Dashboard() {
   }, {});
   const sentimentChartData = sentimentData ? Object.entries(sentimentData).map(([name, value]) => ({
     name,
-    value
+    value: value as number
   })) : [];
 
   // Playbook compliance by playbook title
@@ -351,30 +352,7 @@ export default function Dashboard() {
       {/* Charts Row 2 */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Sentiment Distribution */}
-        <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-          <Card className="bg-card border-border h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Distribuição de Sentimento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={sentimentChartData} cx="50%" cy="50%" labelLine={false} outerRadius={100} fill="hsl(var(--primary))" dataKey="value" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-                    {sentimentChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px"
-                  }} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </MagicBentoCard>
+        <LeadsSentimentChart data={sentimentChartData} />
 
         {/* Compliance Ranking */}
         <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
