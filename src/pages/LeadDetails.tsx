@@ -31,7 +31,8 @@ import {
   Flame,
   Sun,
   Snowflake,
-  Thermometer
+  Thermometer,
+  Star
 } from "lucide-react";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
@@ -240,7 +241,64 @@ export default function LeadDetails() {
       </div>
 
       {/* Informações principais do lead */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {/* Nota de Atendimento - Destacado */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Nota do Atendimento</CardTitle>
+            <Star className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const rating = (lead as any).service_rating;
+              if (rating === null || rating === undefined) {
+                return <div className="text-2xl font-bold text-muted-foreground">N/A</div>;
+              }
+              
+              const getRatingColor = (r: number) => {
+                if (r >= 9) return "text-emerald-500";
+                if (r >= 7) return "text-green-500";
+                if (r >= 4) return "text-yellow-500";
+                return "text-red-500";
+              };
+              
+              const getRatingLabel = (r: number) => {
+                if (r >= 9) return "Excelente";
+                if (r >= 7) return "Bom";
+                if (r >= 4) return "Regular";
+                return "Ruim";
+              };
+              
+              const getRatingBg = (r: number) => {
+                if (r >= 9) return "bg-emerald-500";
+                if (r >= 7) return "bg-green-500";
+                if (r >= 4) return "bg-yellow-500";
+                return "bg-red-500";
+              };
+              
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-4xl font-bold ${getRatingColor(rating)}`}>
+                      {rating.toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground text-sm">/10</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all ${getRatingBg(rating)}`}
+                      style={{ width: `${(rating / 10) * 100}%` }}
+                    />
+                  </div>
+                  <Badge variant="outline" className={getRatingColor(rating)}>
+                    {getRatingLabel(rating)}
+                  </Badge>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Temperatura</CardTitle>
@@ -286,21 +344,13 @@ export default function LeadDetails() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Interações</CardTitle>
+            <CardTitle className="text-sm font-medium">Interações / Chamadas</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{interactions?.length || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ligações</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{calls?.length || 0}</div>
+            <div className="text-2xl font-bold">
+              {interactions?.length || 0} / {calls?.length || 0}
+            </div>
           </CardContent>
         </Card>
       </div>

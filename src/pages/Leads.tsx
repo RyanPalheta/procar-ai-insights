@@ -676,6 +676,7 @@ export default function Leads() {
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Temp.</TableHead>
+                    <TableHead>Nota</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Compliance</TableHead>
                     <TableHead>Sentimento</TableHead>
@@ -724,6 +725,25 @@ export default function Leads() {
                             );
                           }
                           return <span className="text-muted-foreground">-</span>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const rating = (lead as any).service_rating;
+                          if (rating === null || rating === undefined) {
+                            return <span className="text-muted-foreground">-</span>;
+                          }
+                          const getRatingVariant = (r: number) => {
+                            if (r >= 9) return "bg-emerald-500 text-white border-emerald-500";
+                            if (r >= 7) return "bg-green-500 text-white border-green-500";
+                            if (r >= 4) return "bg-yellow-500 text-white border-yellow-500";
+                            return "bg-red-500 text-white border-red-500";
+                          };
+                          return (
+                            <Badge className={`text-xs ${getRatingVariant(rating)}`}>
+                              {rating.toFixed(1)}
+                            </Badge>
+                          );
                         })()}
                       </TableCell>
                       <TableCell>

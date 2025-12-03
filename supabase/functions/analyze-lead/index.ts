@@ -345,9 +345,15 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
                 has_quote: {
                   type: "boolean",
                   description: "Indica se foi apresentada uma cotação formal ao cliente (true) ou apenas estimativa/menção informal (false)"
+                },
+                service_rating: {
+                  type: "number",
+                  minimum: 1,
+                  maximum: 10,
+                  description: "Nota geral do atendimento de 1 a 10. Considere: qualidade do lead (lead_score), aderência ao playbook (compliance_score), profissionalismo na comunicação, engajamento do vendedor, resolução de dúvidas. 1-3: Ruim, 4-6: Regular, 7-8: Bom, 9-10: Excelente"
                 }
               },
-              required: ["sentiment", "lead_score", "improvement_point", "has_quote"]
+              required: ["sentiment", "lead_score", "improvement_point", "has_quote", "service_rating"]
             }
           }
         }],
@@ -390,8 +396,9 @@ Forneça uma análise completa seguindo a estrutura da ferramenta.`;
       playbook_violations: analysisResult.playbook_violations,
       lead_price: analysisResult.quoted_price || null,
       lead_temperature: analysisResult.lead_temperature || null,
+      service_rating: analysisResult.service_rating || null,
       processed: true,
-      ai_version: 'gpt-5-playbook-audit-v2'
+      ai_version: 'gpt-5-playbook-audit-v3'
     };
 
     const { data: updateData, error: updateError } = await supabase.functions.invoke('update-lead', {
