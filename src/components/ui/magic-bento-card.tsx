@@ -3,7 +3,7 @@ import { gsap } from 'gsap';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PARTICLE_COUNT = 12;
-const DEFAULT_GLOW_COLOR = '132, 0, 255';
+const DEFAULT_GLOW_COLOR = '59, 130, 246';
 
 interface MagicBentoCardProps {
   children: React.ReactNode;

@@ -37,7 +37,7 @@ export function KPICard({
       enableTilt={true}
       enableMagnetism={true}
       clickEffect={true}
-      glowColor="132, 0, 255"
+      glowColor="59, 130, 246"
       className="rounded-lg"
     >
       <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
