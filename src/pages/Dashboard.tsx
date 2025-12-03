@@ -189,6 +189,31 @@ export default function Dashboard() {
         .slice(-14) // Last 14 days
     : [];
 
+  // Salesperson ranking by average service rating
+  const salespersonRatings = leads
+    ?.filter(lead => lead.sales_person_id && (lead as any).service_rating !== null)
+    .reduce((acc: any, lead) => {
+      const salesPerson = lead.sales_person_id!;
+      if (!acc[salesPerson]) {
+        acc[salesPerson] = { total: 0, count: 0 };
+      }
+      acc[salesPerson].total += (lead as any).service_rating;
+      acc[salesPerson].count += 1;
+      return acc;
+    }, {});
+
+  const salespersonRankingData = salespersonRatings
+    ? Object.entries(salespersonRatings)
+        .map(([name, data]: [string, any]) => ({
+          name,
+          rating: Number((data.total / data.count).toFixed(1)),
+          leads: data.count,
+          stars: Number(((data.total / data.count) / 2).toFixed(1)) // Convert to 5-star scale
+        }))
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 10)
+    : [];
+
   return (
     <div className="space-y-8 pb-8">
       <div className="space-y-2">
@@ -418,6 +443,68 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ranking de Vendedores por Nota */}
+      <Card className="animate-fade-in">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-500" />
+            Ranking de Vendedores por Nota de Atendimento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {salespersonRankingData.length > 0 ? (
+            <div className="space-y-4">
+              {salespersonRankingData.map((seller, index) => (
+                <div key={seller.name} className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                    {index + 1}º
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium truncate">{seller.name}</span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        {seller.leads} lead{seller.leads > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const filled = star <= Math.floor(seller.stars);
+                          const partial = star === Math.ceil(seller.stars) && seller.stars % 1 !== 0;
+                          const fillPercent = partial ? (seller.stars % 1) * 100 : 0;
+                          
+                          return (
+                            <div key={star} className="relative">
+                              <Star 
+                                className={`h-4 w-4 ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`}
+                              />
+                              {partial && (
+                                <div 
+                                  className="absolute inset-0 overflow-hidden"
+                                  style={{ width: `${fillPercent}%` }}
+                                >
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <span className="text-sm font-semibold">{seller.stars.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">({seller.rating.toFixed(1)}/10)</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum vendedor com leads avaliados ainda
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Leads por Canal */}
       <Card className="animate-fade-in">
