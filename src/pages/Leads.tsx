@@ -294,10 +294,10 @@ export default function Leads() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    // Language distribution (excluding N/A)
+    // Language distribution (excluding N/A and NDA)
     const languageCounts = new Map<string, number>();
     leads.forEach(l => {
-      if (l.lead_language && l.lead_language !== "N/A") {
+      if (l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA") {
         const language = l.lead_language;
         languageCounts.set(language, (languageCounts.get(language) || 0) + 1);
       }
