@@ -59,9 +59,9 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
 
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
-      <Card className="bg-[#060010] border-[#392e4e] text-white h-full">
+      <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg text-white">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Thermometer className="h-5 w-5" />
             Temperatura dos Leads
           </CardTitle>
@@ -79,7 +79,7 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
               
               <div className="relative flex flex-col items-center">
                 {/* Tube */}
-                <div className="w-6 h-36 bg-white/10 rounded-t-full relative">
+                <div className="w-6 h-36 bg-muted rounded-t-full relative">
                   <div 
                     className="absolute bottom-0 left-0 right-0 transition-all duration-700"
                     style={{ 
@@ -102,21 +102,21 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
             <div className="flex flex-col gap-4 text-sm">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#f97316]" />
-                <span className="text-white/60 w-14">Quente</span>
-                <span className="font-medium text-white">{quente}</span>
+                <span className="text-muted-foreground w-14">Quente</span>
+                <span className="font-medium">{quente}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]" />
-                <span className="text-white/60 w-14">Morno</span>
-                <span className="font-medium text-white">{morno}</span>
+                <span className="text-muted-foreground w-14">Morno</span>
+                <span className="font-medium">{morno}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]" />
-                <span className="text-white/60 w-14">Frio</span>
-                <span className="font-medium text-white">{frio}</span>
+                <span className="text-muted-foreground w-14">Frio</span>
+                <span className="font-medium">{frio}</span>
               </div>
-              <div className="border-t border-[#392e4e] pt-3 mt-1 text-white/60">
-                Total: <span className="font-medium text-white">{total}</span>
+              <div className="border-t border-border pt-3 mt-1 text-muted-foreground">
+                Total: <span className="font-medium text-foreground">{total}</span>
               </div>
             </div>
           </div>
