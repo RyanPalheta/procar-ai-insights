@@ -8,6 +8,7 @@ interface LeadsLanguageChartProps {
 const LANGUAGE_CONFIG: Record<string, { flag: string; color: string; label: string }> = {
   "PT-BR": { flag: "🇧🇷", color: "hsl(var(--chart-1))", label: "Português (BR)" },
   "EN-USA": { flag: "🇺🇸", color: "hsl(var(--chart-2))", label: "English (USA)" },
+  "ES-ES": { flag: "🇪🇸", color: "hsl(var(--chart-3))", label: "Español" },
   "EN-ES": { flag: "🇪🇸", color: "hsl(var(--chart-3))", label: "Español" },
   "ES": { flag: "🇪🇸", color: "hsl(var(--chart-3))", label: "Español" },
   "EN": { flag: "🇬🇧", color: "hsl(var(--chart-4))", label: "English" },
@@ -65,20 +66,7 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
                       opacity: opacity,
                       filter: `drop-shadow(0 4px 8px ${config.color}40)`
                     }}
-                    animate={index === 0 ? {
-                      scale: [1, 1.1, 1],
-                      filter: [
-                        `drop-shadow(0 4px 8px ${config.color}40)`,
-                        `drop-shadow(0 8px 16px ${config.color}60)`,
-                        `drop-shadow(0 4px 8px ${config.color}40)`
-                      ]
-                    } : {}}
-                    transition={index === 0 ? {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    } : {}}
-                    whileHover={{ scale: 1.15 }}
+                    whileHover={{ scale: 1.1 }}
                   >
                     {config.flag}
                   </motion.div>
