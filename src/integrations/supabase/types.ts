@@ -151,6 +151,7 @@ export type Database = {
           sales_status: string | null
           sentiment: string | null
           service_desired: string | null
+          service_rating: number | null
           session_id: number
           upsell_opportunity: string | null
         }
@@ -175,6 +176,7 @@ export type Database = {
           sales_status?: string | null
           sentiment?: string | null
           service_desired?: string | null
+          service_rating?: number | null
           session_id: number
           upsell_opportunity?: string | null
         }
@@ -199,6 +201,7 @@ export type Database = {
           sales_status?: string | null
           sentiment?: string | null
           service_desired?: string | null
+          service_rating?: number | null
           session_id?: number
           upsell_opportunity?: string | null
         }

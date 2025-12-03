@@ -126,6 +126,9 @@ Deno.serve(async (req) => {
     if (body.lead_temperature !== undefined) {
       updateData.lead_temperature = body.lead_temperature
     }
+    if (body.service_rating !== undefined) {
+      updateData.service_rating = parseFloat(body.service_rating)
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 
