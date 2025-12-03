@@ -96,6 +96,7 @@ export default function Leads() {
       totalLeads: 0,
       conversionRate: 0,
       avgScore: 0,
+      scoreVariation: null,
       newLeads24h: 0,
       leadsWithQuote: 0,
       avgQuotedPrice: 0
@@ -113,14 +114,32 @@ export default function Leads() {
       ? scoresWithValues.reduce((sum, l) => sum + (l.lead_score || 0), 0) / scoresWithValues.length
       : 0;
 
-    // Calculate avgScore based on scorePeriod
+    // Calculate avgScore based on scorePeriod with variation
     const periodDays = scorePeriod === "all" ? null : parseInt(scorePeriod);
+    const now = new Date();
+    
+    // Current period
     const periodFilteredLeads = periodDays 
-      ? leads.filter(l => l.lead_score !== null && differenceInDays(new Date(), new Date(l.created_at)) <= periodDays)
+      ? leads.filter(l => l.lead_score !== null && differenceInDays(now, new Date(l.created_at)) <= periodDays)
       : scoresWithValues;
     const avgScore = periodFilteredLeads.length > 0
       ? periodFilteredLeads.reduce((sum, l) => sum + (l.lead_score || 0), 0) / periodFilteredLeads.length
       : avgScoreAll;
+
+    // Previous period (for variation calculation)
+    let scoreVariation: number | null = null;
+    if (periodDays) {
+      const previousPeriodLeads = leads.filter(l => {
+        const daysDiff = differenceInDays(now, new Date(l.created_at));
+        return l.lead_score !== null && daysDiff > periodDays && daysDiff <= periodDays * 2;
+      });
+      if (previousPeriodLeads.length > 0) {
+        const avgScorePrevious = previousPeriodLeads.reduce((sum, l) => sum + (l.lead_score || 0), 0) / previousPeriodLeads.length;
+        if (avgScorePrevious > 0) {
+          scoreVariation = ((avgScore - avgScorePrevious) / avgScorePrevious) * 100;
+        }
+      }
+    }
 
     const newLeads24h = leads.filter(l => differenceInHours(new Date(), new Date(l.created_at)) <= 24).length;
 
@@ -134,6 +153,7 @@ export default function Leads() {
       totalLeads,
       conversionRate,
       avgScore,
+      scoreVariation,
       newLeads24h,
       leadsWithQuote,
       avgQuotedPrice
