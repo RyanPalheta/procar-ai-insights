@@ -97,6 +97,8 @@ export default function Leads() {
       conversionRate: 0,
       avgScore: 0,
       scoreVariation: null,
+      totalLeadsVariation: null,
+      leadsWithQuoteVariation: null,
       newLeads24h: 0,
       leadsWithQuote: 0,
       avgQuotedPrice: 0
@@ -149,11 +151,38 @@ export default function Leads() {
       ? pricesWithValues.reduce((sum, l) => sum + (l.lead_price || 0), 0) / pricesWithValues.length
       : 0;
 
+    // Calculate variations for other KPIs
+    let totalLeadsVariation: number | null = null;
+    let leadsWithQuoteVariation: number | null = null;
+
+    if (periodDays) {
+      // Current period leads
+      const currentPeriodLeads = leads.filter(l => differenceInDays(now, new Date(l.created_at)) <= periodDays);
+      const currentPeriodWithQuote = currentPeriodLeads.filter(l => l.lead_price !== null).length;
+
+      // Previous period leads
+      const previousPeriodLeads = leads.filter(l => {
+        const daysDiff = differenceInDays(now, new Date(l.created_at));
+        return daysDiff > periodDays && daysDiff <= periodDays * 2;
+      });
+      const previousPeriodWithQuote = previousPeriodLeads.filter(l => l.lead_price !== null).length;
+
+      // Calculate variations
+      if (previousPeriodLeads.length > 0) {
+        totalLeadsVariation = ((currentPeriodLeads.length - previousPeriodLeads.length) / previousPeriodLeads.length) * 100;
+      }
+      if (previousPeriodWithQuote > 0) {
+        leadsWithQuoteVariation = ((currentPeriodWithQuote - previousPeriodWithQuote) / previousPeriodWithQuote) * 100;
+      }
+    }
+
     return {
       totalLeads,
       conversionRate,
       avgScore,
       scoreVariation,
+      totalLeadsVariation,
+      leadsWithQuoteVariation,
       newLeads24h,
       leadsWithQuote,
       avgQuotedPrice
