@@ -34,6 +34,7 @@ import { LeadsLanguageChart } from "@/components/leads/LeadsLanguageChart";
 import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
 import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart";
 import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart";
+import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -178,7 +179,8 @@ export default function Leads() {
       languageData: [],
       sentimentData: [],
       topProductsData: [],
-      temperatureData: []
+      temperatureData: [],
+      timelineData: []
     };
 
     // Channel distribution
@@ -257,13 +259,36 @@ export default function Leads() {
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
 
+    // Timeline data - leads by date (last 30 days)
+    const timelineCounts = new Map<string, number>();
+    const last30Days = subDays(new Date(), 30);
+    leads.forEach(l => {
+      const leadDate = parseISO(l.created_at);
+      if (leadDate >= last30Days) {
+        const dateKey = format(leadDate, "dd/MM");
+        timelineCounts.set(dateKey, (timelineCounts.get(dateKey) || 0) + 1);
+      }
+    });
+    
+    // Generate all dates for last 30 days to fill gaps
+    const timelineData: Array<{ date: string; count: number }> = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = subDays(new Date(), i);
+      const dateKey = format(date, "dd/MM");
+      timelineData.push({
+        date: dateKey,
+        count: timelineCounts.get(dateKey) || 0
+      });
+    }
+
     return {
       channelData,
       statusData,
       languageData,
       sentimentData,
       topProductsData,
-      temperatureData
+      temperatureData,
+      timelineData
     };
   }, [leads]);
 
@@ -451,6 +476,9 @@ export default function Leads() {
 
       {/* KPI Cards Section */}
       <LeadsKPICards {...kpiMetrics} />
+
+      {/* Timeline Chart */}
+      <LeadsTimelineChart data={chartData.timelineData} />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
