@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { Users, TrendingUp, Phone, MessageSquare, Target, Award, CheckCircle, AlertCircle, PackageSearch, LineChart as LineChartIcon } from "lucide-react";
+import { Users, TrendingUp, Phone, MessageSquare, Target, Award, CheckCircle, AlertCircle, PackageSearch, LineChart as LineChartIcon, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { format, parseISO } from "date-fns";
@@ -74,6 +74,13 @@ export default function Dashboard() {
   
   const totalCalls = calls?.length || 0;
   const totalInteractions = interactions?.length || 0;
+
+  // Average service rating (convert 1-10 to 0-5 stars)
+  const leadsWithRating = leads?.filter(lead => (lead as any).service_rating !== null) || [];
+  const avgServiceRating = leadsWithRating.length > 0
+    ? leadsWithRating.reduce((acc, lead) => acc + ((lead as any).service_rating || 0), 0) / leadsWithRating.length
+    : 0;
+  const avgStars = avgServiceRating / 2; // Convert 1-10 to 0-5 stars
 
   // Channel distribution
   const channelData = leads?.reduce((acc: any, lead) => {
@@ -224,7 +231,51 @@ export default function Dashboard() {
       </div>
 
       {/* KPIs Secundários */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Card especial de estrelas */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Nota Média de Atendimento</p>
+              <Star className="h-4 w-4 text-yellow-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const filled = star <= Math.floor(avgStars);
+                  const partial = star === Math.ceil(avgStars) && avgStars % 1 !== 0;
+                  const fillPercent = partial ? (avgStars % 1) * 100 : 0;
+                  
+                  return (
+                    <div key={star} className="relative">
+                      <Star 
+                        className={`h-6 w-6 ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`}
+                      />
+                      {partial && (
+                        <div 
+                          className="absolute inset-0 overflow-hidden"
+                          style={{ width: `${fillPercent}%` }}
+                        >
+                          <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{avgStars.toFixed(1)}</span>
+                <span className="text-sm text-muted-foreground">/ 5.0</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {leadsWithRating.length} leads avaliados
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <KPICard
           title="Chamadas"
           value={totalCalls}
