@@ -65,7 +65,7 @@ export default function Interactions() {
         </MagicBentoCard>
       </MagicBentoGrid>
 
-      <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoCard glowColor="59, 130, 246" enableTilt={false} enableMagnetism={false}>
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Lista de Interações</CardTitle>
