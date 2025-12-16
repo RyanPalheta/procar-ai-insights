@@ -38,29 +38,58 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verificar se session_id existe na lead_db
-    const { data: leadExists, error: checkError } = await supabase
-      .from('lead_db')
-      .select('session_id')
-      .eq('session_id', body.session_id)
-      .single();
-
-    if (checkError || !leadExists) {
-      console.error('Invalid session_id:', body.session_id);
+    // Parse session_id como inteiro
+    const sessionId = parseInt(body.session_id);
+    if (isNaN(sessionId)) {
+      console.error('Invalid session_id format:', body.session_id);
       return new Response(
-        JSON.stringify({ 
-          error: 'Invalid session_id. Lead not found.' 
-        }),
+        JSON.stringify({ error: 'session_id must be a valid integer' }),
         { 
-          status: 404, 
+          status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
+    // Verificar se session_id existe na lead_db
+    const { data: leadExists, error: checkError } = await supabase
+      .from('lead_db')
+      .select('session_id')
+      .eq('session_id', sessionId)
+      .maybeSingle();
+
+    let leadCreated = false;
+
+    // Se não existe, criar o lead automaticamente
+    if (!leadExists) {
+      console.log('Lead not found, creating automatically:', sessionId);
+      
+      const { error: createError } = await supabase
+        .from('lead_db')
+        .insert({
+          session_id: sessionId,
+          channel: body.channel,
+          processed: false,
+        });
+      
+      if (createError) {
+        console.error('Error creating lead:', createError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create lead: ' + createError.message }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      leadCreated = true;
+      console.log('Lead created automatically:', sessionId);
+    }
+
     // Preparar dados para inserção
     const interactionData = {
-      session_id: body.session_id,
+      session_id: sessionId,
       channel: body.channel,
       message_text: body.message_text || null,
       sender_type: body.sender_type || null,
@@ -86,13 +115,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Interaction created successfully:', data.interaction_id);
+    console.log('Interaction created successfully:', data.interaction_id, leadCreated ? '(lead was auto-created)' : '');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         interaction_id: data.interaction_id,
-        message: 'Interaction created successfully'
+        lead_created: leadCreated,
+        message: leadCreated ? 'Lead and interaction created successfully' : 'Interaction created successfully'
       }),
       { 
         status: 201, 
