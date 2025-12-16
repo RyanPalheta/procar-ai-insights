@@ -34,8 +34,8 @@ export function KPICard({
     <MagicBentoCard
       enableStars={true}
       enableBorderGlow={true}
-      enableTilt={true}
-      enableMagnetism={true}
+      enableTilt={false}
+      enableMagnetism={false}
       clickEffect={true}
       glowColor="59, 130, 246"
       className="rounded-lg"
