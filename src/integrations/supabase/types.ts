@@ -277,7 +277,13 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_interaction_counts: {
+        Args: never
+        Returns: {
+          message_count: number
+          session_id: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
