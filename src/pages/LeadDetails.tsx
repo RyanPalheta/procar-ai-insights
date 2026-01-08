@@ -323,14 +323,6 @@ export default function LeadDetails() {
               <label className="text-sm font-medium text-muted-foreground">Idioma</label>
               <p className="text-base mt-1">{lead.lead_language || "N/A"}</p>
             </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Oportunidade de Upsell</label>
-              <p className="text-base mt-1">{lead.upsell_opportunity || "N/A"}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Versão IA</label>
-              <p className="text-base mt-1">{lead.ai_version || "N/A"}</p>
-            </div>
           </div>
 
           <Separator />
