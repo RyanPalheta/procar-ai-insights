@@ -766,18 +766,6 @@ export default function Leads() {
                   </Select>
                 </div>
 
-                {/* Compliance Score */}
-                <div className="space-y-2">
-                  <Label>Compliance Score: {complianceRange[0]}% - {complianceRange[1]}%</Label>
-                  <Slider
-                    value={complianceRange}
-                    onValueChange={(value) => setComplianceRange(value as [number, number])}
-                    min={0}
-                    max={100}
-                    step={5}
-                    className="mt-2"
-                  />
-                </div>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t">
