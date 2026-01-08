@@ -63,20 +63,35 @@ export default function Leads() {
     },
   });
 
-  // Fetch interaction counts per lead
+  // Fetch interaction counts per lead using the aggregated view
   const { data: interactionCounts } = useQuery({
     queryKey: ["interaction-counts"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("interaction_db")
-        .select("session_id");
-      if (error) throw error;
+        .rpc('get_interaction_counts' as never);
       
-      // Count interactions per session_id
+      // Fallback to direct query if RPC doesn't exist
+      if (error) {
+        const { data: viewData, error: viewError } = await supabase
+          .from("interaction_db")
+          .select("session_id");
+        
+        if (viewError) throw viewError;
+        
+        const counts: Record<number, number> = {};
+        (viewData as { session_id: number | null }[])?.forEach((row) => {
+          if (row.session_id) {
+            counts[row.session_id] = (counts[row.session_id] || 0) + 1;
+          }
+        });
+        return counts;
+      }
+      
+      // Convert view data to record format
       const counts: Record<number, number> = {};
-      data?.forEach((interaction) => {
-        if (interaction.session_id) {
-          counts[interaction.session_id] = (counts[interaction.session_id] || 0) + 1;
+      (data as { session_id: number; message_count: number }[])?.forEach((row) => {
+        if (row.session_id) {
+          counts[row.session_id] = row.message_count;
         }
       });
       return counts;
