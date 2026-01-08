@@ -43,7 +43,7 @@ export default function Leads() {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
-  const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
+  // Compliance filter removed - no longer applicable without salesperson analysis
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -404,11 +404,7 @@ export default function Leads() {
     // Temperature filter
     if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
 
-    // Compliance filter
-    if (lead.playbook_compliance_score !== null) {
-      const score = lead.playbook_compliance_score;
-      if (score < complianceRange[0] || score > complianceRange[1]) return false;
-    }
+    // Compliance filter removed - not applicable without salesperson analysis
 
     // Date range filter
     if (dateFrom || dateTo) {
@@ -435,7 +431,6 @@ export default function Leads() {
     setProductFilter("all");
     setSentimentFilter("all");
     setTemperatureFilter("all");
-    setComplianceRange([0, 100]);
     setDateFrom("");
     setDateTo("");
   };
@@ -445,8 +440,6 @@ export default function Leads() {
     productFilter !== "all" ||
     sentimentFilter !== "all" ||
     temperatureFilter !== "all" ||
-    complianceRange[0] !== 0 ||
-    complianceRange[1] !== 100 ||
     dateFrom !== "" ||
     dateTo !== "";
 
@@ -617,7 +610,7 @@ export default function Leads() {
                 className="h-8"
               >
                 <Filter className="h-4 w-4 mr-1" />
-                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", complianceRange[0] !== 0 || complianceRange[1] !== 100, dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
+                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
               </Button>
             </div>
           </div>
@@ -807,9 +800,7 @@ export default function Leads() {
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Temp.</TableHead>
-                    <TableHead>Nota</TableHead>
                     <TableHead>Score</TableHead>
-                    <TableHead>Compliance</TableHead>
                     <TableHead>Sentimento</TableHead>
                     <TableHead>Serviço</TableHead>
                     <TableHead>Data</TableHead>
@@ -859,40 +850,12 @@ export default function Leads() {
                         })()}
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const rating = (lead as any).service_rating;
-                          if (rating === null || rating === undefined) {
-                            return <span className="text-muted-foreground">-</span>;
-                          }
-                          const getRatingVariant = (r: number) => {
-                            if (r >= 9) return "bg-emerald-500 text-white border-emerald-500";
-                            if (r >= 7) return "bg-green-500 text-white border-green-500";
-                            if (r >= 4) return "bg-yellow-500 text-white border-yellow-500";
-                            return "bg-red-500 text-white border-red-500";
-                          };
-                          return (
-                            <Badge className={`text-xs ${getRatingVariant(rating)}`}>
-                              {rating.toFixed(1)}
-                            </Badge>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-1">
                           {lead.lead_score || "N/A"}
                           {isHighQualityLead(lead.lead_score) && (
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {lead.playbook_compliance_score !== null ? (
-                          <Badge variant={getComplianceColor(lead.playbook_compliance_score) as any}>
-                            {lead.playbook_compliance_score}%
-                          </Badge>
-                        ) : (
-                          "N/A"
-                        )}
                       </TableCell>
                       <TableCell>
                         {lead.sentiment ? (

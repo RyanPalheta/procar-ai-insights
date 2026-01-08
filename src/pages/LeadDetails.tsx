@@ -23,7 +23,6 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  Target,
   ThumbsUp,
   ThumbsDown,
   Minus,
@@ -31,8 +30,7 @@ import {
   Flame,
   Sun,
   Snowflake,
-  Thermometer,
-  Star
+  Thermometer
 } from "lucide-react";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
@@ -103,7 +101,6 @@ export default function LeadDetails() {
         description: "Lead analisado com sucesso! Atualizando dados..."
       });
       
-      // Refetch todos os dados do lead
       queryClient.invalidateQueries({ queryKey: ["lead", sessionId] });
       queryClient.invalidateQueries({ queryKey: ["lead-interactions", sessionId] });
       queryClient.invalidateQueries({ queryKey: ["lead-calls", sessionId] });
@@ -120,7 +117,7 @@ export default function LeadDetails() {
   };
 
   const handleAnalysisComplete = () => {
-    // Called when animation completes, can be used for additional logic
+    // Called when animation completes
   };
 
   const getSentimentIcon = (sentiment: string | null) => {
@@ -241,64 +238,7 @@ export default function LeadDetails() {
       </div>
 
       {/* Informações principais do lead */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {/* Nota de Atendimento - Destacado */}
-        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nota do Atendimento</CardTitle>
-            <Star className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {(() => {
-              const rating = (lead as any).service_rating;
-              if (rating === null || rating === undefined) {
-                return <div className="text-2xl font-bold text-muted-foreground">N/A</div>;
-              }
-              
-              const getRatingColor = (r: number) => {
-                if (r >= 9) return "text-emerald-500";
-                if (r >= 7) return "text-green-500";
-                if (r >= 4) return "text-yellow-500";
-                return "text-red-500";
-              };
-              
-              const getRatingLabel = (r: number) => {
-                if (r >= 9) return "Excelente";
-                if (r >= 7) return "Bom";
-                if (r >= 4) return "Regular";
-                return "Ruim";
-              };
-              
-              const getRatingBg = (r: number) => {
-                if (r >= 9) return "bg-emerald-500";
-                if (r >= 7) return "bg-green-500";
-                if (r >= 4) return "bg-yellow-500";
-                return "bg-red-500";
-              };
-              
-              return (
-                <div className="space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-4xl font-bold ${getRatingColor(rating)}`}>
-                      {rating.toFixed(1)}
-                    </span>
-                    <span className="text-muted-foreground text-sm">/10</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all ${getRatingBg(rating)}`}
-                      style={{ width: `${(rating / 10) * 100}%` }}
-                    />
-                  </div>
-                  <Badge variant="outline" className={getRatingColor(rating)}>
-                    {getRatingLabel(rating)}
-                  </Badge>
-                </div>
-              );
-            })()}
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Temperatura</CardTitle>
@@ -396,7 +336,7 @@ export default function LeadDetails() {
           <Separator />
 
           <div>
-            <label className="text-sm font-medium text-muted-foreground">Ponto de Melhoria</label>
+            <label className="text-sm font-medium text-muted-foreground">Necessidades do Cliente</label>
             <p className="text-base mt-1">{lead.improvement_point || "N/A"}</p>
           </div>
 
@@ -458,80 +398,6 @@ export default function LeadDetails() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Análise de Playbook */}
-      {(lead.playbook_compliance_score !== null || lead.playbook_steps_completed || lead.playbook_steps_missing || lead.playbook_violations) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Análise de Playbook
-            </CardTitle>
-            {lead.service_desired && (
-              <p className="text-sm text-muted-foreground">
-                Produto identificado: <Badge variant="secondary">{lead.service_desired}</Badge>
-              </p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Score de Compliance */}
-            {lead.playbook_compliance_score !== null && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Score de Compliance</label>
-                  <span className="text-2xl font-bold">{lead.playbook_compliance_score}%</span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-3">
-                  <div 
-                    className="bg-primary h-3 rounded-full transition-all" 
-                    style={{ width: `${lead.playbook_compliance_score}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Etapas Cumpridas */}
-            {lead.playbook_steps_completed && lead.playbook_steps_completed.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-success flex items-center gap-2">
-                  <ThumbsUp className="h-4 w-4" />
-                  Etapas Cumpridas
-                </label>
-                <ul className="space-y-1 pl-6">
-                  {lead.playbook_steps_completed.map((step, idx) => (
-                    <li key={idx} className="text-sm list-disc">{step}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Etapas Faltantes */}
-            {lead.playbook_steps_missing && lead.playbook_steps_missing.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-destructive flex items-center gap-2">
-                  <ThumbsDown className="h-4 w-4" />
-                  Etapas Faltantes
-                </label>
-                <ul className="space-y-1 pl-6">
-                  {lead.playbook_steps_missing.map((step, idx) => (
-                    <li key={idx} className="text-sm list-disc">{step}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Violações */}
-            {lead.playbook_violations && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-destructive">Violações Identificadas</label>
-                <div className="p-3 border border-destructive/50 rounded-md bg-destructive/10">
-                  <p className="text-sm">{lead.playbook_violations}</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Interações */}
       <Card>
