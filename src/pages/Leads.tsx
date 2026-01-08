@@ -424,10 +424,10 @@ export default function Leads() {
     // Temperature filter
     if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
 
-    // Ready for analysis filter (leads with 10+ messages)
+    // Ready for analysis filter (leads with 5+ messages)
     if (readyForAnalysisFilter) {
       const msgCount = interactionCounts?.[lead.session_id] || 0;
-      if (msgCount < 10) return false;
+      if (msgCount < 5) return false;
     }
 
     // Date range filter
@@ -804,7 +804,7 @@ export default function Leads() {
                     onClick={() => setReadyForAnalysisFilter(!readyForAnalysisFilter)}
                     className="w-full"
                   >
-                    {readyForAnalysisFilter ? "✓ " : ""}Leads com 10+ mensagens
+                    {readyForAnalysisFilter ? "✓ " : ""}Pronto
                   </Button>
                 </div>
 
@@ -857,7 +857,7 @@ export default function Leads() {
                               Novo
                             </Badge>
                           )}
-                          {(interactionCounts?.[lead.session_id] || 0) >= 10 && !lead.processed && (
+                          {(interactionCounts?.[lead.session_id] || 0) >= 5 && !lead.processed && (
                             <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
                               <MessageSquare className="h-3 w-3 mr-1" />
                               Pronto
