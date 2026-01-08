@@ -260,7 +260,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      interaction_counts: {
+        Row: {
+          message_count: number | null
+          session_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interaction_db_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "lead_db"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
