@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, differenceInDays, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +43,7 @@ export default function Leads() {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
-  // Compliance filter removed - no longer applicable without salesperson analysis
+  const [readyForAnalysisFilter, setReadyForAnalysisFilter] = useState<boolean>(false);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -60,6 +60,26 @@ export default function Leads() {
       const { data, error } = await supabase.from("lead_db").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Fetch interaction counts per lead
+  const { data: interactionCounts } = useQuery({
+    queryKey: ["interaction-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("interaction_db")
+        .select("session_id");
+      if (error) throw error;
+      
+      // Count interactions per session_id
+      const counts: Record<number, number> = {};
+      data?.forEach((interaction) => {
+        if (interaction.session_id) {
+          counts[interaction.session_id] = (counts[interaction.session_id] || 0) + 1;
+        }
+      });
+      return counts;
     },
   });
 
@@ -404,7 +424,11 @@ export default function Leads() {
     // Temperature filter
     if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
 
-    // Compliance filter removed - not applicable without salesperson analysis
+    // Ready for analysis filter (leads with 10+ messages)
+    if (readyForAnalysisFilter) {
+      const msgCount = interactionCounts?.[lead.session_id] || 0;
+      if (msgCount < 10) return false;
+    }
 
     // Date range filter
     if (dateFrom || dateTo) {
@@ -431,6 +455,7 @@ export default function Leads() {
     setProductFilter("all");
     setSentimentFilter("all");
     setTemperatureFilter("all");
+    setReadyForAnalysisFilter(false);
     setDateFrom("");
     setDateTo("");
   };
@@ -440,6 +465,7 @@ export default function Leads() {
     productFilter !== "all" ||
     sentimentFilter !== "all" ||
     temperatureFilter !== "all" ||
+    readyForAnalysisFilter ||
     dateFrom !== "" ||
     dateTo !== "";
 
@@ -610,7 +636,7 @@ export default function Leads() {
                 className="h-8"
               >
                 <Filter className="h-4 w-4 mr-1" />
-                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
+                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", readyForAnalysisFilter, dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
               </Button>
             </div>
           </div>
@@ -766,6 +792,22 @@ export default function Leads() {
                   </Select>
                 </div>
 
+                {/* Ready for Analysis Filter */}
+                <div className="space-y-2 lg:col-span-2">
+                  <Label className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Prontos para Análise
+                  </Label>
+                  <Button
+                    variant={readyForAnalysisFilter ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setReadyForAnalysisFilter(!readyForAnalysisFilter)}
+                    className="w-full"
+                  >
+                    {readyForAnalysisFilter ? "✓ " : ""}Leads com 10+ mensagens
+                  </Button>
+                </div>
+
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t">
@@ -803,7 +845,7 @@ export default function Leads() {
                       onClick={() => navigate(`/leads/${lead.session_id}`)}
                     >
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {lead.session_id || "N/A"}
                           {lead.processed && (
                             <Badge variant="outline" className="text-xs">
@@ -813,6 +855,12 @@ export default function Leads() {
                           {isNewLead(lead.created_at) && (
                             <Badge variant="default" className="text-xs">
                               Novo
+                            </Badge>
+                          )}
+                          {(interactionCounts?.[lead.session_id] || 0) >= 10 && !lead.processed && (
+                            <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                              <MessageSquare className="h-3 w-3 mr-1" />
+                              Pronto
                             </Badge>
                           )}
                         </div>
