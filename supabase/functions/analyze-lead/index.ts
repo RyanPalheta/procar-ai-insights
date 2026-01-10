@@ -164,7 +164,10 @@ Analise e responda:
 4. Qual o potencial de conversão (0-100)?
 5. Tags relevantes para categorização (3-5 tags)
 6. Oportunidades de upsell identificadas
-7. Resumo das principais necessidades do cliente (2-3 frases)`;
+7. Resumo das principais necessidades do cliente (2-3 frases)
+8. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
+9. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
+10. Se houve objeção, qual foi ela em uma frase?`;
 
     console.log(`[analyze-lead] Calling Lovable AI Gateway...`);
 
@@ -223,9 +226,23 @@ Analise e responda:
                   customer_needs_summary: {
                     type: 'string',
                     description: 'Resumo das principais necessidades do cliente (2-3 frases)'
+                  },
+                  lead_intent: {
+                    type: 'string',
+                    enum: ['Orçamento', 'Dúvida', 'Negociar', 'Comparar', 'Agendamento'],
+                    description: 'Intenção principal do lead'
+                  },
+                  has_objection: {
+                    type: 'boolean',
+                    description: 'Se o cliente apresentou objeção no atendimento'
+                  },
+                  objection_detail: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Detalhe da objeção em uma frase (se houver)'
                   }
                 },
-                required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary']
+                required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'lead_intent', 'has_objection']
               }
             }
           }
@@ -294,6 +311,9 @@ Analise e responda:
       ai_tags: analysisResult.ai_tags || [],
       upsell_opportunity: analysisResult.upsell_opportunity || null,
       improvement_point: analysisResult.customer_needs_summary || null, // Reusing field for customer needs
+      lead_intent: analysisResult.lead_intent || null,
+      has_objection: analysisResult.has_objection || false,
+      objection_detail: analysisResult.objection_detail || null,
       processed: true,
       ai_version: AI_VERSION,
       last_ai_update: new Date().toISOString(),

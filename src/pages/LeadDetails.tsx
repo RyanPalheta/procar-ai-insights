@@ -30,8 +30,12 @@ import {
   Flame,
   Sun,
   Snowflake,
-  Thermometer
+  Thermometer,
+  Target,
+  AlertTriangle,
+  CheckCircle2
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
 export default function LeadDetails() {
@@ -304,7 +308,7 @@ export default function LeadDetails() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Vendedor</label>
               <p className="text-base mt-1">{lead.sales_person_id || "N/A"}</p>
@@ -322,6 +326,42 @@ export default function LeadDetails() {
             <div>
               <label className="text-sm font-medium text-muted-foreground">Idioma</label>
               <p className="text-base mt-1">{lead.lead_language || "N/A"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                Intenção
+              </label>
+              <p className="text-base mt-1">
+                <Badge variant="outline" className="bg-primary/10">
+                  {(lead as any).lead_intent || "N/A"}
+                </Badge>
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Objeção
+              </label>
+              <div className="flex items-center gap-2 mt-1">
+                <Checkbox 
+                  checked={(lead as any).has_objection || false} 
+                  disabled 
+                  className="pointer-events-none"
+                />
+                <span className="text-sm">
+                  {(lead as any).has_objection ? (
+                    <span className="text-destructive font-medium">Sim</span>
+                  ) : (
+                    <span className="text-muted-foreground">Não</span>
+                  )}
+                </span>
+              </div>
+              {(lead as any).has_objection && (lead as any).objection_detail && (
+                <p className="text-sm text-muted-foreground mt-1 italic">
+                  "{(lead as any).objection_detail}"
+                </p>
+              )}
             </div>
           </div>
 

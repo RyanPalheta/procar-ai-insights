@@ -135,13 +135,16 @@ export type Database = {
           ai_version: string | null
           channel: string | null
           created_at: string
+          has_objection: boolean | null
           improvement_point: string | null
           last_ai_update: string | null
           last_updated: string | null
+          lead_intent: string | null
           lead_language: string | null
           lead_price: number | null
           lead_score: number | null
           lead_temperature: string | null
+          objection_detail: string | null
           playbook_compliance_score: number | null
           playbook_steps_completed: string[] | null
           playbook_steps_missing: string[] | null
@@ -160,13 +163,16 @@ export type Database = {
           ai_version?: string | null
           channel?: string | null
           created_at?: string
+          has_objection?: boolean | null
           improvement_point?: string | null
           last_ai_update?: string | null
           last_updated?: string | null
+          lead_intent?: string | null
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
           lead_temperature?: string | null
+          objection_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
@@ -185,13 +191,16 @@ export type Database = {
           ai_version?: string | null
           channel?: string | null
           created_at?: string
+          has_objection?: boolean | null
           improvement_point?: string | null
           last_ai_update?: string | null
           last_updated?: string | null
+          lead_intent?: string | null
           lead_language?: string | null
           lead_price?: number | null
           lead_score?: number | null
           lead_temperature?: string | null
+          objection_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
