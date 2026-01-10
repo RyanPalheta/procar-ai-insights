@@ -129,6 +129,15 @@ Deno.serve(async (req) => {
     if (body.service_rating !== undefined) {
       updateData.service_rating = parseFloat(body.service_rating)
     }
+    if (body.lead_intent !== undefined) {
+      updateData.lead_intent = body.lead_intent
+    }
+    if (body.has_objection !== undefined) {
+      updateData.has_objection = body.has_objection
+    }
+    if (body.objection_detail !== undefined) {
+      updateData.objection_detail = body.objection_detail
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 
