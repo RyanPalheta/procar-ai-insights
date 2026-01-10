@@ -9,8 +9,6 @@ import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InteractionIngestLogs } from "@/components/logs/InteractionIngestLogs";
 
 export default function Logs() {
   const { data: logs, isLoading } = useQuery({
@@ -19,7 +17,6 @@ export default function Logs() {
       const { data, error } = await supabase
         .from("audit_logs")
         .select("*")
-        .neq("function_name", "ingest-interaction")
         .order("created_at", { ascending: false })
         .limit(100);
       
@@ -74,8 +71,6 @@ export default function Logs() {
       'lead_update': 'Lead Atualizado',
       'lead_update_error': 'Erro ao Atualizar Lead',
       'edge_function_call': 'Chamada de Edge Function',
-      'interaction_ingest': 'Interação Recebida',
-      'interaction_ingest_error': 'Erro no Ingest de Interação',
     };
     
     return titles[eventType] || `${functionName || 'Sistema'} - ${eventType}`;
@@ -90,132 +85,119 @@ export default function Logs() {
         </p>
       </div>
 
-      <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="geral">Geral</TabsTrigger>
-          <TabsTrigger value="interactions">Ingest de Interações</TabsTrigger>
-        </TabsList>
+      <MagicBentoGrid className="grid gap-4 md:grid-cols-4" glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Operações Bem-sucedidas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">{stats.success}</div>
+              <p className="text-xs text-muted-foreground">Total registrado</p>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Em Processamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">{stats.pending}</div>
+              <p className="text-xs text-muted-foreground">Agora</p>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Avisos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">{stats.warning}</div>
+              <p className="text-xs text-muted-foreground">Total registrado</p>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Erros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">{stats.error}</div>
+              <p className="text-xs text-muted-foreground">Total registrado</p>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+      </MagicBentoGrid>
 
-        <TabsContent value="geral" className="space-y-6">
-          <MagicBentoGrid className="grid gap-4 md:grid-cols-4" glowColor="59, 130, 246">
-            <MagicBentoCard glowColor="59, 130, 246">
-              <Card className="bg-card border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Operações Bem-sucedidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-success">{stats.success}</div>
-                  <p className="text-xs text-muted-foreground">Total registrado</p>
-                </CardContent>
-              </Card>
-            </MagicBentoCard>
-            <MagicBentoCard glowColor="59, 130, 246">
-              <Card className="bg-card border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Em Processamento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">{stats.pending}</div>
-                  <p className="text-xs text-muted-foreground">Agora</p>
-                </CardContent>
-              </Card>
-            </MagicBentoCard>
-            <MagicBentoCard glowColor="59, 130, 246">
-              <Card className="bg-card border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Avisos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-warning">{stats.warning}</div>
-                  <p className="text-xs text-muted-foreground">Total registrado</p>
-                </CardContent>
-              </Card>
-            </MagicBentoCard>
-            <MagicBentoCard glowColor="59, 130, 246">
-              <Card className="bg-card border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Erros</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-destructive">{stats.error}</div>
-                  <p className="text-xs text-muted-foreground">Total registrado</p>
-                </CardContent>
-              </Card>
-            </MagicBentoCard>
-          </MagicBentoGrid>
-
-          <MagicBentoCard glowColor="59, 130, 246">
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle>Registro de Atividades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px] pr-4">
-                  {isLoading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="h-24 w-full" />
-                      ))}
-                    </div>
-                  ) : logs && logs.length > 0 ? (
-                    <div className="space-y-4">
-                      {logs.map((log) => (
-                        <div
-                          key={log.id}
-                          className="flex items-start gap-4 rounded-lg border p-4"
-                        >
-                          <div className="mt-1">{getLogIcon(log.status)}</div>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-medium">
-                                {getEventTitle(log.event_type, log.function_name)}
-                              </p>
-                              <Badge variant={getLogVariant(log.status) as any}>
-                                {log.status}
-                              </Badge>
-                              {log.session_id && (
-                                <Badge variant="outline" className="text-xs">
-                                  Lead #{log.session_id}
-                                </Badge>
-                              )}
-                              {log.execution_time_ms && (
-                                <Badge variant="outline" className="text-xs">
-                                  {log.execution_time_ms}ms
-                                </Badge>
-                              )}
-                            </div>
-                            {log.event_details && (
-                              <p className="text-sm text-muted-foreground">
-                                {JSON.stringify(log.event_details, null, 2)}
-                              </p>
-                            )}
-                            {log.error_message && (
-                              <p className="text-sm text-destructive">
-                                {log.error_message}
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
-                            </p>
-                          </div>
+      <MagicBentoCard glowColor="59, 130, 246">
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle>Registro de Atividades</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[500px] pr-4">
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+              ) : logs && logs.length > 0 ? (
+                <div className="space-y-4">
+                  {logs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-start gap-4 rounded-lg border p-4"
+                    >
+                      <div className="mt-1">{getLogIcon(log.status)}</div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">
+                            {getEventTitle(log.event_type, log.function_name)}
+                          </p>
+                          <Badge variant={getLogVariant(log.status) as any}>
+                            {log.status}
+                          </Badge>
+                          {log.session_id && (
+                            <Badge variant="outline" className="text-xs">
+                              Lead #{log.session_id}
+                            </Badge>
+                          )}
+                          {log.execution_time_ms && (
+                            <Badge variant="outline" className="text-xs">
+                              {log.execution_time_ms}ms
+                            </Badge>
+                          )}
                         </div>
-                      ))}
+                        {log.event_details && (
+                          <p className="text-sm text-muted-foreground">
+                            {JSON.stringify(log.event_details, null, 2)}
+                          </p>
+                        )}
+                        {log.error_message && (
+                          <p className="text-sm text-destructive">
+                            {log.error_message}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                        </p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum log encontrado
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </MagicBentoCard>
-        </TabsContent>
-
-        <TabsContent value="interactions">
-          <InteractionIngestLogs />
-        </TabsContent>
-      </Tabs>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum log encontrado
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </MagicBentoCard>
     </div>
   );
 }
