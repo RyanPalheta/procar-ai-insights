@@ -138,6 +138,9 @@ Deno.serve(async (req) => {
     if (body.objection_detail !== undefined) {
       updateData.objection_detail = body.objection_detail
     }
+    if (body.need_summary !== undefined) {
+      updateData.need_summary = body.need_summary
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 
