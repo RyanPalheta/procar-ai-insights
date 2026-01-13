@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, differenceInDays, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -417,6 +417,14 @@ export default function Leads() {
     };
   }, [leads, timelinePeriod]);
 
+  // Recent objections (limit 5)
+  const recentObjections = useMemo(() => {
+    return leads
+      ?.filter(lead => lead.has_objection === true && lead.objection_detail)
+      .sort((a, b) => new Date(b.last_updated || b.created_at).getTime() - new Date(a.last_updated || a.created_at).getTime())
+      .slice(0, 5) || [];
+  }, [leads]);
+
   const filteredLeads = leads?.filter((lead) => {
     // Search filter
     const matchesSearch = 
@@ -626,6 +634,39 @@ export default function Leads() {
         <LeadsSentimentChart data={chartData.sentimentData} />
         <LeadsTopProductsChart data={chartData.topProductsData} />
       </div>
+
+      {/* Recent Objections Feed */}
+      {recentObjections.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Objeções Recentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {recentObjections.map((lead) => (
+              <Link
+                key={lead.session_id}
+                to={`/leads/${lead.session_id}`}
+                className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">Lead #{lead.session_id}</span>
+                  {lead.lead_intent && (
+                    <Badge variant="outline" className="text-xs">
+                      {lead.lead_intent}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  "{lead.objection_detail}"
+                </p>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Leads Table Section */}
       <Card>
