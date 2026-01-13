@@ -165,9 +165,10 @@ Analise e responda:
 5. Tags relevantes para categorização (3-5 tags)
 6. Oportunidades de upsell identificadas
 7. Resumo das principais necessidades do cliente (2-3 frases)
-8. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
-9. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
-10. Se houve objeção, qual foi ela em uma frase?`;
+8. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
+9. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
+10. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
+11. Se houve objeção, qual foi ela em uma frase?`;
 
     console.log(`[analyze-lead] Calling Lovable AI Gateway...`);
 
@@ -227,6 +228,10 @@ Analise e responda:
                     type: 'string',
                     description: 'Resumo das principais necessidades do cliente (2-3 frases)'
                   },
+                  need_summary: {
+                    type: 'string',
+                    description: 'Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras)'
+                  },
                   lead_intent: {
                     type: 'string',
                     enum: ['Orçamento', 'Dúvida', 'Negociar', 'Comparar', 'Agendamento'],
@@ -242,7 +247,7 @@ Analise e responda:
                     description: 'Detalhe da objeção em uma frase (se houver)'
                   }
                 },
-                required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'lead_intent', 'has_objection']
+                required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
               }
             }
           }
@@ -310,7 +315,8 @@ Analise e responda:
       service_desired: finalServiceDesired,
       ai_tags: analysisResult.ai_tags || [],
       upsell_opportunity: analysisResult.upsell_opportunity || null,
-      improvement_point: analysisResult.customer_needs_summary || null, // Reusing field for customer needs
+      improvement_point: analysisResult.customer_needs_summary || null, // Full needs summary
+      need_summary: analysisResult.need_summary || null, // One-line summary
       lead_intent: analysisResult.lead_intent || null,
       has_objection: analysisResult.has_objection || false,
       objection_detail: analysisResult.objection_detail || null,
@@ -360,7 +366,8 @@ Analise e responda:
           lead_score: updatePayload.lead_score,
           ai_tags: updatePayload.ai_tags,
           upsell_opportunity: updatePayload.upsell_opportunity,
-          customer_needs_summary: updatePayload.improvement_point
+          customer_needs_summary: updatePayload.improvement_point,
+          need_summary: updatePayload.need_summary
         },
         duration_ms: duration,
         ai_version: AI_VERSION

@@ -144,6 +144,7 @@ export type Database = {
           lead_price: number | null
           lead_score: number | null
           lead_temperature: string | null
+          need_summary: string | null
           objection_detail: string | null
           playbook_compliance_score: number | null
           playbook_steps_completed: string[] | null
@@ -172,6 +173,7 @@ export type Database = {
           lead_price?: number | null
           lead_score?: number | null
           lead_temperature?: string | null
+          need_summary?: string | null
           objection_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
@@ -200,6 +202,7 @@ export type Database = {
           lead_price?: number | null
           lead_score?: number | null
           lead_temperature?: string | null
+          need_summary?: string | null
           objection_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null

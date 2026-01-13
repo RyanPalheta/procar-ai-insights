@@ -33,7 +33,8 @@ import {
   Thermometer,
   Target,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Lightbulb
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
@@ -367,9 +368,20 @@ export default function LeadDetails() {
 
           <Separator />
 
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Necessidades do Cliente</label>
-            <p className="text-base mt-1">{lead.improvement_point || "N/A"}</p>
+          <div className="space-y-3">
+            {(lead as any).need_summary && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <Lightbulb className="h-3 w-3" />
+                  Necessidade Principal
+                </label>
+                <p className="text-base mt-1 font-medium text-primary">{(lead as any).need_summary}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Detalhes das Necessidades</label>
+              <p className="text-base mt-1 text-muted-foreground">{lead.improvement_point || "N/A"}</p>
+            </div>
           </div>
 
           {lead.sentiment && (

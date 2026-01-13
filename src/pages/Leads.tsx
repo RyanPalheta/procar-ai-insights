@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, AlertTriangle } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, AlertTriangle, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, differenceInDays, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -425,6 +425,14 @@ export default function Leads() {
       .slice(0, 5) || [];
   }, [leads]);
 
+  // Recent needs (limit 5)
+  const recentNeeds = useMemo(() => {
+    return leads
+      ?.filter(lead => (lead as any).need_summary)
+      .sort((a, b) => new Date(b.last_updated || b.created_at).getTime() - new Date(a.last_updated || a.created_at).getTime())
+      .slice(0, 5) || [];
+  }, [leads]);
+
   const filteredLeads = leads?.filter((lead) => {
     // Search filter
     const matchesSearch = 
@@ -661,6 +669,39 @@ export default function Leads() {
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">
                   "{lead.objection_detail}"
+                </p>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Needs Feed */}
+      {recentNeeds.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Necessidades Recentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {recentNeeds.map((lead) => (
+              <Link
+                key={lead.session_id}
+                to={`/leads/${lead.session_id}`}
+                className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">Lead #{lead.session_id}</span>
+                  {lead.service_desired && (
+                    <Badge variant="outline" className="text-xs">
+                      {lead.service_desired}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {(lead as any).need_summary}
                 </p>
               </Link>
             ))}
