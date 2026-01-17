@@ -34,8 +34,10 @@ import {
   Target,
   AlertTriangle,
   CheckCircle2,
-  Lightbulb
+  Lightbulb,
+  Footprints
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
 
@@ -46,6 +48,7 @@ export default function LeadDetails() {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const sessionId = parseInt(leadId || "0");
 
   // Buscar dados do lead
@@ -123,6 +126,35 @@ export default function LeadDetails() {
 
   const handleAnalysisComplete = () => {
     // Called when animation completes
+  };
+
+  const handleUpdateSalesStatus = async (newStatus: string) => {
+    setIsUpdatingStatus(true);
+    try {
+      const { error } = await supabase.functions.invoke('update-lead', {
+        body: { 
+          session_id: sessionId,
+          sales_status: newStatus 
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Status atualizado",
+        description: `Status alterado para: ${newStatus}`
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["lead", sessionId] });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const getSentimentIcon = (sentiment: string | null) => {
@@ -236,9 +268,22 @@ export default function LeadDetails() {
             🔍 Analisar Este Lead
           </Button>
           
-          <Badge variant={getStatusColor(lead.sales_status) as any} className="text-lg px-4 py-2">
-            {lead.sales_status || "N/A"}
-          </Badge>
+          <Select 
+            value={lead.sales_status || ''} 
+            onValueChange={handleUpdateSalesStatus}
+            disabled={isUpdatingStatus}
+          >
+            <SelectTrigger className="w-[220px] text-lg">
+              <SelectValue placeholder="Selecione status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Aguardando atendimento">Aguardando atendimento</SelectItem>
+              <SelectItem value="Contato inicial">Contato inicial</SelectItem>
+              <SelectItem value="Tomada de decisão">Tomada de decisão</SelectItem>
+              <SelectItem value="Venda ganha">Venda ganha</SelectItem>
+              <SelectItem value="Venda perdida">Venda perdida</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -319,6 +364,20 @@ export default function LeadDetails() {
               <p className="text-base mt-1">
                 <Badge variant="secondary">{lead.channel || "N/A"}</Badge>
               </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Footprints className="h-3 w-3" />
+                Lead Presencial (Walking)
+              </label>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge 
+                  variant={(lead as any).is_walking ? "default" : "outline"}
+                  className={(lead as any).is_walking ? "bg-green-500 text-white" : ""}
+                >
+                  {(lead as any).is_walking ? "Sim - Walking" : "Não"}
+                </Badge>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Serviço Desejado</label>

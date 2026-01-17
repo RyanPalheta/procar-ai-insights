@@ -137,6 +137,7 @@ export type Database = {
           created_at: string
           has_objection: boolean | null
           improvement_point: string | null
+          is_walking: boolean | null
           last_ai_update: string | null
           last_updated: string | null
           lead_intent: string | null
@@ -166,6 +167,7 @@ export type Database = {
           created_at?: string
           has_objection?: boolean | null
           improvement_point?: string | null
+          is_walking?: boolean | null
           last_ai_update?: string | null
           last_updated?: string | null
           lead_intent?: string | null
@@ -195,6 +197,7 @@ export type Database = {
           created_at?: string
           has_objection?: boolean | null
           improvement_point?: string | null
+          is_walking?: boolean | null
           last_ai_update?: string | null
           last_updated?: string | null
           lead_intent?: string | null
