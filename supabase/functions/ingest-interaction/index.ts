@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Milestones that trigger automatic AI analysis
+const ANALYSIS_MILESTONES = [10, 20, 30, 40];
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -117,12 +120,84 @@ Deno.serve(async (req) => {
 
     console.log('Interaction created successfully:', data.interaction_id, leadCreated ? '(lead was auto-created)' : '');
 
+    // Count total interactions for this lead
+    const { count: interactionCount, error: countError } = await supabase
+      .from('interaction_db')
+      .select('*', { count: 'exact', head: true })
+      .eq('session_id', sessionId);
+
+    if (countError) {
+      console.error('Error counting interactions:', countError);
+    }
+
+    const totalInteractions = interactionCount || 0;
+    console.log(`[ingest-interaction] Lead ${sessionId} now has ${totalInteractions} interactions`);
+
+    // Check if we hit an analysis milestone
+    let analysisTriggered = false;
+    let analysisError: string | null = null;
+
+    if (ANALYSIS_MILESTONES.includes(totalInteractions)) {
+      console.log(`[ingest-interaction] Lead ${sessionId} hit milestone ${totalInteractions} - triggering auto-analysis`);
+      
+      // Trigger AI analysis in background using waitUntil
+      const analyzePromise = (async () => {
+        try {
+          const { data: analysisResult, error: analysisErr } = await supabase.functions.invoke('analyze-lead', {
+            body: { session_id: sessionId }
+          });
+
+          if (analysisErr) {
+            console.error(`[ingest-interaction] Auto-analysis failed for lead ${sessionId}:`, analysisErr);
+            
+            // Log the failed analysis attempt
+            await supabase.from('audit_logs').insert({
+              event_type: 'auto_analysis_failed',
+              session_id: sessionId,
+              event_details: { 
+                milestone: totalInteractions,
+                error: analysisErr.message 
+              },
+              status: 'error',
+              error_message: analysisErr.message
+            });
+          } else {
+            console.log(`[ingest-interaction] Auto-analysis completed for lead ${sessionId} at milestone ${totalInteractions}`);
+            
+            // Log successful auto-analysis
+            await supabase.from('audit_logs').insert({
+              event_type: 'auto_analysis_triggered',
+              session_id: sessionId,
+              event_details: { 
+                milestone: totalInteractions,
+                analysis_result: analysisResult 
+              },
+              status: 'success'
+            });
+          }
+        } catch (err) {
+          console.error(`[ingest-interaction] Unexpected error during auto-analysis for lead ${sessionId}:`, err);
+        }
+      })();
+
+      // Run analysis in background - don't await, let it run independently
+      analyzePromise.catch(console.error);
+      analysisTriggered = true;
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         interaction_id: data.interaction_id,
         lead_created: leadCreated,
-        message: leadCreated ? 'Lead and interaction created successfully' : 'Interaction created successfully'
+        total_interactions: totalInteractions,
+        analysis_triggered: analysisTriggered,
+        milestone_reached: ANALYSIS_MILESTONES.includes(totalInteractions) ? totalInteractions : null,
+        message: leadCreated 
+          ? 'Lead and interaction created successfully' 
+          : analysisTriggered 
+            ? `Interaction created, auto-analysis triggered at milestone ${totalInteractions}`
+            : 'Interaction created successfully'
       }),
       { 
         status: 201, 
