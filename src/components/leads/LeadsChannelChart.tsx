@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface LeadsChannelChartProps {
@@ -11,9 +11,10 @@ interface LeadsChannelChartProps {
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
-  "WhatsApp": "hsl(142, 71%, 45%)",
-  "Facebook": "hsl(217, 91%, 60%)",
-  "Instagram": "hsl(330, 81%, 56%)",
+  "WhatsApp": "#25D366",
+  "Facebook": "#1877F2",
+  "Instagram": "#E4405F",
+  "N/A": "hsl(var(--muted))",
 };
 
 const getChannelColor = (channelName: string): string => {
@@ -22,13 +23,6 @@ const getChannelColor = (channelName: string): string => {
 
 export function LeadsChannelChart({ data, closedData, mode, onModeChange }: LeadsChannelChartProps) {
   const displayData = mode === "all" ? data : closedData;
-  
-  const renderLabel = ({ name, percent, conversion }: { name: string; percent: number; conversion?: number }) => {
-    if (mode === "closed" && conversion !== undefined) {
-      return `${name}: ${(percent * 100).toFixed(0)}% (${conversion.toFixed(0)}% conv.)`;
-    }
-    return `${name}: ${(percent * 100).toFixed(0)}%`;
-  };
   
   return (
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
@@ -46,24 +40,48 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
           </ToggleGroup>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          {/* Legenda customizada no topo */}
+          <div className="flex justify-center gap-6 mb-4">
+            {displayData.map((entry, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: getChannelColor(entry.name) }}
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">{entry.name}</span>
+                  <span className="text-sm font-semibold">{entry.value}</span>
+                  {mode === "closed" && "conversion" in entry && (
+                    <span className="text-xs text-muted-foreground">
+                      {(entry as { conversion: number }).conversion.toFixed(0)}% conv.
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Gráfico semi-circular */}
+          <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie
                 data={displayData}
                 cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={renderLabel}
-                outerRadius={80}
-                fill="hsl(var(--primary))"
+                cy="100%"
+                startAngle={180}
+                endAngle={0}
+                innerRadius={80}
+                outerRadius={120}
+                paddingAngle={2}
                 dataKey="value"
               >
                 {displayData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={getChannelColor(entry.name)} />
                 ))}
               </Pie>
-              <Tooltip />
-              <Legend />
+              <Tooltip 
+                formatter={(value: number, name: string) => [value, name]}
+              />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>
