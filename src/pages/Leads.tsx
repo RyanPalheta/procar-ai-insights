@@ -128,11 +128,9 @@ export default function Leads() {
   // KPI Calculations
   const kpiMetrics = useMemo(() => {
     if (!leads) return {
-      totalLeads: 0,
       conversionRate: 0,
       avgScore: 0,
       scoreVariation: null,
-      totalLeadsVariation: null,
       leadsWithQuoteVariation: null,
       newLeads24h: 0,
       leadsWithQuote: 0,
@@ -187,7 +185,6 @@ export default function Leads() {
       : 0;
 
     // Calculate variations for other KPIs
-    let totalLeadsVariation: number | null = null;
     let leadsWithQuoteVariation: number | null = null;
 
     if (periodDays) {
@@ -203,20 +200,15 @@ export default function Leads() {
       const previousPeriodWithQuote = previousPeriodLeads.filter(l => l.lead_price !== null).length;
 
       // Calculate variations
-      if (previousPeriodLeads.length > 0) {
-        totalLeadsVariation = ((currentPeriodLeads.length - previousPeriodLeads.length) / previousPeriodLeads.length) * 100;
-      }
       if (previousPeriodWithQuote > 0) {
         leadsWithQuoteVariation = ((currentPeriodWithQuote - previousPeriodWithQuote) / previousPeriodWithQuote) * 100;
       }
     }
 
     return {
-      totalLeads,
       conversionRate,
       avgScore,
       scoreVariation,
-      totalLeadsVariation,
       leadsWithQuoteVariation,
       newLeads24h,
       leadsWithQuote,

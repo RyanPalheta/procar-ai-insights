@@ -1,16 +1,14 @@
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { Users, TrendingUp, Award, Clock, DollarSign, Receipt } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type ScorePeriod = "all" | "7" | "30" | "90";
 
 interface LeadsKPICardsProps {
-  totalLeads: number;
   conversionRate: number;
   avgScore: number;
   scoreVariation: number | null;
-  totalLeadsVariation: number | null;
   leadsWithQuoteVariation: number | null;
   newLeads24h: number;
   leadsWithQuote: number;
@@ -27,11 +25,9 @@ const periodLabels: Record<ScorePeriod, string> = {
 };
 
 export function LeadsKPICards({
-  totalLeads,
   conversionRate,
   avgScore,
   scoreVariation,
-  totalLeadsVariation,
   leadsWithQuoteVariation,
   newLeads24h,
   leadsWithQuote,
@@ -55,12 +51,11 @@ export function LeadsKPICards({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard
-          title="Total de Leads"
-          value={totalLeads}
-          icon={Users}
-          variant="default"
-          description={scorePeriod === "all" ? "Total acumulado" : `Período: ${periodLabels[scorePeriod]}`}
-          trend={getTrend(totalLeadsVariation)}
+          title="Taxa de Conversão"
+          value={`${conversionRate.toFixed(1)}%`}
+          icon={TrendingUp}
+          variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
+          description="Leads ganhos vs total"
         />
         
         <KPICard
