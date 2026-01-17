@@ -49,7 +49,7 @@ export default function Leads() {
   const [showFilters, setShowFilters] = useState(false);
   const [timelinePeriod, setTimelinePeriod] = useState<"7" | "30" | "90">("30");
   const [channelMode, setChannelMode] = useState<"all" | "closed">("all");
-  const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("all");
+  const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("7");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
