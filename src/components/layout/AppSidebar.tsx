@@ -40,10 +40,10 @@ export function AppSidebar() {
             <img 
               src={logo} 
               alt="PROCAR Logo" 
-              className="h-10 w-10"
+              className="h-10 w-10 flex-shrink-0 object-contain"
             />
             {!collapsed && (
-              <div>
+              <div className="flex-shrink-0">
                 <h2 className="font-bold text-lg">PROCAR</h2>
                 <p className="text-xs text-muted-foreground">Dashboard</p>
               </div>
