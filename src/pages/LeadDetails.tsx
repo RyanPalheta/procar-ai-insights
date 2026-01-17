@@ -372,7 +372,10 @@ export default function LeadDetails() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Temperatura</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-1">
+              Temperatura
+              <Sparkles className="h-3 w-3 text-primary" />
+            </CardTitle>
             <Thermometer className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -393,7 +396,10 @@ export default function LeadDetails() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Score do Lead</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-1">
+              Score do Lead
+              <Sparkles className="h-3 w-3 text-primary" />
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -461,7 +467,10 @@ export default function LeadDetails() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Serviço Desejado</label>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Serviço Desejado
+                <Sparkles className="h-3 w-3 text-primary" />
+              </label>
               <p className="text-base mt-1">{lead.service_desired || "N/A"}</p>
             </div>
             <div>
@@ -472,6 +481,7 @@ export default function LeadDetails() {
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <Target className="h-3 w-3" />
                 Intenção
+                <Sparkles className="h-3 w-3 text-primary" />
               </label>
               <p className="text-base mt-1">
                 <Badge variant="outline" className="bg-primary/10">
@@ -483,6 +493,7 @@ export default function LeadDetails() {
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
                 Objeção
+                <Sparkles className="h-3 w-3 text-primary" />
               </label>
               <div className="flex items-center gap-2 mt-1">
                 <Checkbox 
@@ -511,15 +522,19 @@ export default function LeadDetails() {
           <div className="space-y-3">
             {(lead as any).need_summary && (
               <div>
-                <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                   <Lightbulb className="h-3 w-3" />
                   Necessidade Principal
+                  <Sparkles className="h-3 w-3 text-primary" />
                 </label>
                 <p className="text-base mt-1 font-medium text-primary">{(lead as any).need_summary}</p>
               </div>
             )}
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Detalhes das Necessidades</label>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Detalhes das Necessidades
+                <Sparkles className="h-3 w-3 text-primary" />
+              </label>
               <p className="text-base mt-1 text-muted-foreground">{lead.improvement_point || "N/A"}</p>
             </div>
           </div>
@@ -529,7 +544,10 @@ export default function LeadDetails() {
               <Separator />
               <div className="flex items-center gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Sentimento</label>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    Sentimento
+                    <Sparkles className="h-3 w-3 text-primary" />
+                  </label>
                   <div className="flex items-center gap-2 mt-1">
                     {getSentimentIcon(lead.sentiment)}
                     <span className="text-base">{lead.sentiment}</span>
@@ -537,7 +555,10 @@ export default function LeadDetails() {
                 </div>
                 {lead.ai_tags && lead.ai_tags.length > 0 && (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Tags IA</label>
+                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      Tags IA
+                      <Sparkles className="h-3 w-3 text-primary" />
+                    </label>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {lead.ai_tags.map((tag, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">

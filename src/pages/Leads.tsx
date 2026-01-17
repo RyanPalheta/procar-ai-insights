@@ -866,10 +866,30 @@ export default function Leads() {
                     <TableHead>Lead ID</TableHead>
                     <TableHead>Canal</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Temp.</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Sentimento</TableHead>
-                    <TableHead>Serviço</TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        Temp.
+                        <Sparkles className="h-3 w-3 text-primary" />
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        Score
+                        <Sparkles className="h-3 w-3 text-primary" />
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        Sentimento
+                        <Sparkles className="h-3 w-3 text-primary" />
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        Serviço
+                        <Sparkles className="h-3 w-3 text-primary" />
+                      </span>
+                    </TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
