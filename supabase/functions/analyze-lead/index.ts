@@ -328,7 +328,9 @@ Analise e responda:
       playbook_steps_completed: null,
       playbook_steps_missing: null,
       playbook_violations: null,
-      service_rating: null
+      service_rating: null,
+      // Mark this as AI analysis for history tracking
+      change_source: 'ai_analysis'
     };
 
     // Call update-lead function

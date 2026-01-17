@@ -59,10 +59,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if lead exists
+    // Fetch current lead data for history tracking
     const { data: existingLead, error: checkError } = await supabaseClient
       .from('lead_db')
-      .select('session_id')
+      .select('*')
       .eq('session_id', body.session_id)
       .single()
 
@@ -146,6 +146,52 @@ Deno.serve(async (req) => {
     }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
+
+    // Track field changes for history
+    const changeSource = body.change_source || 'manual'
+    const changedBy = body.changed_by || 'sistema'
+    const historyRecords: Array<{
+      session_id: number
+      field_name: string
+      old_value: string | null
+      new_value: string | null
+      changed_by: string
+      change_source: string
+    }> = []
+
+    // Compare and record changes (excluding last_ai_update which is always updated)
+    for (const [field, newValue] of Object.entries(updateData)) {
+      if (field === 'last_ai_update') continue
+      
+      const oldValue = existingLead[field]
+      const oldStr = oldValue !== null && oldValue !== undefined ? String(oldValue) : null
+      const newStr = newValue !== null && newValue !== undefined ? String(newValue) : null
+      
+      if (oldStr !== newStr) {
+        historyRecords.push({
+          session_id: body.session_id,
+          field_name: field,
+          old_value: oldStr,
+          new_value: newStr,
+          changed_by: changedBy,
+          change_source: changeSource
+        })
+      }
+    }
+
+    // Insert history records if any fields changed
+    if (historyRecords.length > 0) {
+      const { error: historyError } = await supabaseClient
+        .from('lead_history')
+        .insert(historyRecords)
+      
+      if (historyError) {
+        console.error('Failed to insert history records:', historyError)
+        // Don't fail the update, just log the error
+      } else {
+        console.log(`Recorded ${historyRecords.length} field changes to history`)
+      }
+    }
 
     // Update the lead
     const { data, error } = await supabaseClient
