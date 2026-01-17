@@ -7,12 +7,15 @@ export type ScorePeriod = "all" | "7" | "30" | "90";
 
 interface LeadsKPICardsProps {
   conversionRate: number;
+  conversionRateVariation: number | null;
   avgScore: number;
   scoreVariation: number | null;
   leadsWithQuoteVariation: number | null;
   newLeads24h: number;
+  newLeads24hVariation: number | null;
   leadsWithQuote: number;
   avgQuotedPrice: number;
+  avgQuotedPriceVariation: number | null;
   scorePeriod: ScorePeriod;
   onScorePeriodChange: (period: ScorePeriod) => void;
 }
@@ -26,17 +29,21 @@ const periodLabels: Record<ScorePeriod, string> = {
 
 export function LeadsKPICards({
   conversionRate,
+  conversionRateVariation,
   avgScore,
   scoreVariation,
   leadsWithQuoteVariation,
   newLeads24h,
+  newLeads24hVariation,
   leadsWithQuote,
   avgQuotedPrice,
+  avgQuotedPriceVariation,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
-  const getTrend = (variation: number | null) => {
-    if (variation === null || scorePeriod === "all") return undefined;
+  const getTrend = (variation: number | null, alwaysShow = false) => {
+    if (variation === null) return undefined;
+    if (!alwaysShow && scorePeriod === "all") return undefined;
     return {
       value: Math.abs(parseFloat(variation.toFixed(1))),
       isPositive: variation >= 0
@@ -56,6 +63,7 @@ export function LeadsKPICards({
           icon={TrendingUp}
           variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
           description="Leads ganhos vs total"
+          trend={getTrend(conversionRateVariation)}
         />
         
         <div className="relative">
@@ -87,7 +95,8 @@ export function LeadsKPICards({
           value={newLeads24h}
           icon={Clock}
           variant="default"
-          description="Criados recentemente"
+          description="vs. 24h anteriores"
+          trend={getTrend(newLeads24hVariation, true)}
         />
         
         <KPICard
@@ -104,7 +113,8 @@ export function LeadsKPICards({
           value={avgQuotedPrice > 0 ? `R$ ${avgQuotedPrice.toFixed(2)}` : "N/A"}
           icon={DollarSign}
           variant="success"
-          description="Ticket médio"
+          description={scorePeriod === "all" ? "Ticket médio" : `Período: ${periodLabels[scorePeriod]}`}
+          trend={getTrend(avgQuotedPriceVariation)}
         />
       </div>
     </MagicBentoGrid>
