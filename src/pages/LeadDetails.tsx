@@ -343,7 +343,7 @@ export default function LeadDetails() {
             onClick={handleAnalyzeThisLead}
             disabled={isAnalyzing}
             size="lg"
-            className="bg-primary"
+            className="bg-primary rounded-full px-6"
           >
             <Sparkles className="h-5 w-5 mr-2" />
             🔍 Analisar Este Lead
@@ -354,7 +354,7 @@ export default function LeadDetails() {
             onValueChange={handleUpdateSalesStatus}
             disabled={isUpdatingStatus}
           >
-            <SelectTrigger className="w-[220px] text-lg">
+            <SelectTrigger className="w-[220px] text-lg rounded-full px-4">
               <SelectValue placeholder="Selecione status" />
             </SelectTrigger>
             <SelectContent>
