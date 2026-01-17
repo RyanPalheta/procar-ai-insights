@@ -46,20 +46,21 @@ export function KPICard({
           <Icon className={cn("h-4 w-4", variantStyles[variant])} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{value}</div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-2xl font-bold">{value}</span>
+            {trend && (
+              <span
+                className={cn(
+                  "text-sm font-medium",
+                  trend.isPositive ? "text-emerald-500" : "text-amber-500"
+                )}
+              >
+                {trend.isPositive ? "+" : "-"}{trend.value}% vs. período ant.
+              </span>
+            )}
+          </div>
           {description && (
             <p className="text-xs text-muted-foreground mt-1">{description}</p>
-          )}
-          {trend && (
-            <p
-              className={cn(
-                "text-xs mt-1",
-                trend.isPositive ? "text-emerald-500" : "text-red-500"
-              )}
-            >
-              {trend.isPositive ? "+" : ""}
-              {trend.value}% em relação ao período anterior
-            </p>
           )}
         </CardContent>
       </Card>

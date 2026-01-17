@@ -136,13 +136,17 @@ export default function Leads() {
       if (error) throw error;
       return data as {
         total_audited: number;
+        total_audited_previous: number | null;
         won_leads: number;
+        won_leads_previous: number | null;
         avg_score: number;
         avg_score_previous: number | null;
         new_audited_24h: number;
+        new_audited_24h_previous: number | null;
         leads_with_quote: number;
         leads_with_quote_previous: number | null;
         avg_quoted_price: number;
+        avg_quoted_price_previous: number | null;
       };
     }
   });
@@ -151,17 +155,29 @@ export default function Leads() {
   const kpiMetrics = useMemo(() => {
     if (!kpisData) return {
       conversionRate: 0,
+      conversionRateVariation: null,
       avgScore: 0,
       scoreVariation: null,
       leadsWithQuoteVariation: null,
       newLeads24h: 0,
+      newLeads24hVariation: null,
       leadsWithQuote: 0,
-      avgQuotedPrice: 0
+      avgQuotedPrice: 0,
+      avgQuotedPriceVariation: null
     };
 
     const conversionRate = kpisData.total_audited > 0 
       ? (kpisData.won_leads / kpisData.total_audited) * 100 
       : 0;
+
+    // Calcular taxa de conversão do período anterior
+    let conversionRateVariation: number | null = null;
+    if (kpisData.total_audited_previous && kpisData.total_audited_previous > 0) {
+      const previousConversionRate = (kpisData.won_leads_previous || 0) / kpisData.total_audited_previous * 100;
+      if (previousConversionRate > 0) {
+        conversionRateVariation = ((conversionRate - previousConversionRate) / previousConversionRate) * 100;
+      }
+    }
 
     let scoreVariation: number | null = null;
     if (kpisData.avg_score_previous && kpisData.avg_score_previous > 0) {
@@ -173,14 +189,29 @@ export default function Leads() {
       leadsWithQuoteVariation = ((kpisData.leads_with_quote - kpisData.leads_with_quote_previous) / kpisData.leads_with_quote_previous) * 100;
     }
 
+    // Variação de novos leads 24h (sempre disponível, comparando com 24h anteriores)
+    let newLeads24hVariation: number | null = null;
+    if (kpisData.new_audited_24h_previous && kpisData.new_audited_24h_previous > 0) {
+      newLeads24hVariation = ((kpisData.new_audited_24h - kpisData.new_audited_24h_previous) / kpisData.new_audited_24h_previous) * 100;
+    }
+
+    // Variação do preço médio cotado
+    let avgQuotedPriceVariation: number | null = null;
+    if (kpisData.avg_quoted_price_previous && kpisData.avg_quoted_price_previous > 0) {
+      avgQuotedPriceVariation = ((kpisData.avg_quoted_price - kpisData.avg_quoted_price_previous) / kpisData.avg_quoted_price_previous) * 100;
+    }
+
     return {
       conversionRate,
+      conversionRateVariation,
       avgScore: kpisData.avg_score,
       scoreVariation,
       leadsWithQuoteVariation,
       newLeads24h: kpisData.new_audited_24h,
+      newLeads24hVariation,
       leadsWithQuote: kpisData.leads_with_quote,
-      avgQuotedPrice: kpisData.avg_quoted_price
+      avgQuotedPrice: kpisData.avg_quoted_price,
+      avgQuotedPriceVariation
     };
   }, [kpisData]);
 
