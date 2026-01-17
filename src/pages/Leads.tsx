@@ -125,9 +125,31 @@ export default function Leads() {
     return channel;
   };
 
-  // KPI Calculations
+  // Fetch KPIs via RPC (only AI-audited leads)
+  const { data: kpisData } = useQuery({
+    queryKey: ["leads-kpis", scorePeriod],
+    queryFn: async () => {
+      const periodDays = scorePeriod === "all" ? null : parseInt(scorePeriod);
+      const { data, error } = await supabase.rpc("get_leads_kpis", { 
+        period_days: periodDays 
+      });
+      if (error) throw error;
+      return data as {
+        total_audited: number;
+        won_leads: number;
+        avg_score: number;
+        avg_score_previous: number | null;
+        new_audited_24h: number;
+        leads_with_quote: number;
+        leads_with_quote_previous: number | null;
+        avg_quoted_price: number;
+      };
+    }
+  });
+
+  // KPI Calculations from RPC data
   const kpiMetrics = useMemo(() => {
-    if (!leads) return {
+    if (!kpisData) return {
       conversionRate: 0,
       avgScore: 0,
       scoreVariation: null,
@@ -137,84 +159,30 @@ export default function Leads() {
       avgQuotedPrice: 0
     };
 
-    const totalLeads = leads.length;
-    const wonLeads = leads.filter(l => 
-      l.sales_status?.toLowerCase() === "won" || 
-      l.sales_status?.toLowerCase() === "ganho"
-    ).length;
-    const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
-
-    const scoresWithValues = leads.filter(l => l.lead_score !== null);
-    const avgScoreAll = scoresWithValues.length > 0
-      ? scoresWithValues.reduce((sum, l) => sum + (l.lead_score || 0), 0) / scoresWithValues.length
+    const conversionRate = kpisData.total_audited > 0 
+      ? (kpisData.won_leads / kpisData.total_audited) * 100 
       : 0;
 
-    // Calculate avgScore based on scorePeriod with variation
-    const periodDays = scorePeriod === "all" ? null : parseInt(scorePeriod);
-    const now = new Date();
-    
-    // Current period
-    const periodFilteredLeads = periodDays 
-      ? leads.filter(l => l.lead_score !== null && differenceInDays(now, new Date(l.created_at)) <= periodDays)
-      : scoresWithValues;
-    const avgScore = periodFilteredLeads.length > 0
-      ? periodFilteredLeads.reduce((sum, l) => sum + (l.lead_score || 0), 0) / periodFilteredLeads.length
-      : avgScoreAll;
-
-    // Previous period (for variation calculation)
     let scoreVariation: number | null = null;
-    if (periodDays) {
-      const previousPeriodLeads = leads.filter(l => {
-        const daysDiff = differenceInDays(now, new Date(l.created_at));
-        return l.lead_score !== null && daysDiff > periodDays && daysDiff <= periodDays * 2;
-      });
-      if (previousPeriodLeads.length > 0) {
-        const avgScorePrevious = previousPeriodLeads.reduce((sum, l) => sum + (l.lead_score || 0), 0) / previousPeriodLeads.length;
-        if (avgScorePrevious > 0) {
-          scoreVariation = ((avgScore - avgScorePrevious) / avgScorePrevious) * 100;
-        }
-      }
+    if (kpisData.avg_score_previous && kpisData.avg_score_previous > 0) {
+      scoreVariation = ((kpisData.avg_score - kpisData.avg_score_previous) / kpisData.avg_score_previous) * 100;
     }
 
-    const newLeads24h = leads.filter(l => differenceInHours(new Date(), new Date(l.created_at)) <= 24).length;
-
-    const leadsWithQuote = leads.filter(l => l.lead_price !== null).length;
-    const pricesWithValues = leads.filter(l => l.lead_price !== null);
-    const avgQuotedPrice = pricesWithValues.length > 0
-      ? pricesWithValues.reduce((sum, l) => sum + (l.lead_price || 0), 0) / pricesWithValues.length
-      : 0;
-
-    // Calculate variations for other KPIs
     let leadsWithQuoteVariation: number | null = null;
-
-    if (periodDays) {
-      // Current period leads
-      const currentPeriodLeads = leads.filter(l => differenceInDays(now, new Date(l.created_at)) <= periodDays);
-      const currentPeriodWithQuote = currentPeriodLeads.filter(l => l.lead_price !== null).length;
-
-      // Previous period leads
-      const previousPeriodLeads = leads.filter(l => {
-        const daysDiff = differenceInDays(now, new Date(l.created_at));
-        return daysDiff > periodDays && daysDiff <= periodDays * 2;
-      });
-      const previousPeriodWithQuote = previousPeriodLeads.filter(l => l.lead_price !== null).length;
-
-      // Calculate variations
-      if (previousPeriodWithQuote > 0) {
-        leadsWithQuoteVariation = ((currentPeriodWithQuote - previousPeriodWithQuote) / previousPeriodWithQuote) * 100;
-      }
+    if (kpisData.leads_with_quote_previous && kpisData.leads_with_quote_previous > 0) {
+      leadsWithQuoteVariation = ((kpisData.leads_with_quote - kpisData.leads_with_quote_previous) / kpisData.leads_with_quote_previous) * 100;
     }
 
     return {
       conversionRate,
-      avgScore,
+      avgScore: kpisData.avg_score,
       scoreVariation,
       leadsWithQuoteVariation,
-      newLeads24h,
-      leadsWithQuote,
-      avgQuotedPrice
+      newLeads24h: kpisData.new_audited_24h,
+      leadsWithQuote: kpisData.leads_with_quote,
+      avgQuotedPrice: kpisData.avg_quoted_price
     };
-  }, [leads, scorePeriod]);
+  }, [kpisData]);
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
