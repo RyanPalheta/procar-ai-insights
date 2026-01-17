@@ -222,6 +222,39 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_history: {
+        Row: {
+          change_source: string | null
+          changed_by: string | null
+          created_at: string | null
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          session_id: number
+        }
+        Insert: {
+          change_source?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          session_id: number
+        }
+        Update: {
+          change_source?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          session_id?: number
+        }
+        Relationships: []
+      }
       playbooks: {
         Row: {
           content: string

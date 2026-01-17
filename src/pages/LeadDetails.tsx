@@ -35,11 +35,76 @@ import {
   AlertTriangle,
   CheckCircle2,
   Lightbulb,
-  Footprints
+  Footprints,
+  History,
+  Bot,
+  Globe,
+  UserCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
+
+// Mapeamento de nomes de campos para português
+const fieldLabels: Record<string, string> = {
+  sales_status: "Status de Venda",
+  lead_temperature: "Temperatura",
+  lead_score: "Score do Lead",
+  is_walking: "Lead Presencial",
+  sentiment: "Sentimento",
+  lead_price: "Valor",
+  service_desired: "Serviço Desejado",
+  lead_intent: "Intenção",
+  has_objection: "Objeção",
+  objection_detail: "Detalhe da Objeção",
+  need_summary: "Necessidade Principal",
+  improvement_point: "Ponto de Melhoria",
+  upsell_opportunity: "Oportunidade de Upsell",
+  playbook_compliance_score: "Score de Compliance",
+  playbook_steps_completed: "Passos Completos",
+  playbook_steps_missing: "Passos Faltando",
+  playbook_violations: "Violações",
+  channel: "Canal",
+  sales_person_id: "Vendedor",
+  lead_language: "Idioma",
+  ai_tags: "Tags IA",
+  ai_version: "Versão IA",
+  service_rating: "Avaliação",
+  processed: "Processado"
+};
+
+const getSourceIcon = (source: string) => {
+  switch (source) {
+    case 'ai_analysis':
+      return <Bot className="h-3 w-3" />;
+    case 'api':
+      return <Globe className="h-3 w-3" />;
+    default:
+      return <UserCircle className="h-3 w-3" />;
+  }
+};
+
+const getSourceLabel = (source: string) => {
+  switch (source) {
+    case 'ai_analysis':
+      return 'IA';
+    case 'api':
+      return 'API';
+    default:
+      return 'Manual';
+  }
+};
+
+const getSourceColor = (source: string) => {
+  switch (source) {
+    case 'ai_analysis':
+      return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+    case 'api':
+      return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+    default:
+      return 'bg-green-500/10 text-green-600 border-green-500/30';
+  }
+};
 
 export default function LeadDetails() {
   const { leadId } = useParams();
@@ -93,6 +158,20 @@ export default function LeadDetails() {
     },
   });
 
+  // Buscar histórico de alterações do lead
+  const { data: history, isLoading: loadingHistory } = useQuery({
+    queryKey: ["lead-history", sessionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lead_history")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handleAnalyzeThisLead = async () => {
     setIsAnalyzing(true);
     setShowAnalysisDialog(true);
@@ -134,7 +213,8 @@ export default function LeadDetails() {
       const { error } = await supabase.functions.invoke('update-lead', {
         body: { 
           session_id: sessionId,
-          sales_status: newStatus 
+          sales_status: newStatus,
+          change_source: 'manual'
         }
       });
       
@@ -146,6 +226,7 @@ export default function LeadDetails() {
       });
       
       queryClient.invalidateQueries({ queryKey: ["lead", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["lead-history", sessionId] });
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar",
@@ -545,6 +626,63 @@ export default function LeadDetails() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               Nenhuma interação registrada
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Histórico de Alterações */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Histórico de Alterações ({history?.length || 0})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingHistory ? (
+            <div className="text-center py-4">Carregando histórico...</div>
+          ) : history && history.length > 0 ? (
+            <div className="space-y-3">
+              {history.map((record: any) => (
+                <div 
+                  key={record.id} 
+                  className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30"
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${getSourceColor(record.change_source)}`}
+                    >
+                      {getSourceIcon(record.change_source)}
+                      <span className="ml-1">{getSourceLabel(record.change_source)}</span>
+                    </Badge>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm">
+                        {fieldLabels[record.field_name] || record.field_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(record.created_at).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-sm flex items-center gap-2 flex-wrap">
+                      <span className="text-muted-foreground line-through">
+                        {record.old_value || "(vazio)"}
+                      </span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="font-medium text-foreground">
+                        {record.new_value || "(vazio)"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma alteração registrada
             </div>
           )}
         </CardContent>
