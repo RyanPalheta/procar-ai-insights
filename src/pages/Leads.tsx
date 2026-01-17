@@ -43,7 +43,7 @@ export default function Leads() {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
-  const [readyForAnalysisFilter, setReadyForAnalysisFilter] = useState<boolean>(false);
+  
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -455,11 +455,6 @@ export default function Leads() {
     // Temperature filter
     if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
 
-    // Ready for analysis filter (leads with 5+ messages)
-    if (readyForAnalysisFilter) {
-      const msgCount = interactionCounts?.[lead.session_id] || 0;
-      if (msgCount < 5) return false;
-    }
 
     // Date range filter
     if (dateFrom || dateTo) {
@@ -486,7 +481,7 @@ export default function Leads() {
     setProductFilter("all");
     setSentimentFilter("all");
     setTemperatureFilter("all");
-    setReadyForAnalysisFilter(false);
+    
     setDateFrom("");
     setDateTo("");
   };
@@ -496,7 +491,7 @@ export default function Leads() {
     productFilter !== "all" ||
     sentimentFilter !== "all" ||
     temperatureFilter !== "all" ||
-    readyForAnalysisFilter ||
+    
     dateFrom !== "" ||
     dateTo !== "";
 
@@ -733,7 +728,7 @@ export default function Leads() {
                 className="h-8"
               >
                 <Filter className="h-4 w-4 mr-1" />
-                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", readyForAnalysisFilter, dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
+                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
               </Button>
             </div>
           </div>
@@ -889,21 +884,6 @@ export default function Leads() {
                   </Select>
                 </div>
 
-                {/* Ready for Analysis Filter */}
-                <div className="space-y-2 lg:col-span-2">
-                  <Label className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Prontos para Análise
-                  </Label>
-                  <Button
-                    variant={readyForAnalysisFilter ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setReadyForAnalysisFilter(!readyForAnalysisFilter)}
-                    className="w-full"
-                  >
-                    {readyForAnalysisFilter ? "✓ " : ""}Pronto
-                  </Button>
-                </div>
 
               </div>
 
