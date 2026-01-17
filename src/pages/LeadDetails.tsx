@@ -346,7 +346,7 @@ export default function LeadDetails() {
             className="bg-primary rounded-full px-6"
           >
             <Sparkles className="h-5 w-5 mr-2" />
-            🔍 Analisar Este Lead
+            IA Insights
           </Button>
           
           <Select 
