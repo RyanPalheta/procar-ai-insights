@@ -58,14 +58,6 @@ export function LeadsKPICards({
           description="Leads ganhos vs total"
         />
         
-        <KPICard
-          title="Taxa de Conversão"
-          value={`${conversionRate.toFixed(1)}%`}
-          icon={TrendingUp}
-          variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
-          description="Leads ganhos vs total"
-        />
-        
         <div className="relative">
           <KPICard
             title="Score Médio"

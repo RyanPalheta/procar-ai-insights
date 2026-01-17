@@ -332,6 +332,7 @@ export type Database = {
           session_id: number
         }[]
       }
+      get_leads_kpis: { Args: { period_days?: number }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
