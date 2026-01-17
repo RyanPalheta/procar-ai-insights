@@ -41,8 +41,8 @@ export function LeadsKPICards({
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
-  const getTrend = (variation: number | null, alwaysShow = false) => {
-    if (variation === null) return undefined;
+  const getTrend = (variation: number | null | undefined, alwaysShow = false) => {
+    if (variation === null || variation === undefined) return undefined;
     if (!alwaysShow && scorePeriod === "all") return undefined;
     return {
       value: Math.abs(parseFloat(variation.toFixed(1))),
