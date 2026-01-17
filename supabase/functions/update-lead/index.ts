@@ -141,6 +141,9 @@ Deno.serve(async (req) => {
     if (body.need_summary !== undefined) {
       updateData.need_summary = body.need_summary
     }
+    if (body.is_walking !== undefined) {
+      updateData.is_walking = body.is_walking
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 

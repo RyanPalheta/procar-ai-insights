@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
       improvement_point: body.improvement_point || null,
       service_desired: body.service_desired || null,
       ai_version: body.ai_version || null,
+      is_walking: body.is_walking === true || body.is_walking === 'true' || false,
     };
 
     console.log('Inserting lead:', leadData);
