@@ -4,7 +4,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
-import { Users, TrendingUp, Phone, MessageSquare, Target, CheckCircle, AlertCircle, PackageSearch, LineChart as LineChartIcon } from "lucide-react";
+import { Target, CheckCircle, LineChart as LineChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { format, parseISO } from "date-fns";
@@ -17,24 +17,6 @@ export default function Dashboard() {
     queryKey: ["leads"],
     queryFn: async () => {
       const { data, error } = await supabase.from("lead_db").select("*");
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: calls } = useQuery({
-    queryKey: ["calls"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("call_db").select("*");
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: interactions } = useQuery({
-    queryKey: ["interactions"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("interaction_db").select("*");
       if (error) throw error;
       return data;
     }
@@ -61,10 +43,7 @@ export default function Dashboard() {
   // Calculate KPIs
   const totalLeads = leads?.length || 0;
   const processedLeads = leads?.filter(lead => lead.processed === true).length || 0;
-  const unprocessedLeads = totalLeads - processedLeads;
   const avgScore = leads?.length ? (leads.reduce((acc, lead) => acc + (lead.lead_score || 0), 0) / leads.length).toFixed(1) : "0.0";
-  const totalCalls = calls?.length || 0;
-  const totalInteractions = interactions?.length || 0;
 
   // Channel normalization function
   const normalizeChannel = (channel: string | null): string => {
@@ -181,20 +160,9 @@ export default function Dashboard() {
 
       {/* KPIs Principais */}
       <MagicBentoGrid enableSpotlight={true} spotlightRadius={300} glowColor="59, 130, 246">
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <KPICard title="Total de Leads" value={totalLeads} icon={Users} description={`${processedLeads} processados • ${unprocessedLeads} pendentes`} variant="default" />
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
           <KPICard title="Leads Processados" value={processedLeads} icon={CheckCircle} description={`${(processedLeads / totalLeads * 100 || 0).toFixed(1)}% do total`} variant="success" />
           <KPICard title="Score Médio" value={avgScore} icon={Target} description="Potencial de conversão dos leads" variant="default" />
-          <KPICard title="Análises Pendentes" value={unprocessedLeads} icon={AlertCircle} description="Leads aguardando análise IA" variant="warning" />
-        </div>
-      </MagicBentoGrid>
-
-      {/* KPIs Secundários */}
-      <MagicBentoGrid enableSpotlight={true} spotlightRadius={300} glowColor="59, 130, 246">
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <KPICard title="Total de Chamadas" value={totalCalls} icon={Phone} description="Ligações registradas" variant="default" />
-          <KPICard title="Total de Interações" value={totalInteractions} icon={MessageSquare} description="Mensagens trocadas" variant="default" />
-          <KPICard title="Produtos Cadastrados" value={products?.length || 0} icon={PackageSearch} description="Disponíveis para análise" variant="default" />
         </div>
       </MagicBentoGrid>
 
