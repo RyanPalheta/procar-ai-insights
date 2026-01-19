@@ -56,7 +56,7 @@ export function KPICard({
                   trend.isPositive ? "text-emerald-500" : "text-amber-500"
                 )}
               >
-                {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
+                {trend.isNegativeChange ? "↓" : "↑"} {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
               </span>
             )}
           </div>
