@@ -165,7 +165,8 @@ export function LeadsKPICards({
     if (!alwaysShow && scorePeriod === "all") return undefined;
     return {
       value: Math.abs(parseFloat(variation.toFixed(1))),
-      isPositive: invertColors ? variation <= 0 : variation >= 0
+      isPositive: invertColors ? variation < 0 : variation >= 0,
+      isNegativeChange: variation < 0
     };
   };
 
