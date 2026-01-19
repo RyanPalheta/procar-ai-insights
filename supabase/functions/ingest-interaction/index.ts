@@ -120,6 +120,50 @@ Deno.serve(async (req) => {
 
     console.log('Interaction created successfully:', data.interaction_id, leadCreated ? '(lead was auto-created)' : '');
 
+    // Update sales_status if provided in payload
+    let statusUpdated = false;
+    if (body.sales_status) {
+      // Get current lead status
+      const { data: currentLead } = await supabase
+        .from('lead_db')
+        .select('sales_status')
+        .eq('session_id', sessionId)
+        .single();
+
+      const oldStatus = currentLead?.sales_status;
+      const newStatus = body.sales_status;
+
+      // Only update if there's a change
+      if (oldStatus !== newStatus) {
+        console.log(`[ingest-interaction] Updating sales_status: "${oldStatus}" -> "${newStatus}"`);
+
+        // Update the lead
+        const { error: updateError } = await supabase
+          .from('lead_db')
+          .update({ sales_status: newStatus })
+          .eq('session_id', sessionId);
+
+        if (updateError) {
+          console.error('[ingest-interaction] Error updating sales_status:', updateError);
+        } else {
+          // Record in history
+          await supabase
+            .from('lead_history')
+            .insert({
+              session_id: sessionId,
+              field_name: 'sales_status',
+              old_value: oldStatus,
+              new_value: newStatus,
+              changed_by: 'n8n',
+              change_source: 'api'
+            });
+
+          statusUpdated = true;
+          console.log(`[ingest-interaction] sales_status updated and recorded in history`);
+        }
+      }
+    }
+
     // Count total interactions for this lead
     const { count: interactionCount, error: countError } = await supabase
       .from('interaction_db')
@@ -190,14 +234,17 @@ Deno.serve(async (req) => {
         success: true, 
         interaction_id: data.interaction_id,
         lead_created: leadCreated,
+        status_updated: statusUpdated,
         total_interactions: totalInteractions,
         analysis_triggered: analysisTriggered,
         milestone_reached: ANALYSIS_MILESTONES.includes(totalInteractions) ? totalInteractions : null,
         message: leadCreated 
           ? 'Lead and interaction created successfully' 
-          : analysisTriggered 
-            ? `Interaction created, auto-analysis triggered at milestone ${totalInteractions}`
-            : 'Interaction created successfully'
+          : statusUpdated
+            ? `Interaction created, sales_status updated`
+            : analysisTriggered 
+              ? `Interaction created, auto-analysis triggered at milestone ${totalInteractions}`
+              : 'Interaction created successfully'
       }),
       { 
         status: 201, 
