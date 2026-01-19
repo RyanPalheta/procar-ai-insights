@@ -11,6 +11,7 @@ interface KPICardProps {
   trend?: {
     value: number;
     isPositive: boolean;
+    isNegativeChange?: boolean; // True when the actual change was negative (e.g., -77%)
   };
   variant?: "default" | "success" | "warning" | "destructive";
 }
@@ -55,7 +56,7 @@ export function KPICard({
                   trend.isPositive ? "text-emerald-500" : "text-amber-500"
                 )}
               >
-                {trend.isPositive ? "+" : "-"}{trend.value}% vs. período ant.
+                {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
               </span>
             )}
           </div>
