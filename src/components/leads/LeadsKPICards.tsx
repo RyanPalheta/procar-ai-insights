@@ -170,21 +170,21 @@ export function LeadsKPICards({
     <div className="space-y-4">
       {/* Alert Banner */}
       {showAlert && (
-        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="flex items-center justify-between">
-            <span>Alerta: Tempo de Resposta Elevado</span>
+        <Alert className="border-2 border-red-500 bg-red-50 dark:bg-red-950/50">
+          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <AlertTitle className="flex items-center justify-between text-red-800 dark:text-red-200 font-semibold">
+            <span>⚠️ Alerta: Tempo de Resposta Elevado</span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 -mr-2"
+              className="h-6 w-6 -mr-2 hover:bg-red-200 dark:hover:bg-red-800"
               onClick={() => setAlertDismissed(true)}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4 text-red-600 dark:text-red-400" />
             </Button>
           </AlertTitle>
-          <AlertDescription className="text-sm">
-            O tempo mediano de primeira resposta ({formatResponseTime(medianFirstResponseTime)}) excedeu o limite configurado de {formatResponseTime(threshold)}. 
+          <AlertDescription className="text-sm text-red-700 dark:text-red-300 font-medium mt-1">
+            O tempo mediano de primeira resposta (<strong>{formatResponseTime(medianFirstResponseTime)}</strong>) excedeu o limite configurado de <strong>{formatResponseTime(threshold)}</strong>. 
             Considere revisar os processos de atendimento inicial para melhorar a velocidade de resposta aos leads.
           </AlertDescription>
         </Alert>
