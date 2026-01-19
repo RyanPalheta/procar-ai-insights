@@ -1,6 +1,6 @@
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Info } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Tooltip,
@@ -22,6 +22,8 @@ interface LeadsKPICardsProps {
   leadsWithQuote: number;
   avgQuotedPrice: number;
   avgQuotedPriceVariation: number | null;
+  medianFirstResponseTime: number;
+  medianFirstResponseTimeVariation: number | null;
   scorePeriod: ScorePeriod;
   onScorePeriodChange: (period: ScorePeriod) => void;
 }
@@ -31,6 +33,21 @@ const periodLabels: Record<ScorePeriod, string> = {
   "7": "7 dias",
   "30": "30 dias",
   "90": "90 dias"
+};
+
+// Formata minutos para exibição legível
+const formatResponseTime = (minutes: number): string => {
+  if (minutes === 0) return "N/A";
+  if (minutes < 1) return "< 1 min";
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  if (minutes < 1440) { // menos de 24h
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.round((minutes % 1440) / 60);
+  return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
 };
 
 const kpiTooltips = {
@@ -66,6 +83,13 @@ const kpiTooltips = {
     comparison: (period: ScorePeriod) => period === "all"
       ? "Mostrando dados de todo o período"
       : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  medianFirstResponseTime: {
+    title: "Tempo Mediano 1ª Resposta",
+    description: "Mediana do tempo entre a 1ª e 3ª interação do lead. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
   }
 };
 
@@ -80,15 +104,17 @@ export function LeadsKPICards({
   leadsWithQuote,
   avgQuotedPrice,
   avgQuotedPriceVariation,
+  medianFirstResponseTime,
+  medianFirstResponseTimeVariation,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
-  const getTrend = (variation: number | null | undefined, alwaysShow = false) => {
+  const getTrend = (variation: number | null | undefined, alwaysShow = false, invertColors = false) => {
     if (variation === null || variation === undefined) return undefined;
     if (!alwaysShow && scorePeriod === "all") return undefined;
     return {
       value: Math.abs(parseFloat(variation.toFixed(1))),
-      isPositive: variation >= 0
+      isPositive: invertColors ? variation <= 0 : variation >= 0
     };
   };
 
@@ -225,6 +251,28 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.avgQuotedPrice.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.avgQuotedPrice.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(scorePeriod)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Tempo Mediano 1ª Resposta"
+                    value={formatResponseTime(medianFirstResponseTime)}
+                    icon={Timer}
+                    variant={medianFirstResponseTime > 0 && medianFirstResponseTime <= 30 ? "success" : medianFirstResponseTime <= 120 ? "warning" : "destructive"}
+                    description={scorePeriod === "all" ? "Entre 1ª e 3ª interação" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(medianFirstResponseTimeVariation, false, true)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.medianFirstResponseTime.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.medianFirstResponseTime.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.medianFirstResponseTime.comparison(scorePeriod)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>

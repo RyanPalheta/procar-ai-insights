@@ -147,6 +147,8 @@ export default function Leads() {
         leads_with_quote_previous: number | null;
         avg_quoted_price: number;
         avg_quoted_price_previous: number | null;
+        median_first_response_time_minutes: number;
+        median_first_response_time_minutes_previous: number | null;
       };
     }
   });
@@ -163,7 +165,9 @@ export default function Leads() {
       newLeads24hVariation: null,
       leadsWithQuote: 0,
       avgQuotedPrice: 0,
-      avgQuotedPriceVariation: null
+      avgQuotedPriceVariation: null,
+      medianFirstResponseTime: 0,
+      medianFirstResponseTimeVariation: null
     };
 
     const conversionRate = kpisData.total_audited > 0 
@@ -201,6 +205,12 @@ export default function Leads() {
       avgQuotedPriceVariation = ((kpisData.avg_quoted_price - kpisData.avg_quoted_price_previous) / kpisData.avg_quoted_price_previous) * 100;
     }
 
+    // Variação do tempo mediano de primeira resposta
+    let medianFirstResponseTimeVariation: number | null = null;
+    if (kpisData.median_first_response_time_minutes_previous && kpisData.median_first_response_time_minutes_previous > 0) {
+      medianFirstResponseTimeVariation = ((kpisData.median_first_response_time_minutes - kpisData.median_first_response_time_minutes_previous) / kpisData.median_first_response_time_minutes_previous) * 100;
+    }
+
     return {
       conversionRate,
       conversionRateVariation,
@@ -211,7 +221,9 @@ export default function Leads() {
       newLeads24hVariation,
       leadsWithQuote: kpisData.leads_with_quote,
       avgQuotedPrice: kpisData.avg_quoted_price,
-      avgQuotedPriceVariation
+      avgQuotedPriceVariation,
+      medianFirstResponseTime: kpisData.median_first_response_time_minutes,
+      medianFirstResponseTimeVariation
     };
   }, [kpisData]);
 
