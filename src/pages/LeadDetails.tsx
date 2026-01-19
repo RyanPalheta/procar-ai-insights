@@ -130,6 +130,24 @@ export default function LeadDetails() {
     },
   });
 
+  // Buscar status distintos para dropdown dinâmico
+  const { data: distinctStatuses } = useQuery({
+    queryKey: ['distinct-sales-statuses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lead_db')
+        .select('sales_status')
+        .not('sales_status', 'is', null)
+        .order('sales_status');
+      
+      if (error) throw error;
+      
+      // Extrair valores únicos
+      const uniqueStatuses = [...new Set(data?.map(d => d.sales_status).filter(Boolean))] as string[];
+      return uniqueStatuses;
+    },
+  });
+
   // Buscar interações do lead
   const { data: interactions, isLoading: loadingInteractions } = useQuery({
     queryKey: ["lead-interactions", sessionId],
@@ -358,11 +376,15 @@ export default function LeadDetails() {
               <SelectValue placeholder="Selecione status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Aguardando atendimento">Aguardando atendimento</SelectItem>
-              <SelectItem value="Contato inicial">Contato inicial</SelectItem>
-              <SelectItem value="Tomada de decisão">Tomada de decisão</SelectItem>
-              <SelectItem value="Venda ganha">Venda ganha</SelectItem>
-              <SelectItem value="Venda perdida">Venda perdida</SelectItem>
+              {distinctStatuses && distinctStatuses.length > 0 ? (
+                distinctStatuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="Aguardando atendimento">Aguardando atendimento</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
