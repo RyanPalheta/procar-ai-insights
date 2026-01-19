@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlaybookManager } from "@/components/settings/PlaybookManager";
 import { ProductManager } from "@/components/settings/ProductManager";
+import { AlertsManager } from "@/components/settings/AlertsManager";
 
 export default function Settings() {
   return (
@@ -16,8 +17,9 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="ai-settings" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="ai-settings">Configurações de IA</TabsTrigger>
+          <TabsTrigger value="alerts">Alertas</TabsTrigger>
           <TabsTrigger value="audit">Auditoria IA</TabsTrigger>
         </TabsList>
 
@@ -119,7 +121,12 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* Tab 2: AI Audit (new content) */}
+        {/* Tab 2: Alerts */}
+        <TabsContent value="alerts" className="space-y-6">
+          <AlertsManager />
+        </TabsContent>
+
+        {/* Tab 3: AI Audit */}
         <TabsContent value="audit" className="space-y-6">
           <div>
             <h3 className="text-xl font-semibold mb-2">Gerenciamento de Playbooks</h3>
