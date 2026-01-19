@@ -1,4 +1,4 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { cn } from "@/lib/utils";
@@ -52,11 +52,16 @@ export function KPICard({
             {trend && (
               <span
                 className={cn(
-                  "text-sm font-medium",
+                  "text-sm font-medium inline-flex items-center gap-1",
                   trend.isPositive ? "text-emerald-500" : "text-amber-500"
                 )}
               >
-                {trend.isNegativeChange ? "↓" : "↑"} {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
+                {trend.isNegativeChange ? (
+                  <TrendingDown className="h-4 w-4" />
+                ) : (
+                  <TrendingUp className="h-4 w-4" />
+                )}
+                {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
               </span>
             )}
           </div>
