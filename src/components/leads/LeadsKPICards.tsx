@@ -1,22 +1,15 @@
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, Settings, X } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export type ScorePeriod = "all" | "7" | "30" | "90";
@@ -123,9 +116,7 @@ export function LeadsKPICards({
   onScorePeriodChange
 }: LeadsKPICardsProps) {
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
-  const [tempThreshold, setTempThreshold] = useState(DEFAULT_THRESHOLD.toString());
   const [alertDismissed, setAlertDismissed] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Carregar threshold do localStorage
   useEffect(() => {
@@ -134,25 +125,37 @@ export function LeadsKPICards({
       const value = parseInt(saved, 10);
       if (!isNaN(value) && value > 0) {
         setThreshold(value);
-        setTempThreshold(value.toString());
       }
     }
+  }, []);
+
+  // Escutar mudanças no localStorage (para sincronizar com Settings)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem(RESPONSE_TIME_THRESHOLD_KEY);
+      if (saved) {
+        const value = parseInt(saved, 10);
+        if (!isNaN(value) && value > 0) {
+          setThreshold(value);
+          setAlertDismissed(false);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Também verificar periodicamente para mudanças na mesma aba
+    const interval = setInterval(handleStorageChange, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Resetar alerta quando o tempo de resposta mudar
   useEffect(() => {
     setAlertDismissed(false);
   }, [medianFirstResponseTime]);
-
-  const saveThreshold = () => {
-    const value = parseInt(tempThreshold, 10);
-    if (!isNaN(value) && value > 0) {
-      setThreshold(value);
-      localStorage.setItem(RESPONSE_TIME_THRESHOLD_KEY, value.toString());
-      setSettingsOpen(false);
-      setAlertDismissed(false);
-    }
-  };
 
   const isOverThreshold = medianFirstResponseTime > 0 && medianFirstResponseTime > threshold;
   const showAlert = isOverThreshold && !alertDismissed;
@@ -193,58 +196,6 @@ export function LeadsKPICards({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">Indicadores de Performance</h3>
         <div className="flex items-center gap-2">
-          {/* Threshold Settings */}
-          <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Settings className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>Configurar alertas</TooltipContent>
-                </Tooltip>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72" align="end">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Configurar Alerta de Tempo</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Defina o limite máximo aceitável para o tempo mediano de primeira resposta.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="threshold" className="text-xs">Limite (minutos)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="threshold"
-                      type="number"
-                      min="1"
-                      value={tempThreshold}
-                      onChange={(e) => setTempThreshold(e.target.value)}
-                      className="h-8"
-                      placeholder="60"
-                    />
-                    <Button size="sm" onClick={saveThreshold} className="h-8">
-                      Salvar
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Atual: {formatResponseTime(threshold)}
-                  </p>
-                </div>
-                <div className="pt-2 border-t">
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${isOverThreshold ? 'bg-destructive' : 'bg-emerald-500'}`} />
-                    <span className="text-muted-foreground">
-                      Status: {isOverThreshold ? 'Acima do limite' : 'Dentro do limite'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
           <span className="text-xs text-muted-foreground">Período:</span>
           <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
             <SelectTrigger className="h-8 w-[110px] text-xs">
