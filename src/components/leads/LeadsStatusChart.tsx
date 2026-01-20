@@ -6,17 +6,78 @@ interface LeadsStatusChartProps {
   data: { name: string; value: number }[];
 }
 
+// Paleta semântica baseada no funil de vendas
 const STATUS_COLORS: Record<string, string> = {
-  "Venda Ganha": "hsl(142, 71%, 45%)",
-  "Venda Perdida": "hsl(0, 84%, 60%)",
-  "Novo Lead": "hsl(217, 91%, 60%)",
-  "Em Negociação": "hsl(45, 93%, 47%)",
-  "Em Qualificação": "hsl(271, 91%, 65%)",
-  "Follow-up": "hsl(24, 95%, 53%)",
+  // Etapas iniciais - tons de slate
+  "Aguardando atendimento": "#64748b",
+  "Contato inicial": "#64748b",
+  
+  // Em progresso - tons de azul
+  "Em atendimento (qualificação)": "#3b82f6",
+  "Em qualificação": "#3b82f6",
+  "Qualificação": "#3b82f6",
+  
+  // Agendamento - tons de cyan/teal
+  "Agendamento confirmado": "#06b6d4",
+  "Faltou agendamento": "#dc2626",
+  
+  // Negociação - tons de âmbar
+  "Em Negociação": "#f59e0b",
+  "Proposta/Negociação": "#f59e0b",
+  "Tomada de decisão": "#f59e0b",
+  
+  // Follow-up - laranja
+  "Follow-up": "#f97316",
+  "Recuperação de clientes": "#f97316",
+  
+  // Finais positivos - verde
+  "Venda ganha": "#22c55e",
+  "Venda Ganha": "#22c55e",
+  
+  // Finais negativos - vermelho
+  "Venda perdida": "#ef4444",
+  "Venda Perdida": "#ef4444",
+  "Cancelamento": "#ef4444",
 };
 
 const getStatusColor = (statusName: string): string => {
-  return STATUS_COLORS[statusName] || "hsl(var(--muted))";
+  // Match exato
+  if (STATUS_COLORS[statusName]) {
+    return STATUS_COLORS[statusName];
+  }
+  
+  // Match por palavra-chave (case-insensitive)
+  const lowerName = statusName.toLowerCase();
+  
+  if (lowerName.includes('ganha') || lowerName.includes('fechad') || lowerName.includes('won')) {
+    return "#22c55e"; // Verde
+  }
+  if (lowerName.includes('perdida') || lowerName.includes('cancel') || lowerName.includes('lost')) {
+    return "#ef4444"; // Vermelho
+  }
+  if (lowerName.includes('atendimento') || lowerName.includes('qualificação')) {
+    return "#3b82f6"; // Azul
+  }
+  if (lowerName.includes('negociação') || lowerName.includes('proposta') || lowerName.includes('decisão')) {
+    return "#f59e0b"; // Âmbar
+  }
+  if (lowerName.includes('agendamento') || lowerName.includes('confirmad')) {
+    return "#06b6d4"; // Cyan
+  }
+  if (lowerName.includes('faltou')) {
+    return "#dc2626"; // Vermelho escuro
+  }
+  if (lowerName.includes('follow') || lowerName.includes('recuperação')) {
+    return "#f97316"; // Laranja
+  }
+  if (lowerName.includes('aguardando') || lowerName.includes('inicial') || lowerName.includes('contato')) {
+    return "#64748b"; // Slate
+  }
+  
+  // Fallback: cor baseada em hash do nome (sempre a mesma cor para o mesmo status)
+  const hash = statusName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hue = hash % 360;
+  return `hsl(${hue}, 65%, 50%)`;
 };
 
 export function LeadsStatusChart({ data }: LeadsStatusChartProps) {

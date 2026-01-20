@@ -249,35 +249,16 @@ export default function Leads() {
     return null; // Retorna null se não foi reconhecido
   };
 
-  // Status normalization function
+  // Status normalization function - retorna status original do CRM, filtrando apenas valores inválidos
   const normalizeStatus = (status: string | null): string | null => {
     if (!status) return null;
     const statusLower = status.toLowerCase();
     
-    // Excluir valores inválidos
-    if (["nda", "test"].includes(statusLower)) return null;
+    // Excluir apenas valores inválidos
+    if (["nda", "test", "n/a", "teste"].includes(statusLower)) return null;
     
-    // Mapeamento para categorias padronizadas
-    if (statusLower.includes("contato inicial") || statusLower.includes("novo lead") || statusLower.includes("dia 1")) {
-      return "Novo Lead";
-    }
-    if (statusLower.includes("qualified") || statusLower.includes("apontamentos") || statusLower.includes("oxigenação")) {
-      return "Em Qualificação";
-    }
-    if (statusLower.includes("negociação") || statusLower.includes("tomada de decisão") || statusLower.includes("dia 2") || statusLower.includes("dia 4")) {
-      return "Em Negociação";
-    }
-    if (statusLower.includes("follow-up") || statusLower.includes("recuperação de clientes")) {
-      return "Follow-up";
-    }
-    if (statusLower.includes("venda ganha") || statusLower.includes("won") || statusLower.includes("ganho")) {
-      return "Venda Ganha";
-    }
-    if (statusLower.includes("venda perdida") || statusLower.includes("lost") || statusLower.includes("perdido") || statusLower.includes("cancelamento")) {
-      return "Venda Perdida";
-    }
-    
-    return status; // Retorna o status original se não foi mapeado
+    // Retorna o status original (do CRM)
+    return status;
   };
 
   // Chart Data Calculations
