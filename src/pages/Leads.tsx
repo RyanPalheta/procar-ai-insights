@@ -717,12 +717,22 @@ export default function Leads() {
             </div>
           </div>
           
-          <Input
-            placeholder="Buscar por lead ID, canal ou status..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
+          <div className="flex flex-wrap items-center gap-4">
+            <Input
+              placeholder="Buscar por lead ID, canal ou status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            
+            <Tabs value={processedFilter} onValueChange={setProcessedFilter} className="w-auto">
+              <TabsList>
+                <TabsTrigger value="all">Todos</TabsTrigger>
+                <TabsTrigger value="processed">Prontos</TabsTrigger>
+                <TabsTrigger value="unprocessed">Pendentes</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
           {showFilters && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
@@ -791,18 +801,7 @@ export default function Leads() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Status de Análise */}
-                <div className="space-y-2">
-                  <Label>Status de Análise</Label>
-                  <Tabs value={processedFilter} onValueChange={setProcessedFilter}>
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="all">Todos</TabsTrigger>
-                      <TabsTrigger value="processed">Processados</TabsTrigger>
-                      <TabsTrigger value="unprocessed">Pendentes</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {/* Produto Desejado */}
                 <div className="space-y-2">
