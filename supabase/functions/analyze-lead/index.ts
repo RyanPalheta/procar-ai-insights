@@ -168,7 +168,16 @@ Analise e responda:
 8. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
 9. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
 10. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
-11. Se houve objeção, qual foi ela em uma frase?`;
+11. Se houve objeção, qual foi ela em uma frase?
+12. Se houve objeção, classifique em UMA ou MAIS categorias:
+    - preco (preço alto, orçamento limitado, busca desconto)
+    - tempo (tempo de espera, agenda ocupada, prazo)
+    - distancia (localização, distância da loja)
+    - financiamento (parcelamento, juros, forma de pagamento)
+    - confianca (qualidade, garantia, desconfiança)
+    - concorrencia (comparando com outros, já tem proposta)
+    - tecnica (dúvida técnica, compatibilidade)
+    - indecisao (precisa pensar, não está pronto)`;
 
     console.log(`[analyze-lead] Calling Lovable AI Gateway...`);
 
@@ -245,6 +254,14 @@ Analise e responda:
                     type: 'string',
                     nullable: true,
                     description: 'Detalhe da objeção em uma frase (se houver)'
+                  },
+                  objection_categories: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                      enum: ['preco', 'tempo', 'distancia', 'financiamento', 'confianca', 'concorrencia', 'tecnica', 'indecisao']
+                    },
+                    description: 'Categorias de objeção identificadas (pode ser múltiplas). preco: preço alto ou busca desconto; tempo: agenda ocupada ou tempo de espera; distancia: localização longe; financiamento: parcelamento ou forma de pagamento; confianca: qualidade ou garantia; concorrencia: comparando com outros; tecnica: dúvida técnica; indecisao: precisa pensar mais'
                   }
                 },
                 required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
@@ -320,6 +337,7 @@ Analise e responda:
       lead_intent: analysisResult.lead_intent || null,
       has_objection: analysisResult.has_objection || false,
       objection_detail: analysisResult.objection_detail || null,
+      objection_categories: analysisResult.objection_categories || null,
       processed: true,
       ai_version: AI_VERSION,
       last_ai_update: new Date().toISOString(),
