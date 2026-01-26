@@ -147,33 +147,43 @@ export default function Leads() {
     return null; // Retorna null se não foi reconhecido
   };
 
-  // ===== GLOBAL FILTERS: Extract unique values =====
-  const uniqueChannels = useMemo(() => {
-    const channels = new Set<string>();
+  // ===== GLOBAL FILTERS: Extract unique values with counts =====
+  const uniqueChannelsWithCount = useMemo(() => {
+    const channelCounts = new Map<string, number>();
     leads?.forEach(lead => {
       const channel = normalizeChannel(lead.channel);
-      if (channel !== "N/A") channels.add(channel);
-    });
-    return Array.from(channels).sort();
-  }, [leads]);
-
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set<string>();
-    leads?.forEach(lead => {
-      const status = normalizeStatus(lead.sales_status);
-      if (status) statuses.add(status);
-    });
-    return Array.from(statuses).sort();
-  }, [leads]);
-
-  const uniqueLanguages = useMemo(() => {
-    const languages = new Set<string>();
-    leads?.forEach(lead => {
-      if (lead.lead_language && !["N/A", "NDA"].includes(lead.lead_language)) {
-        languages.add(lead.lead_language);
+      if (channel !== "N/A") {
+        channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
       }
     });
-    return Array.from(languages).sort();
+    return Array.from(channelCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [leads]);
+
+  const uniqueStatusesWithCount = useMemo(() => {
+    const statusCounts = new Map<string, number>();
+    leads?.forEach(lead => {
+      const status = normalizeStatus(lead.sales_status);
+      if (status) {
+        statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+      }
+    });
+    return Array.from(statusCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [leads]);
+
+  const uniqueLanguagesWithCount = useMemo(() => {
+    const languageCounts = new Map<string, number>();
+    leads?.forEach(lead => {
+      if (lead.lead_language && !["N/A", "NDA"].includes(lead.lead_language)) {
+        languageCounts.set(lead.lead_language, (languageCounts.get(lead.lead_language) || 0) + 1);
+      }
+    });
+    return Array.from(languageCounts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count);
   }, [leads]);
 
   // ===== GLOBAL FILTERED LEADS: Applied to all KPIs, Charts, and Table =====
@@ -716,14 +726,14 @@ export default function Leads() {
             
             {/* Channel Filter */}
             <Select value={channelFilter} onValueChange={setChannelFilter}>
-              <SelectTrigger className="w-[160px] bg-background">
+              <SelectTrigger className="w-[180px] bg-background">
                 <SelectValue placeholder="Canal" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos os Canais</SelectItem>
-                {uniqueChannels.map(channel => (
-                  <SelectItem key={channel} value={channel}>
-                    {channel}
+                <SelectItem value="all">Todos os Canais ({leads?.length || 0})</SelectItem>
+                {uniqueChannelsWithCount.map(({ value, count }) => (
+                  <SelectItem key={value} value={value}>
+                    {value} ({count})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -731,14 +741,14 @@ export default function Leads() {
             
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[220px] bg-background">
+              <SelectTrigger className="w-[260px] bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos os Status</SelectItem>
-                {uniqueStatuses.map(status => (
-                  <SelectItem key={status} value={status}>
-                    {status}
+                <SelectItem value="all">Todos os Status ({leads?.length || 0})</SelectItem>
+                {uniqueStatusesWithCount.map(({ value, count }) => (
+                  <SelectItem key={value} value={value}>
+                    {value} ({count})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -746,14 +756,14 @@ export default function Leads() {
             
             {/* Language Filter */}
             <Select value={languageFilter} onValueChange={setLanguageFilter}>
-              <SelectTrigger className="w-[140px] bg-background">
+              <SelectTrigger className="w-[180px] bg-background">
                 <SelectValue placeholder="Língua" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todas as Línguas</SelectItem>
-                {uniqueLanguages.map(lang => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
+                <SelectItem value="all">Todas as Línguas ({leads?.length || 0})</SelectItem>
+                {uniqueLanguagesWithCount.map(({ value, count }) => (
+                  <SelectItem key={value} value={value}>
+                    {value} ({count})
                   </SelectItem>
                 ))}
               </SelectContent>
