@@ -35,6 +35,7 @@ import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
 import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart";
 import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart";
 import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
+import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -508,6 +509,33 @@ export default function Leads() {
       });
     }
 
+    // Objection categories ranking
+    const objectionCounts = new Map<string, number>();
+    globalFilteredLeads.forEach(l => {
+      if (l.has_objection && l.objection_detail) {
+        // Extract category from objection detail (first part before ":" or first 40 chars)
+        let category = l.objection_detail;
+        
+        // Try to extract a shorter category
+        if (category.includes(':')) {
+          category = category.split(':')[0].trim();
+        } else if (category.includes('-')) {
+          category = category.split('-')[0].trim();
+        }
+        
+        // Truncate if still too long
+        if (category.length > 40) {
+          category = category.substring(0, 37) + '...';
+        }
+        
+        objectionCounts.set(category, (objectionCounts.get(category) || 0) + 1);
+      }
+    });
+    const objectionsData = Array.from(objectionCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8); // Top 8 objections
+
     return {
       channelData,
       closedChannelData,
@@ -516,7 +544,8 @@ export default function Leads() {
       sentimentData,
       topProductsData,
       temperatureData,
-      timelineData
+      timelineData,
+      objectionsData
     };
   }, [globalFilteredLeads, timelinePeriod]);
 
@@ -814,6 +843,7 @@ export default function Leads() {
         <LeadsLanguageChart data={chartData.languageData} />
         <LeadsSentimentChart data={chartData.sentimentData} />
         <LeadsTopProductsChart data={chartData.topProductsData} />
+        <LeadsObjectionsChart data={chartData.objectionsData} />
       </div>
 
       {/* Recent Objections Feed */}
