@@ -44,6 +44,11 @@ export default function Leads() {
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
   
+  // Global Filters State
+  const [channelFilter, setChannelFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [languageFilter, setLanguageFilter] = useState<string>("all");
+  
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -98,23 +103,6 @@ export default function Leads() {
     },
   });
 
-  // Extract unique products and sentiments for filters
-  const uniqueProducts = useMemo(() => {
-    const products = new Set<string>();
-    leads?.forEach(lead => {
-      if (lead.service_desired) products.add(lead.service_desired);
-    });
-    return Array.from(products).sort();
-  }, [leads]);
-
-  const uniqueSentiments = useMemo(() => {
-    const sentiments = new Set<string>();
-    leads?.forEach(lead => {
-      if (lead.sentiment) sentiments.add(lead.sentiment);
-    });
-    return Array.from(sentiments).sort();
-  }, [leads]);
-
   // Channel normalization function (fallback for consistency)
   const normalizeChannel = (channel: string | null): string => {
     if (!channel) return "N/A";
@@ -124,6 +112,120 @@ export default function Leads() {
     if (lower.includes('instagram')) return 'Instagram';
     return channel;
   };
+
+  // Status normalization function - retorna status original do CRM, filtrando apenas valores inválidos
+  const normalizeStatus = (status: string | null): string | null => {
+    if (!status) return null;
+    const statusLower = status.toLowerCase();
+    
+    // Excluir apenas valores inválidos
+    if (["nda", "test", "n/a", "teste"].includes(statusLower)) return null;
+    
+    // Retorna o status original (do CRM)
+    return status;
+  };
+
+  // Sentiment normalization function
+  const normalizeSentiment = (sentiment: string | null): string | null => {
+    if (!sentiment) return null;
+    const sentimentLower = sentiment.toLowerCase().trim();
+    
+    // Excluir valores inválidos
+    if (sentimentLower === "n/a" || sentimentLower === "") return null;
+    
+    // Mapeamento para categorias padronizadas
+    if (sentimentLower.includes("positiv")) {
+      return "Positivo";
+    }
+    if (sentimentLower.includes("neutr")) {
+      return "Neutro";
+    }
+    if (sentimentLower.includes("negativ")) {
+      return "Negativo";
+    }
+    
+    return null; // Retorna null se não foi reconhecido
+  };
+
+  // ===== GLOBAL FILTERS: Extract unique values =====
+  const uniqueChannels = useMemo(() => {
+    const channels = new Set<string>();
+    leads?.forEach(lead => {
+      const channel = normalizeChannel(lead.channel);
+      if (channel !== "N/A") channels.add(channel);
+    });
+    return Array.from(channels).sort();
+  }, [leads]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set<string>();
+    leads?.forEach(lead => {
+      const status = normalizeStatus(lead.sales_status);
+      if (status) statuses.add(status);
+    });
+    return Array.from(statuses).sort();
+  }, [leads]);
+
+  const uniqueLanguages = useMemo(() => {
+    const languages = new Set<string>();
+    leads?.forEach(lead => {
+      if (lead.lead_language && !["N/A", "NDA"].includes(lead.lead_language)) {
+        languages.add(lead.lead_language);
+      }
+    });
+    return Array.from(languages).sort();
+  }, [leads]);
+
+  // ===== GLOBAL FILTERED LEADS: Applied to all KPIs, Charts, and Table =====
+  const globalFilteredLeads = useMemo(() => {
+    return leads?.filter(lead => {
+      // Filter by channel
+      if (channelFilter !== "all") {
+        const normalizedChannel = normalizeChannel(lead.channel);
+        if (normalizedChannel !== channelFilter) return false;
+      }
+      
+      // Filter by status
+      if (statusFilter !== "all") {
+        const normalizedStatus = normalizeStatus(lead.sales_status);
+        if (normalizedStatus !== statusFilter) return false;
+      }
+      
+      // Filter by language
+      if (languageFilter !== "all") {
+        if (lead.lead_language !== languageFilter) return false;
+      }
+      
+      return true;
+    }) || [];
+  }, [leads, channelFilter, statusFilter, languageFilter]);
+
+  // Check if any global filter is active
+  const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all";
+
+  // Clear global filters
+  const clearGlobalFilters = () => {
+    setChannelFilter("all");
+    setStatusFilter("all");
+    setLanguageFilter("all");
+  };
+
+  // Extract unique products and sentiments for filters (from globalFilteredLeads)
+  const uniqueProducts = useMemo(() => {
+    const products = new Set<string>();
+    globalFilteredLeads?.forEach(lead => {
+      if (lead.service_desired) products.add(lead.service_desired);
+    });
+    return Array.from(products).sort();
+  }, [globalFilteredLeads]);
+
+  const uniqueSentiments = useMemo(() => {
+    const sentiments = new Set<string>();
+    globalFilteredLeads?.forEach(lead => {
+      if (lead.sentiment) sentiments.add(lead.sentiment);
+    });
+    return Array.from(sentiments).sort();
+  }, [globalFilteredLeads]);
 
   // Fetch KPIs via RPC (only AI-audited leads)
   const { data: kpisData } = useQuery({
@@ -153,8 +255,49 @@ export default function Leads() {
     }
   });
 
-  // KPI Calculations from RPC data
+  // KPI Calculations - use globalFilteredLeads when global filters are active
   const kpiMetrics = useMemo(() => {
+    // When global filters are active, calculate KPIs from filtered data
+    if (hasActiveGlobalFilters) {
+      const totalLeads = globalFilteredLeads.length;
+      const wonLeads = globalFilteredLeads.filter(l => 
+        normalizeStatus(l.sales_status)?.toLowerCase().includes('ganha')
+      ).length;
+      const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
+      
+      const leadsWithScore = globalFilteredLeads.filter(l => l.lead_score !== null);
+      const avgScore = leadsWithScore.length > 0 
+        ? leadsWithScore.reduce((sum, l) => sum + (l.lead_score || 0), 0) / leadsWithScore.length 
+        : 0;
+      
+      const newLeads24h = globalFilteredLeads.filter(l => 
+        differenceInHours(new Date(), new Date(l.created_at)) <= 24
+      ).length;
+      
+      const leadsWithQuote = globalFilteredLeads.filter(l => l.lead_price && l.lead_price > 0).length;
+      
+      const quotedLeads = globalFilteredLeads.filter(l => l.lead_price && l.lead_price > 0);
+      const avgQuotedPrice = quotedLeads.length > 0
+        ? quotedLeads.reduce((sum, l) => sum + (l.lead_price || 0), 0) / quotedLeads.length
+        : 0;
+
+      return {
+        conversionRate,
+        conversionRateVariation: null,
+        avgScore,
+        scoreVariation: null,
+        leadsWithQuoteVariation: null,
+        newLeads24h,
+        newLeads24hVariation: null,
+        leadsWithQuote,
+        avgQuotedPrice,
+        avgQuotedPriceVariation: null,
+        medianFirstResponseTime: 0,
+        medianFirstResponseTimeVariation: null
+      };
+    }
+
+    // Default: use RPC data when no global filters
     if (!kpisData) return {
       conversionRate: 0,
       conversionRateVariation: null,
@@ -225,45 +368,11 @@ export default function Leads() {
       medianFirstResponseTime: kpisData.median_first_response_time_minutes,
       medianFirstResponseTimeVariation
     };
-  }, [kpisData]);
+  }, [kpisData, globalFilteredLeads, hasActiveGlobalFilters]);
 
-  // Sentiment normalization function
-  const normalizeSentiment = (sentiment: string | null): string | null => {
-    if (!sentiment) return null;
-    const sentimentLower = sentiment.toLowerCase().trim();
-    
-    // Excluir valores inválidos
-    if (sentimentLower === "n/a" || sentimentLower === "") return null;
-    
-    // Mapeamento para categorias padronizadas
-    if (sentimentLower.includes("positiv")) {
-      return "Positivo";
-    }
-    if (sentimentLower.includes("neutr")) {
-      return "Neutro";
-    }
-    if (sentimentLower.includes("negativ")) {
-      return "Negativo";
-    }
-    
-    return null; // Retorna null se não foi reconhecido
-  };
-
-  // Status normalization function - retorna status original do CRM, filtrando apenas valores inválidos
-  const normalizeStatus = (status: string | null): string | null => {
-    if (!status) return null;
-    const statusLower = status.toLowerCase();
-    
-    // Excluir apenas valores inválidos
-    if (["nda", "test", "n/a", "teste"].includes(statusLower)) return null;
-    
-    // Retorna o status original (do CRM)
-    return status;
-  };
-
-  // Chart Data Calculations
+  // Chart Data Calculations - now using globalFilteredLeads
   const chartData = useMemo(() => {
-    if (!leads) return {
+    if (!globalFilteredLeads.length) return {
       channelData: [],
       closedChannelData: [],
       statusData: [],
@@ -276,7 +385,7 @@ export default function Leads() {
 
     // Channel distribution (with normalization)
     const channelCounts = new Map<string, number>();
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       const channel = normalizeChannel(l.channel);
       channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
     });
@@ -286,7 +395,7 @@ export default function Leads() {
 
     // Channel distribution for closed sales only (with conversion rate)
     const closedChannelCounts = new Map<string, number>();
-    leads.filter(l => normalizeStatus(l.sales_status) === "Venda Ganha").forEach(l => {
+    globalFilteredLeads.filter(l => normalizeStatus(l.sales_status)?.toLowerCase().includes('ganha')).forEach(l => {
       const channel = normalizeChannel(l.channel);
       if (channel !== "N/A") {
         closedChannelCounts.set(channel, (closedChannelCounts.get(channel) || 0) + 1);
@@ -302,7 +411,7 @@ export default function Leads() {
 
     // Status distribution with normalization
     const statusCounts = new Map<string, number>();
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       const normalizedStatus = normalizeStatus(l.sales_status);
       if (normalizedStatus) {
         statusCounts.set(normalizedStatus, (statusCounts.get(normalizedStatus) || 0) + 1);
@@ -315,7 +424,7 @@ export default function Leads() {
 
     // Language distribution (excluding N/A and NDA)
     const languageCounts = new Map<string, number>();
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       if (l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA") {
         const language = l.lead_language;
         languageCounts.set(language, (languageCounts.get(language) || 0) + 1);
@@ -327,7 +436,7 @@ export default function Leads() {
 
   // Sentiment distribution with normalization
   const sentimentCounts = new Map<string, number>();
-  leads.forEach(l => {
+  globalFilteredLeads.forEach(l => {
     const normalizedSentiment = normalizeSentiment(l.sentiment);
     if (normalizedSentiment) {
       sentimentCounts.set(normalizedSentiment, (sentimentCounts.get(normalizedSentiment) || 0) + 1);
@@ -339,7 +448,7 @@ export default function Leads() {
 
     // Top 5 products
     const productCounts = new Map<string, number>();
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       if (l.service_desired) {
         const product = l.service_desired;
         productCounts.set(product, (productCounts.get(product) || 0) + 1);
@@ -352,7 +461,7 @@ export default function Leads() {
 
     // Temperature distribution
     const temperatureCounts = new Map<string, number>();
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       const temp = (l as any).lead_temperature;
       if (temp) {
         const normalizedTemp = temp.charAt(0).toUpperCase() + temp.slice(1).toLowerCase();
@@ -370,7 +479,7 @@ export default function Leads() {
     const periodDays = parseInt(timelinePeriod);
     const timelineCounts = new Map<string, number>();
     const periodStart = subDays(new Date(), periodDays);
-    leads.forEach(l => {
+    globalFilteredLeads.forEach(l => {
       const leadDate = parseISO(l.created_at);
       if (leadDate >= periodStart) {
         const dateKey = format(leadDate, "dd/MM");
@@ -399,25 +508,26 @@ export default function Leads() {
       temperatureData,
       timelineData
     };
-  }, [leads, timelinePeriod]);
+  }, [globalFilteredLeads, timelinePeriod]);
 
-  // Recent objections (limit 5)
+  // Recent objections (limit 5) - from globalFilteredLeads
   const recentObjections = useMemo(() => {
-    return leads
+    return globalFilteredLeads
       ?.filter(lead => lead.has_objection === true && lead.objection_detail)
       .sort((a, b) => new Date(b.last_updated || b.created_at).getTime() - new Date(a.last_updated || a.created_at).getTime())
       .slice(0, 5) || [];
-  }, [leads]);
+  }, [globalFilteredLeads]);
 
-  // Recent needs (limit 5)
+  // Recent needs (limit 5) - from globalFilteredLeads
   const recentNeeds = useMemo(() => {
-    return leads
+    return globalFilteredLeads
       ?.filter(lead => (lead as any).need_summary)
       .sort((a, b) => new Date(b.last_updated || b.created_at).getTime() - new Date(a.last_updated || a.created_at).getTime())
       .slice(0, 5) || [];
-  }, [leads]);
+  }, [globalFilteredLeads]);
 
-  const filteredLeads = leads?.filter((lead) => {
+  // Table filter - now applies on top of globalFilteredLeads
+  const filteredLeads = globalFilteredLeads?.filter((lead) => {
     // Search filter
     const matchesSearch = 
       lead.session_id?.toString().includes(searchTerm) ||
@@ -586,12 +696,86 @@ export default function Leads() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
-        <p className="text-muted-foreground">
-          Gerencie e acompanhe todos os seus leads
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
+          <p className="text-muted-foreground">
+            Gerencie e acompanhe todos os seus leads
+          </p>
+        </div>
       </div>
+
+      {/* Global Filters Bar */}
+      <Card className="border-dashed">
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Filter className="h-4 w-4" />
+              <span className="font-medium">Filtrar por:</span>
+            </div>
+            
+            {/* Channel Filter */}
+            <Select value={channelFilter} onValueChange={setChannelFilter}>
+              <SelectTrigger className="w-[160px] bg-background">
+                <SelectValue placeholder="Canal" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todos os Canais</SelectItem>
+                {uniqueChannels.map(channel => (
+                  <SelectItem key={channel} value={channel}>
+                    {channel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[220px] bg-background">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todos os Status</SelectItem>
+                {uniqueStatuses.map(status => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Language Filter */}
+            <Select value={languageFilter} onValueChange={setLanguageFilter}>
+              <SelectTrigger className="w-[140px] bg-background">
+                <SelectValue placeholder="Língua" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todas as Línguas</SelectItem>
+                {uniqueLanguages.map(lang => (
+                  <SelectItem key={lang} value={lang}>
+                    {lang}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Clear Button */}
+            {hasActiveGlobalFilters && (
+              <Button variant="ghost" size="sm" onClick={clearGlobalFilters} className="h-9">
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
+            )}
+
+            {/* Active filters indicator */}
+            {hasActiveGlobalFilters && (
+              <div className="ml-auto text-sm text-muted-foreground">
+                Exibindo <span className="font-semibold text-foreground">{globalFilteredLeads.length}</span> de {leads?.length || 0} leads
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards Section */}
       <LeadsKPICards 
@@ -807,10 +991,10 @@ export default function Leads() {
                 <div className="space-y-2">
                   <Label>Produto Desejado</Label>
                   <Select value={productFilter} onValueChange={setProductFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todos os produtos" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover z-50">
                       <SelectItem value="all">Todos os produtos</SelectItem>
                       {uniqueProducts.map(product => (
                         <SelectItem key={product} value={product}>
@@ -825,10 +1009,10 @@ export default function Leads() {
                 <div className="space-y-2">
                   <Label>Sentimento</Label>
                   <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todos os sentimentos" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover z-50">
                       <SelectItem value="all">Todos os sentimentos</SelectItem>
                       {uniqueSentiments.map(sentiment => (
                         <SelectItem key={sentiment} value={sentiment}>
@@ -843,10 +1027,10 @@ export default function Leads() {
                 <div className="space-y-2">
                   <Label>Temperatura</Label>
                   <Select value={temperatureFilter} onValueChange={setTemperatureFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todas as temperaturas" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover z-50">
                       <SelectItem value="all">Todas</SelectItem>
                       <SelectItem value="quente">
                         <span className="flex items-center gap-1">
