@@ -509,32 +509,33 @@ export default function Leads() {
       });
     }
 
-    // Objection categories ranking
+    // Objection categories ranking - using AI-classified categories
+    const objectionCategoryLabels: Record<string, string> = {
+      'preco': 'Preço/Orçamento',
+      'tempo': 'Tempo/Agenda',
+      'distancia': 'Localização',
+      'financiamento': 'Financiamento',
+      'confianca': 'Confiança/Qualidade',
+      'concorrencia': 'Concorrência',
+      'tecnica': 'Dúvida Técnica',
+      'indecisao': 'Indecisão'
+    };
+    
     const objectionCounts = new Map<string, number>();
     globalFilteredLeads.forEach(l => {
-      if (l.has_objection && l.objection_detail) {
-        // Extract category from objection detail (first part before ":" or first 40 chars)
-        let category = l.objection_detail;
-        
-        // Try to extract a shorter category
-        if (category.includes(':')) {
-          category = category.split(':')[0].trim();
-        } else if (category.includes('-')) {
-          category = category.split('-')[0].trim();
-        }
-        
-        // Truncate if still too long
-        if (category.length > 40) {
-          category = category.substring(0, 37) + '...';
-        }
-        
-        objectionCounts.set(category, (objectionCounts.get(category) || 0) + 1);
+      const categories = (l as any).objection_categories as string[] | null;
+      if (categories && categories.length > 0) {
+        categories.forEach(cat => {
+          objectionCounts.set(cat, (objectionCounts.get(cat) || 0) + 1);
+        });
       }
     });
     const objectionsData = Array.from(objectionCounts.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8); // Top 8 objections
+      .map(([key, value]) => ({ 
+        name: objectionCategoryLabels[key] || key, 
+        value 
+      }))
+      .sort((a, b) => b.value - a.value);
 
     return {
       channelData,
