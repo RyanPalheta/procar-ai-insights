@@ -1,152 +1,169 @@
 
 
-## Plano: Adicionar Contador de Leads nos Dropdowns dos Filtros Globais
+## Plano: Classificação de Objeções como Multi-Select pela IA
 
-### Objetivo
-Mostrar a contagem de leads disponíveis para cada opção nos filtros globais, permitindo que o usuário visualize rapidamente a distribuição antes de selecionar um filtro.
+### Problema Atual
+O ranking de objeções atual tenta extrair categorias de texto livre (`objection_detail`), resultando em categorias inconsistentes e pouco úteis. Por exemplo:
+- "O cliente considera o preço proposto muito alto..."
+- "O preço do serviço de instalação foi considerado muito caro..."
 
-**Exemplo visual:**
-- `WhatsApp (145)` ao invés de apenas `WhatsApp`
-- `Venda ganha (23)` ao invés de apenas `Venda ganha`
-- `PT-BR (89)` ao invés de apenas `PT-BR`
+Ambos são sobre **preço**, mas aparecem como categorias diferentes.
 
-### Implementação Técnica
+### Solução Proposta
+Modificar a análise de IA para classificar objeções em **categorias predefinidas** (como um multi-select), permitindo que um lead tenha múltiplas categorias de objeção.
 
-#### 1. Modificar Extração de Valores Únicos para Incluir Contagens
+### Categorias de Objeção (Multi-Select)
 
-Atualmente, os valores únicos são extraídos como arrays simples. Precisamos transformá-los em arrays de objetos com `value` e `count`:
+| Categoria | Descrição |
+|-----------|-----------|
+| `preco` | Preço alto, orçamento limitado, busca desconto |
+| `tempo` | Tempo de espera, agenda ocupada, prazo |
+| `distancia` | Localização, distância da loja |
+| `financiamento` | Parcelamento, juros, forma de pagamento |
+| `confianca` | Qualidade, garantia, desconfiança |
+| `concorrencia` | Comparando com outros, já tem proposta |
+| `tecnica` | Dúvida técnica, compatibilidade |
+| `indecisao` | Precisa pensar, não está pronto |
+
+### Alterações Necessárias
+
+#### 1. Banco de Dados - Nova Coluna
+
+```sql
+ALTER TABLE lead_db 
+ADD COLUMN objection_categories text[] DEFAULT NULL;
+
+COMMENT ON COLUMN lead_db.objection_categories IS 
+'Array de categorias de objeção classificadas pela IA (multiselect)';
+```
+
+Exemplo de valores:
+- `['preco']` → Lead com objeção apenas de preço
+- `['preco', 'financiamento']` → Lead quer desconto E parcelamento
+- `['tempo', 'distancia']` → Lead com problemas de agenda E localização
+
+#### 2. Edge Function - Modificar `analyze-lead`
+
+Adicionar novo campo no tool calling da IA:
 
 ```typescript
-// ANTES: Array simples
-const uniqueChannels = useMemo(() => {
-  const channels = new Set<string>();
-  leads?.forEach(lead => { ... });
-  return Array.from(channels).sort();
-}, [leads]);
-
-// DEPOIS: Array de objetos com contagem
-const uniqueChannelsWithCount = useMemo(() => {
-  const channelCounts = new Map<string, number>();
-  leads?.forEach(lead => {
-    const channel = normalizeChannel(lead.channel);
-    if (channel !== "N/A") {
-      channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
-    }
-  });
-  return Array.from(channelCounts.entries())
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count); // Ordenar por contagem (maior primeiro)
-}, [leads]);
+// Adicionar nas propriedades do tool
+objection_categories: {
+  type: 'array',
+  items: {
+    type: 'string',
+    enum: ['preco', 'tempo', 'distancia', 'financiamento', 
+           'confianca', 'concorrencia', 'tecnica', 'indecisao']
+  },
+  description: 'Categorias de objeção identificadas (pode ser múltiplas). ' +
+    'preco: preço alto ou busca desconto; ' +
+    'tempo: agenda ocupada ou tempo de espera; ' +
+    'distancia: localização longe; ' +
+    'financiamento: parcelamento ou forma de pagamento; ' +
+    'confianca: qualidade ou garantia; ' +
+    'concorrencia: comparando com outros; ' +
+    'tecnica: dúvida técnica; ' +
+    'indecisao: precisa pensar mais'
+}
 ```
 
-#### 2. Aplicar Mesma Lógica para Status e Língua
+Atualizar o prompt para instruir a IA:
+
+```
+11. Se houve objeção, classifique em UMA ou MAIS categorias:
+    - preco (preço alto, orçamento limitado, busca desconto)
+    - tempo (tempo de espera, agenda ocupada, prazo)
+    - distancia (localização, distância da loja)
+    - financiamento (parcelamento, juros, forma de pagamento)
+    - confianca (qualidade, garantia, desconfiança)
+    - concorrencia (comparando com outros, já tem proposta)
+    - tecnica (dúvida técnica, compatibilidade)
+    - indecisao (precisa pensar, não está pronto)
+```
+
+#### 3. Frontend - Atualizar Ranking
+
+Modificar `src/pages/Leads.tsx` para usar `objection_categories` ao invés de parsear `objection_detail`:
 
 ```typescript
-const uniqueStatusesWithCount = useMemo(() => {
-  const statusCounts = new Map<string, number>();
-  leads?.forEach(lead => {
-    const status = normalizeStatus(lead.sales_status);
-    if (status) {
-      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
-    }
-  });
-  return Array.from(statusCounts.entries())
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count);
-}, [leads]);
+// Novo cálculo de objectionCounts
+const objectionCounts = new Map<string, number>();
+globalFilteredLeads.forEach(l => {
+  const categories = (l as any).objection_categories as string[] | null;
+  if (categories && categories.length > 0) {
+    categories.forEach(cat => {
+      objectionCounts.set(cat, (objectionCounts.get(cat) || 0) + 1);
+    });
+  }
+});
 
-const uniqueLanguagesWithCount = useMemo(() => {
-  const languageCounts = new Map<string, number>();
-  leads?.forEach(lead => {
-    if (lead.lead_language && !["N/A", "NDA"].includes(lead.lead_language)) {
-      languageCounts.set(lead.lead_language, (languageCounts.get(lead.lead_language) || 0) + 1);
-    }
-  });
-  return Array.from(languageCounts.entries())
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count);
-}, [leads]);
+// Mapear categorias para labels legíveis
+const categoryLabels: Record<string, string> = {
+  'preco': 'Preço/Orçamento',
+  'tempo': 'Tempo/Agenda',
+  'distancia': 'Localização',
+  'financiamento': 'Financiamento',
+  'confianca': 'Confiança/Qualidade',
+  'concorrencia': 'Concorrência',
+  'tecnica': 'Dúvida Técnica',
+  'indecisao': 'Indecisão'
+};
+
+const objectionsData = Array.from(objectionCounts.entries())
+  .map(([key, value]) => ({ 
+    name: categoryLabels[key] || key, 
+    value 
+  }))
+  .sort((a, b) => b.value - a.value);
 ```
 
-#### 3. Atualizar UI dos Dropdowns
-
-```tsx
-{/* Channel Filter */}
-<Select value={channelFilter} onValueChange={setChannelFilter}>
-  <SelectTrigger className="w-[180px] bg-background">
-    <SelectValue placeholder="Canal" />
-  </SelectTrigger>
-  <SelectContent className="bg-popover z-50">
-    <SelectItem value="all">Todos os Canais ({leads?.length || 0})</SelectItem>
-    {uniqueChannelsWithCount.map(({ value, count }) => (
-      <SelectItem key={value} value={value}>
-        {value} ({count})
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-
-{/* Status Filter */}
-<Select value={statusFilter} onValueChange={setStatusFilter}>
-  <SelectTrigger className="w-[260px] bg-background">
-    <SelectValue placeholder="Status" />
-  </SelectTrigger>
-  <SelectContent className="bg-popover z-50">
-    <SelectItem value="all">Todos os Status ({leads?.length || 0})</SelectItem>
-    {uniqueStatusesWithCount.map(({ value, count }) => (
-      <SelectItem key={value} value={value}>
-        {value} ({count})
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-
-{/* Language Filter */}
-<Select value={languageFilter} onValueChange={setLanguageFilter}>
-  <SelectTrigger className="w-[160px] bg-background">
-    <SelectValue placeholder="Língua" />
-  </SelectTrigger>
-  <SelectContent className="bg-popover z-50">
-    <SelectItem value="all">Todas as Línguas ({leads?.length || 0})</SelectItem>
-    {uniqueLanguagesWithCount.map(({ value, count }) => (
-      <SelectItem key={value} value={value}>
-        {value} ({count})
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-```
-
-### Considerações de UX
-
-| Aspecto | Decisão |
-|---------|---------|
-| **Ordenação** | Por contagem (maior para menor) para destacar opções mais relevantes |
-| **Formato** | `Nome (123)` - formato simples e legível |
-| **Total na opção "Todos"** | Mostra total de leads para contexto |
-| **Largura dos triggers** | Aumentar levemente para acomodar números (160px -> 180px para Canal, etc.) |
-
-### Arquivo a Modificar
-
-| Arquivo | Alterações |
-|---------|------------|
-| `src/pages/Leads.tsx` | Modificar `uniqueChannels`, `uniqueStatuses`, `uniqueLanguages` para incluir contagens; Atualizar UI dos Select components |
-
-### Resultado Esperado
+### Fluxo de Dados
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  🔽 Filtrar por:                                                     │
-│                                                                      │
-│  Canal ▼              Status ▼                    Língua ▼          │
-│  ┌──────────────────┐ ┌─────────────────────────┐ ┌───────────────┐ │
-│  │ Todos (287)      │ │ Todos os Status (287)   │ │ Todas (287)   │ │
-│  │ WhatsApp (145)   │ │ Aguardando (89)         │ │ PT-BR (145)   │ │
-│  │ Facebook (98)    │ │ Em atendimento (67)     │ │ EN-USA (98)   │ │
-│  │ Instagram (44)   │ │ Venda ganha (45)        │ │ ES-ES (44)    │ │
-│  └──────────────────┘ │ Venda perdida (32)      │ └───────────────┘ │
-│                       │ Proposta (54)           │                   │
-│                       └─────────────────────────┘                   │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  ANTES (Texto Livre)                                             │
+│  objection_detail: "O preço está muito alto para mim"           │
+│  → Parsing manual → Inconsistente                                │
+├──────────────────────────────────────────────────────────────────┤
+│  DEPOIS (Multi-Select Classificado pela IA)                     │
+│  objection_detail: "O preço está muito alto para mim"           │
+│  objection_categories: ["preco"]                                 │
+│  → Agregação direta → Ranking preciso                            │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+### Exemplo de Resultado no Gráfico
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Ranking de Objeções                                        │
+│  ──────────────────────────────────────────────────────────│
+│  Preço/Orçamento    ████████████████████  18 leads (45%)   │
+│  Tempo/Agenda       ██████████            9 leads (23%)    │
+│  Indecisão          ██████                6 leads (15%)    │
+│  Financiamento      ████                  4 leads (10%)    │
+│  Localização        ███                   3 leads (7%)     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Arquivos a Modificar/Criar
+
+| Arquivo | Ação |
+|---------|------|
+| **Migration SQL** | Criar coluna `objection_categories` no `lead_db` |
+| `supabase/functions/analyze-lead/index.ts` | Adicionar `objection_categories` no tool calling |
+| `src/pages/Leads.tsx` | Usar `objection_categories` para calcular ranking |
+| `src/components/leads/LeadsObjectionsChart.tsx` | Ajustar se necessário |
+
+### Benefícios
+
+1. **Precisão**: Categorias consistentes e comparáveis
+2. **Multi-Select**: Um lead pode ter múltiplas objeções (ex: preço E tempo)
+3. **Métricas confiáveis**: Ranking reflete padrões reais de objeção
+4. **Acionável**: Equipe pode criar estratégias por categoria
+5. **Retrocompatibilidade**: Mantém `objection_detail` para contexto detalhado
+
+### Observação sobre Leads Existentes
+
+Os leads já analisados terão `objection_categories = NULL`. O ranking exibirá apenas leads re-analisados. Opcionalmente, pode-se criar um script para re-analisar leads com objeções existentes.
 
