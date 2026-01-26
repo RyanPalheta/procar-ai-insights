@@ -22,9 +22,11 @@ const OBJECTION_COLORS = [
 ];
 
 export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  // Safe handling for undefined or empty data
+  const safeData = data || [];
+  const total = safeData.reduce((sum, item) => sum + item.value, 0);
   
-  if (data.length === 0) {
+  if (safeData.length === 0) {
     return (
       <MagicBentoCard className="rounded-lg" glowColor="239, 68, 68">
         <Card className="bg-card border-border h-full">
@@ -53,7 +55,7 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data} layout="vertical">
+            <BarChart data={safeData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
               <YAxis 
@@ -75,7 +77,7 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
                 }}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {data.map((entry, index) => (
+                {safeData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={OBJECTION_COLORS[index % OBJECTION_COLORS.length]} />
                 ))}
                 <LabelList 
