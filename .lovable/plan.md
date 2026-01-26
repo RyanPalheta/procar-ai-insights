@@ -1,248 +1,152 @@
 
 
-## Plano: Filtros Principais Globais na Aba de Leads
+## Plano: Adicionar Contador de Leads nos Dropdowns dos Filtros Globais
 
 ### Objetivo
-Adicionar três filtros principais visíveis no topo da página de Leads que filtram **todos os dados** (KPIs, gráficos e tabela) de acordo com:
-1. **Canal** (WhatsApp, Facebook, Instagram)
-2. **Status** (Status de vendas do CRM)
-3. **Língua** (PT-BR, EN-USA, ES-ES)
+Mostrar a contagem de leads disponíveis para cada opção nos filtros globais, permitindo que o usuário visualize rapidamente a distribuição antes de selecionar um filtro.
 
-### Posicionamento na UI
-
-Os filtros serão colocados em uma barra destacada logo abaixo do título, antes dos KPIs:
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Leads                                        [Período: 7 dias ▼]   │
-├─────────────────────────────────────────────────────────────────────┤
-│  🔽 Canal: Todos ▼    🔽 Status: Todos ▼    🔽 Língua: Todas ▼     │
-├─────────────────────────────────────────────────────────────────────┤
-│  [KPIs Cards] [KPIs Cards] [KPIs Cards] [KPIs Cards]                │
-│  ─────────────────────────────────────────────────────────────      │
-│  [Gráficos] [Gráficos] [Gráficos]                                   │
-│  ─────────────────────────────────────────────────────────────      │
-│  [Tabela de Leads]                                                  │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Dados Disponíveis no Banco
-
-| Filtro | Valores Únicos |
-|--------|----------------|
-| **Canal** | WhatsApp, Facebook, Instagram |
-| **Status** | Aguardando atendimento, Em atendimento (qualificação), Proposta/Negociação, Venda ganha, Venda perdida, etc. |
-| **Língua** | PT-BR, EN-USA, ES-ES |
+**Exemplo visual:**
+- `WhatsApp (145)` ao invés de apenas `WhatsApp`
+- `Venda ganha (23)` ao invés de apenas `Venda ganha`
+- `PT-BR (89)` ao invés de apenas `PT-BR`
 
 ### Implementação Técnica
 
-#### 1. Novos Estados para Filtros Globais
+#### 1. Modificar Extração de Valores Únicos para Incluir Contagens
+
+Atualmente, os valores únicos são extraídos como arrays simples. Precisamos transformá-los em arrays de objetos com `value` e `count`:
 
 ```typescript
-// Novos estados para filtros principais
-const [channelFilter, setChannelFilter] = useState<string>("all");
-const [statusFilter, setStatusFilter] = useState<string>("all");
-const [languageFilter, setLanguageFilter] = useState<string>("all");
-```
-
-#### 2. Extração de Valores Únicos
-
-```typescript
-// Canais únicos (normalizados)
+// ANTES: Array simples
 const uniqueChannels = useMemo(() => {
   const channels = new Set<string>();
-  leads?.forEach(lead => {
-    const channel = normalizeChannel(lead.channel);
-    if (channel !== "N/A") channels.add(channel);
-  });
+  leads?.forEach(lead => { ... });
   return Array.from(channels).sort();
 }, [leads]);
 
-// Status únicos (normalizados)
-const uniqueStatuses = useMemo(() => {
-  const statuses = new Set<string>();
+// DEPOIS: Array de objetos com contagem
+const uniqueChannelsWithCount = useMemo(() => {
+  const channelCounts = new Map<string, number>();
+  leads?.forEach(lead => {
+    const channel = normalizeChannel(lead.channel);
+    if (channel !== "N/A") {
+      channelCounts.set(channel, (channelCounts.get(channel) || 0) + 1);
+    }
+  });
+  return Array.from(channelCounts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count); // Ordenar por contagem (maior primeiro)
+}, [leads]);
+```
+
+#### 2. Aplicar Mesma Lógica para Status e Língua
+
+```typescript
+const uniqueStatusesWithCount = useMemo(() => {
+  const statusCounts = new Map<string, number>();
   leads?.forEach(lead => {
     const status = normalizeStatus(lead.sales_status);
-    if (status) statuses.add(status);
+    if (status) {
+      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+    }
   });
-  return Array.from(statuses).sort();
+  return Array.from(statusCounts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count);
 }, [leads]);
 
-// Idiomas únicos (excluindo NDA)
-const uniqueLanguages = useMemo(() => {
-  const languages = new Set<string>();
+const uniqueLanguagesWithCount = useMemo(() => {
+  const languageCounts = new Map<string, number>();
   leads?.forEach(lead => {
     if (lead.lead_language && !["N/A", "NDA"].includes(lead.lead_language)) {
-      languages.add(lead.lead_language);
+      languageCounts.set(lead.lead_language, (languageCounts.get(lead.lead_language) || 0) + 1);
     }
   });
-  return Array.from(languages).sort();
+  return Array.from(languageCounts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count);
 }, [leads]);
 ```
 
-#### 3. Filtro Global Aplicado aos Leads
-
-```typescript
-// Leads filtrados pelos filtros GLOBAIS (afeta tudo: KPIs, gráficos, tabela)
-const globalFilteredLeads = useMemo(() => {
-  return leads?.filter(lead => {
-    // Filtro por canal
-    if (channelFilter !== "all") {
-      const normalizedChannel = normalizeChannel(lead.channel);
-      if (normalizedChannel !== channelFilter) return false;
-    }
-    
-    // Filtro por status
-    if (statusFilter !== "all") {
-      const normalizedStatus = normalizeStatus(lead.sales_status);
-      if (normalizedStatus !== statusFilter) return false;
-    }
-    
-    // Filtro por língua
-    if (languageFilter !== "all") {
-      if (lead.lead_language !== languageFilter) return false;
-    }
-    
-    return true;
-  }) || [];
-}, [leads, channelFilter, statusFilter, languageFilter]);
-```
-
-#### 4. Atualizar Cálculos de Charts e KPIs
-
-Todos os cálculos que atualmente usam `leads` passarão a usar `globalFilteredLeads`:
-
-```typescript
-// Charts usarão globalFilteredLeads
-const chartData = useMemo(() => {
-  if (!globalFilteredLeads.length) return { ... };
-  
-  // Channel distribution
-  const channelCounts = new Map<string, number>();
-  globalFilteredLeads.forEach(l => { ... });
-  
-  // ... resto dos cálculos
-}, [globalFilteredLeads, timelinePeriod]);
-```
-
-#### 5. Componente UI dos Filtros Globais
+#### 3. Atualizar UI dos Dropdowns
 
 ```tsx
-{/* Barra de Filtros Globais */}
-<Card className="mb-6">
-  <CardContent className="py-4">
-    <div className="flex flex-wrap items-center gap-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Filter className="h-4 w-4" />
-        <span className="font-medium">Filtrar por:</span>
-      </div>
-      
-      {/* Canal */}
-      <Select value={channelFilter} onValueChange={setChannelFilter}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Canal" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos os Canais</SelectItem>
-          {uniqueChannels.map(channel => (
-            <SelectItem key={channel} value={channel}>
-              {channel}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      {/* Status */}
-      <Select value={statusFilter} onValueChange={setStatusFilter}>
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos os Status</SelectItem>
-          {uniqueStatuses.map(status => (
-            <SelectItem key={status} value={status}>
-              {status}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      {/* Língua */}
-      <Select value={languageFilter} onValueChange={setLanguageFilter}>
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Língua" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas as Línguas</SelectItem>
-          {uniqueLanguages.map(lang => (
-            <SelectItem key={lang} value={lang}>
-              {lang}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      {/* Botão Limpar */}
-      {(channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all") && (
-        <Button variant="ghost" size="sm" onClick={clearGlobalFilters}>
-          <X className="h-4 w-4 mr-1" />
-          Limpar
-        </Button>
-      )}
-    </div>
-  </CardContent>
-</Card>
+{/* Channel Filter */}
+<Select value={channelFilter} onValueChange={setChannelFilter}>
+  <SelectTrigger className="w-[180px] bg-background">
+    <SelectValue placeholder="Canal" />
+  </SelectTrigger>
+  <SelectContent className="bg-popover z-50">
+    <SelectItem value="all">Todos os Canais ({leads?.length || 0})</SelectItem>
+    {uniqueChannelsWithCount.map(({ value, count }) => (
+      <SelectItem key={value} value={value}>
+        {value} ({count})
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+
+{/* Status Filter */}
+<Select value={statusFilter} onValueChange={setStatusFilter}>
+  <SelectTrigger className="w-[260px] bg-background">
+    <SelectValue placeholder="Status" />
+  </SelectTrigger>
+  <SelectContent className="bg-popover z-50">
+    <SelectItem value="all">Todos os Status ({leads?.length || 0})</SelectItem>
+    {uniqueStatusesWithCount.map(({ value, count }) => (
+      <SelectItem key={value} value={value}>
+        {value} ({count})
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+
+{/* Language Filter */}
+<Select value={languageFilter} onValueChange={setLanguageFilter}>
+  <SelectTrigger className="w-[160px] bg-background">
+    <SelectValue placeholder="Língua" />
+  </SelectTrigger>
+  <SelectContent className="bg-popover z-50">
+    <SelectItem value="all">Todas as Línguas ({leads?.length || 0})</SelectItem>
+    {uniqueLanguagesWithCount.map(({ value, count }) => (
+      <SelectItem key={value} value={value}>
+        {value} ({count})
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
 ```
 
-### Arquivos a Modificar
+### Considerações de UX
+
+| Aspecto | Decisão |
+|---------|---------|
+| **Ordenação** | Por contagem (maior para menor) para destacar opções mais relevantes |
+| **Formato** | `Nome (123)` - formato simples e legível |
+| **Total na opção "Todos"** | Mostra total de leads para contexto |
+| **Largura dos triggers** | Aumentar levemente para acomodar números (160px -> 180px para Canal, etc.) |
+
+### Arquivo a Modificar
 
 | Arquivo | Alterações |
 |---------|------------|
-| `src/pages/Leads.tsx` | Adicionar estados, extrair valores únicos, criar filtro global, atualizar UI |
+| `src/pages/Leads.tsx` | Modificar `uniqueChannels`, `uniqueStatuses`, `uniqueLanguages` para incluir contagens; Atualizar UI dos Select components |
 
-### Fluxo de Dados Após Implementação
+### Resultado Esperado
 
 ```
-                     ┌─────────────────┐
-                     │   leads (raw)   │
-                     └────────┬────────┘
-                              │
-              ┌───────────────▼───────────────┐
-              │   FILTROS GLOBAIS             │
-              │   (Canal, Status, Língua)     │
-              └───────────────┬───────────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │ globalFilteredLeads│
-                    └─────────┬─────────┘
-                              │
-         ┌────────────────────┼────────────────────┐
-         │                    │                    │
-    ┌────▼────┐         ┌─────▼─────┐        ┌────▼────┐
-    │  KPIs   │         │  Charts   │        │ Tabela  │
-    │ (cards) │         │ (gráficos)│        │ + filtros│
-    └─────────┘         └───────────┘        │secundários│
-                                             └──────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  🔽 Filtrar por:                                                     │
+│                                                                      │
+│  Canal ▼              Status ▼                    Língua ▼          │
+│  ┌──────────────────┐ ┌─────────────────────────┐ ┌───────────────┐ │
+│  │ Todos (287)      │ │ Todos os Status (287)   │ │ Todas (287)   │ │
+│  │ WhatsApp (145)   │ │ Aguardando (89)         │ │ PT-BR (145)   │ │
+│  │ Facebook (98)    │ │ Em atendimento (67)     │ │ EN-USA (98)   │ │
+│  │ Instagram (44)   │ │ Venda ganha (45)        │ │ ES-ES (44)    │ │
+│  └──────────────────┘ │ Venda perdida (32)      │ └───────────────┘ │
+│                       │ Proposta (54)           │                   │
+│                       └─────────────────────────┘                   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
-
-### Comportamento Esperado
-
-1. **Ao selecionar "WhatsApp" no filtro Canal**:
-   - KPIs mostram métricas apenas de leads do WhatsApp
-   - Gráfico de Status mostra apenas status de leads do WhatsApp
-   - Gráfico de Língua mostra distribuição de línguas do WhatsApp
-   - Tabela exibe apenas leads do WhatsApp
-
-2. **Ao combinar filtros**:
-   - Exemplo: Canal = "WhatsApp" + Língua = "PT-BR"
-   - Todos os dados refletem apenas leads que são WhatsApp E falam português
-
-3. **Limpar filtros**:
-   - Volta a exibir todos os dados
-
-### Considerações Técnicas
-
-- Os KPIs via RPC (`get_leads_kpis`) não serão afetados pelos filtros globais pois são calculados no servidor. Os KPIs locais calculados a partir de `globalFilteredLeads` serão atualizados.
-- Os gráficos serão recalculados automaticamente via `useMemo` quando `globalFilteredLeads` mudar.
-- Os dropdowns terão z-index alto e background sólido para evitar transparência.
 
