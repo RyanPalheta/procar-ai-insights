@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, 
   User, 
@@ -39,7 +40,11 @@ import {
   History,
   Bot,
   Globe,
-  UserCircle
+  UserCircle,
+  ClipboardCheck,
+  XCircle,
+  Star,
+  ShieldAlert
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -625,6 +630,140 @@ export default function LeadDetails() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Análise de Compliance do Vendedor */}
+      {(lead.playbook_compliance_score !== null || lead.service_rating !== null || 
+        (lead.playbook_steps_completed && lead.playbook_steps_completed.length > 0) ||
+        (lead.playbook_steps_missing && lead.playbook_steps_missing.length > 0) ||
+        lead.playbook_violations) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Análise de Compliance do Vendedor
+              <Sparkles className="h-4 w-4 text-primary" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Scores */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Compliance Score */}
+              {lead.playbook_compliance_score !== null && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <ClipboardCheck className="h-4 w-4" />
+                      Score de Aderência ao Playbook
+                    </label>
+                    <span className={`text-2xl font-bold ${
+                      lead.playbook_compliance_score >= 80 ? 'text-green-500' :
+                      lead.playbook_compliance_score >= 50 ? 'text-yellow-500' :
+                      'text-red-500'
+                    }`}>
+                      {lead.playbook_compliance_score}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={lead.playbook_compliance_score} 
+                    className={`h-3 ${
+                      lead.playbook_compliance_score >= 80 ? '[&>div]:bg-green-500' :
+                      lead.playbook_compliance_score >= 50 ? '[&>div]:bg-yellow-500' :
+                      '[&>div]:bg-red-500'
+                    }`}
+                  />
+                </div>
+              )}
+
+              {/* Service Rating */}
+              {lead.service_rating !== null && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <Star className="h-4 w-4" />
+                      Nota do Atendimento
+                    </label>
+                    <span className={`text-2xl font-bold ${
+                      lead.service_rating >= 8 ? 'text-green-500' :
+                      lead.service_rating >= 5 ? 'text-yellow-500' :
+                      'text-red-500'
+                    }`}>
+                      {lead.service_rating}/10
+                    </span>
+                  </div>
+                  <Progress 
+                    value={lead.service_rating * 10} 
+                    className={`h-3 ${
+                      lead.service_rating >= 8 ? '[&>div]:bg-green-500' :
+                      lead.service_rating >= 5 ? '[&>div]:bg-yellow-500' :
+                      '[&>div]:bg-red-500'
+                    }`}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Steps Completed and Missing */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Steps Completed */}
+              {lead.playbook_steps_completed && lead.playbook_steps_completed.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Passos Seguidos ({lead.playbook_steps_completed.length})
+                  </label>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {lead.playbook_steps_completed.map((step, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-start gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Steps Missing */}
+              {lead.playbook_steps_missing && lead.playbook_steps_missing.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    Passos Não Seguidos ({lead.playbook_steps_missing.length})
+                  </label>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {lead.playbook_steps_missing.map((step, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-start gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20"
+                      >
+                        <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Violations */}
+            {lead.playbook_violations && (
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-destructive flex items-center gap-1">
+                      Violações Identificadas
+                    </h4>
+                    <p className="text-sm mt-1 text-foreground">{lead.playbook_violations}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Interações */}
       <Card>
