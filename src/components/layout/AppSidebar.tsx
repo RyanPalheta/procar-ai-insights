@@ -1,8 +1,9 @@
-import { LayoutDashboard, Users, Phone, MessageSquare, Settings, FileText, ChevronLeft, BarChart3, HelpCircle } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
+import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect, useMemo } from "react";
 import logo from "@/assets/logo.png";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,14 +22,15 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
+const VIEWED_LEADS_KEY = "procar_viewed_leads";
+
 // Navigation structure organized by sections
 const navigationSections = [
   {
     label: "PRINCIPAL",
     items: [
       { title: "Visão Geral", url: "/", icon: LayoutDashboard },
-      { title: "Leads", url: "/leads", icon: Users, showCount: true },
-      { title: "Conversas", url: "/interactions", icon: MessageSquare },
+      { title: "Leads", url: "/leads", icon: Users, showUnviewedCount: true },
     ],
   },
   {
@@ -50,18 +52,64 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
   const collapsed = state === "collapsed";
+  
+  // Track viewed leads in localStorage
+  const [viewedLeads, setViewedLeads] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(VIEWED_LEADS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  // Fetch leads count
-  const { data: leadsCount } = useQuery({
-    queryKey: ["leads-count"],
+  // Fetch all lead session_ids
+  const { data: leads } = useQuery({
+    queryKey: ["leads-for-badge"],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("lead_db")
-        .select("*", { count: "exact", head: true });
+        .select("session_id")
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return count || 0;
+      return data;
     },
   });
+
+  // Calculate unviewed leads count
+  const unviewedCount = useMemo(() => {
+    if (!leads) return 0;
+    const allSessionIds = leads.map(l => l.session_id);
+    const unviewed = allSessionIds.filter(id => !viewedLeads.includes(id));
+    return unviewed.length;
+  }, [leads, viewedLeads]);
+
+  // Mark all leads as viewed when navigating to /leads
+  useEffect(() => {
+    if (location.pathname === "/leads" && leads && leads.length > 0) {
+      const allSessionIds = leads.map(l => l.session_id);
+      const newViewedLeads = [...new Set([...viewedLeads, ...allSessionIds])];
+      
+      // Only update if there are new leads to mark as viewed
+      if (newViewedLeads.length > viewedLeads.length) {
+        setViewedLeads(newViewedLeads);
+        localStorage.setItem(VIEWED_LEADS_KEY, JSON.stringify(newViewedLeads));
+      }
+    }
+  }, [location.pathname, leads]);
+
+  // Clean up old viewed leads (keep only existing ones)
+  useEffect(() => {
+    if (leads && viewedLeads.length > 0) {
+      const existingIds = new Set(leads.map(l => l.session_id));
+      const validViewedLeads = viewedLeads.filter(id => existingIds.has(id));
+      
+      if (validViewedLeads.length !== viewedLeads.length) {
+        setViewedLeads(validViewedLeads);
+        localStorage.setItem(VIEWED_LEADS_KEY, JSON.stringify(validViewedLeads));
+      }
+    }
+  }, [leads]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -123,16 +171,13 @@ export function AppSidebar() {
                           <item.icon className="h-5 w-5" />
                           {!collapsed && <span>{item.title}</span>}
                         </div>
-                        {/* Count badge for Leads */}
-                        {!collapsed && item.showCount && leadsCount !== undefined && (
+                        {/* Unviewed leads count badge */}
+                        {!collapsed && item.showUnviewedCount && unviewedCount > 0 && (
                           <Badge 
-                            variant={isActive(item.url) ? "secondary" : "outline"} 
-                            className={cn(
-                              "text-xs px-2 py-0.5 h-5 min-w-[28px] justify-center",
-                              isActive(item.url) && "bg-primary-foreground/20 text-primary-foreground border-0"
-                            )}
+                            variant="destructive"
+                            className="text-xs px-2 py-0.5 h-5 min-w-[28px] justify-center animate-pulse"
                           >
-                            {leadsCount > 999 ? "999+" : leadsCount}
+                            {unviewedCount > 99 ? "99+" : unviewedCount}
                           </Badge>
                         )}
                       </NavLink>
