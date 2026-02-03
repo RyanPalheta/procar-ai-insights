@@ -36,6 +36,7 @@ import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart"
 import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart";
 import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
+import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -391,7 +392,11 @@ export default function Leads() {
       sentimentData: [],
       topProductsData: [],
       temperatureData: [],
-      timelineData: []
+      timelineData: [],
+      objectionsData: [],
+      complianceData: [],
+      avgCompliance: 0,
+      totalWithCompliance: 0
     };
 
     // Channel distribution (with normalization)
@@ -537,6 +542,30 @@ export default function Leads() {
       }))
       .sort((a, b) => b.value - a.value);
 
+    // Compliance distribution
+    const leadsWithCompliance = globalFilteredLeads.filter(
+      l => l.playbook_compliance_score !== null && l.playbook_compliance_score !== undefined
+    );
+    
+    const complianceRanges = {
+      excellent: leadsWithCompliance.filter(l => (l.playbook_compliance_score ?? 0) >= 80).length,
+      good: leadsWithCompliance.filter(l => (l.playbook_compliance_score ?? 0) >= 60 && (l.playbook_compliance_score ?? 0) < 80).length,
+      regular: leadsWithCompliance.filter(l => (l.playbook_compliance_score ?? 0) >= 40 && (l.playbook_compliance_score ?? 0) < 60).length,
+      low: leadsWithCompliance.filter(l => (l.playbook_compliance_score ?? 0) < 40).length,
+    };
+    
+    const totalWithCompliance = leadsWithCompliance.length;
+    const avgCompliance = totalWithCompliance > 0
+      ? leadsWithCompliance.reduce((sum, l) => sum + (l.playbook_compliance_score ?? 0), 0) / totalWithCompliance
+      : 0;
+    
+    const complianceData = [
+      { name: "Excelente", value: complianceRanges.excellent, percentage: totalWithCompliance > 0 ? (complianceRanges.excellent / totalWithCompliance) * 100 : 0 },
+      { name: "Bom", value: complianceRanges.good, percentage: totalWithCompliance > 0 ? (complianceRanges.good / totalWithCompliance) * 100 : 0 },
+      { name: "Regular", value: complianceRanges.regular, percentage: totalWithCompliance > 0 ? (complianceRanges.regular / totalWithCompliance) * 100 : 0 },
+      { name: "Baixo", value: complianceRanges.low, percentage: totalWithCompliance > 0 ? (complianceRanges.low / totalWithCompliance) * 100 : 0 },
+    ].filter(item => item.value > 0);
+
     return {
       channelData,
       closedChannelData,
@@ -546,7 +575,10 @@ export default function Leads() {
       topProductsData,
       temperatureData,
       timelineData,
-      objectionsData
+      objectionsData,
+      complianceData,
+      avgCompliance,
+      totalWithCompliance
     };
   }, [globalFilteredLeads, timelinePeriod]);
 
@@ -845,6 +877,11 @@ export default function Leads() {
         <LeadsSentimentChart data={chartData.sentimentData} />
         <LeadsTopProductsChart data={chartData.topProductsData} />
         <LeadsObjectionsChart data={chartData.objectionsData} />
+        <LeadsComplianceChart 
+          data={chartData.complianceData} 
+          avgScore={chartData.avgCompliance}
+          totalAudited={chartData.totalWithCompliance}
+        />
       </div>
 
       {/* Recent Objections Feed */}
