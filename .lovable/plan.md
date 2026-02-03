@@ -1,169 +1,142 @@
 
+# Plano: Reativar Auditoria de Compliance dos Vendedores
 
-## Plano: Classificação de Objeções como Multi-Select pela IA
+## Contexto Atual
 
-### Problema Atual
-O ranking de objeções atual tenta extrair categorias de texto livre (`objection_detail`), resultando em categorias inconsistentes e pouco úteis. Por exemplo:
-- "O cliente considera o preço proposto muito alto..."
-- "O preço do serviço de instalação foi considerado muito caro..."
+- **Milestones de auditoria**: Já configurados para `[10, 20, 30, 40]` (a cada 10 interações)
+- **Mensagens de vendedores**: Já começaram a ser ingeridas (6 mensagens com `sender_type: 'agent'`)
+- **Análise de compliance**: Atualmente **desativada** - todos os campos de playbook são forçados a `null`
 
-Ambos são sobre **preço**, mas aparecem como categorias diferentes.
+## Alterações Necessárias
 
-### Solução Proposta
-Modificar a análise de IA para classificar objeções em **categorias predefinidas** (como um multi-select), permitindo que um lead tenha múltiplas categorias de objeção.
+### 1. Modificar `analyze-lead` para incluir análise de compliance
 
-### Categorias de Objeção (Multi-Select)
+**Arquivo**: `supabase/functions/analyze-lead/index.ts`
 
-| Categoria | Descrição |
-|-----------|-----------|
-| `preco` | Preço alto, orçamento limitado, busca desconto |
-| `tempo` | Tempo de espera, agenda ocupada, prazo |
-| `distancia` | Localização, distância da loja |
-| `financiamento` | Parcelamento, juros, forma de pagamento |
-| `confianca` | Qualidade, garantia, desconfiança |
-| `concorrencia` | Comparando com outros, já tem proposta |
-| `tecnica` | Dúvida técnica, compatibilidade |
-| `indecisao` | Precisa pensar, não está pronto |
+Alterações:
+1. **Separar mensagens por tipo** - Dividir interações entre cliente e vendedor
+2. **Buscar playbook correspondente** - Após identificar o produto, buscar o playbook na tabela
+3. **Incluir playbook no prompt** - Adicionar conteúdo do playbook ao prompt de análise
+4. **Adicionar campos de compliance no tool calling**:
+   - `playbook_compliance_score` (0-100)
+   - `playbook_steps_completed` (array de passos seguidos)
+   - `playbook_steps_missing` (array de passos faltantes)
+   - `playbook_violations` (texto com violações críticas)
+   - `service_rating` (nota do atendimento 0-10)
 
-### Alterações Necessárias
+5. **Remover a forçagem de campos para null** (linhas 344-349)
 
-#### 1. Banco de Dados - Nova Coluna
+### 2. Estrutura do Novo Prompt
 
-```sql
-ALTER TABLE lead_db 
-ADD COLUMN objection_categories text[] DEFAULT NULL;
+O prompt será expandido para incluir:
 
-COMMENT ON COLUMN lead_db.objection_categories IS 
-'Array de categorias de objeção classificadas pela IA (multiselect)';
+```text
+MENSAGENS DO CLIENTE:
+[mensagens com sender_type = 'client']
+
+MENSAGENS DO VENDEDOR:
+[mensagens com sender_type = 'agent']
+
+PLAYBOOK A SER SEGUIDO ({product_type}):
+[conteúdo do playbook correspondente ao produto identificado]
+
+Avalie se o vendedor seguiu o playbook corretamente...
 ```
 
-Exemplo de valores:
-- `['preco']` → Lead com objeção apenas de preço
-- `['preco', 'financiamento']` → Lead quer desconto E parcelamento
-- `['tempo', 'distancia']` → Lead com problemas de agenda E localização
+### 3. Fluxo de Análise Atualizado
 
-#### 2. Edge Function - Modificar `analyze-lead`
+```text
+1. Receber session_id
+2. Buscar todas as interações (cliente + vendedor)
+3. Identificar produto desejado pelo cliente
+4. Buscar playbook correspondente ao product_type
+5. Enviar para IA com prompt completo
+6. Retornar análise do lead + compliance do vendedor
+7. Persistir via update-lead
+```
 
-Adicionar novo campo no tool calling da IA:
+## Detalhes Técnicos
+
+### Consulta de Playbook
 
 ```typescript
-// Adicionar nas propriedades do tool
-objection_categories: {
+// Após identificar o produto
+const { data: playbook } = await supabase
+  .from('playbooks')
+  .select('title, content, steps')
+  .eq('product_type', productType)
+  .single();
+```
+
+### Campos Adicionais no Tool Calling
+
+```typescript
+playbook_compliance_score: {
+  type: 'number',
+  minimum: 0,
+  maximum: 100,
+  description: 'Score de aderência ao playbook (0-100)'
+},
+playbook_steps_completed: {
   type: 'array',
-  items: {
-    type: 'string',
-    enum: ['preco', 'tempo', 'distancia', 'financiamento', 
-           'confianca', 'concorrencia', 'tecnica', 'indecisao']
-  },
-  description: 'Categorias de objeção identificadas (pode ser múltiplas). ' +
-    'preco: preço alto ou busca desconto; ' +
-    'tempo: agenda ocupada ou tempo de espera; ' +
-    'distancia: localização longe; ' +
-    'financiamento: parcelamento ou forma de pagamento; ' +
-    'confianca: qualidade ou garantia; ' +
-    'concorrencia: comparando com outros; ' +
-    'tecnica: dúvida técnica; ' +
-    'indecisao: precisa pensar mais'
+  items: { type: 'string' },
+  description: 'Lista de passos do playbook que foram seguidos'
+},
+playbook_steps_missing: {
+  type: 'array',
+  items: { type: 'string' },
+  description: 'Lista de passos do playbook que não foram seguidos'
+},
+playbook_violations: {
+  type: 'string',
+  nullable: true,
+  description: 'Violações críticas identificadas no atendimento'
+},
+service_rating: {
+  type: 'number',
+  minimum: 0,
+  maximum: 10,
+  description: 'Nota geral do atendimento (0-10)'
 }
 ```
 
-Atualizar o prompt para instruir a IA:
+### Remoção da Forçagem para Null
 
-```
-11. Se houve objeção, classifique em UMA ou MAIS categorias:
-    - preco (preço alto, orçamento limitado, busca desconto)
-    - tempo (tempo de espera, agenda ocupada, prazo)
-    - distancia (localização, distância da loja)
-    - financiamento (parcelamento, juros, forma de pagamento)
-    - confianca (qualidade, garantia, desconfiança)
-    - concorrencia (comparando com outros, já tem proposta)
-    - tecnica (dúvida técnica, compatibilidade)
-    - indecisao (precisa pensar, não está pronto)
-```
-
-#### 3. Frontend - Atualizar Ranking
-
-Modificar `src/pages/Leads.tsx` para usar `objection_categories` ao invés de parsear `objection_detail`:
-
+Remover linhas 344-349:
 ```typescript
-// Novo cálculo de objectionCounts
-const objectionCounts = new Map<string, number>();
-globalFilteredLeads.forEach(l => {
-  const categories = (l as any).objection_categories as string[] | null;
-  if (categories && categories.length > 0) {
-    categories.forEach(cat => {
-      objectionCounts.set(cat, (objectionCounts.get(cat) || 0) + 1);
-    });
-  }
-});
-
-// Mapear categorias para labels legíveis
-const categoryLabels: Record<string, string> = {
-  'preco': 'Preço/Orçamento',
-  'tempo': 'Tempo/Agenda',
-  'distancia': 'Localização',
-  'financiamento': 'Financiamento',
-  'confianca': 'Confiança/Qualidade',
-  'concorrencia': 'Concorrência',
-  'tecnica': 'Dúvida Técnica',
-  'indecisao': 'Indecisão'
-};
-
-const objectionsData = Array.from(objectionCounts.entries())
-  .map(([key, value]) => ({ 
-    name: categoryLabels[key] || key, 
-    value 
-  }))
-  .sort((a, b) => b.value - a.value);
+// REMOVER ISSO:
+playbook_compliance_score: null,
+playbook_steps_completed: null,
+playbook_steps_missing: null,
+playbook_violations: null,
+service_rating: null,
 ```
 
-### Fluxo de Dados
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  ANTES (Texto Livre)                                             │
-│  objection_detail: "O preço está muito alto para mim"           │
-│  → Parsing manual → Inconsistente                                │
-├──────────────────────────────────────────────────────────────────┤
-│  DEPOIS (Multi-Select Classificado pela IA)                     │
-│  objection_detail: "O preço está muito alto para mim"           │
-│  objection_categories: ["preco"]                                 │
-│  → Agregação direta → Ranking preciso                            │
-└──────────────────────────────────────────────────────────────────┘
+Substituir por valores do resultado da IA:
+```typescript
+playbook_compliance_score: analysisResult.playbook_compliance_score || null,
+playbook_steps_completed: analysisResult.playbook_steps_completed || null,
+playbook_steps_missing: analysisResult.playbook_steps_missing || null,
+playbook_violations: analysisResult.playbook_violations || null,
+service_rating: analysisResult.service_rating || null,
 ```
 
-### Exemplo de Resultado no Gráfico
+## Resultado Esperado
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Ranking de Objeções                                        │
-│  ──────────────────────────────────────────────────────────│
-│  Preço/Orçamento    ████████████████████  18 leads (45%)   │
-│  Tempo/Agenda       ██████████            9 leads (23%)    │
-│  Indecisão          ██████                6 leads (15%)    │
-│  Financiamento      ████                  4 leads (10%)    │
-│  Localização        ███                   3 leads (7%)     │
-└─────────────────────────────────────────────────────────────┘
-```
+Após implementação:
+- Leads com mensagens de vendedores terão análise de compliance
+- Dashboard mostrará métricas de aderência ao playbook
+- Auditorias automáticas a cada 10, 20, 30 e 40 interações
+- Campos de compliance preenchidos na tabela `lead_db`
 
-### Arquivos a Modificar/Criar
+## Arquivos a Modificar
 
-| Arquivo | Ação |
-|---------|------|
-| **Migration SQL** | Criar coluna `objection_categories` no `lead_db` |
-| `supabase/functions/analyze-lead/index.ts` | Adicionar `objection_categories` no tool calling |
-| `src/pages/Leads.tsx` | Usar `objection_categories` para calcular ranking |
-| `src/components/leads/LeadsObjectionsChart.tsx` | Ajustar se necessário |
+| Arquivo | Alteração |
+|---------|-----------|
+| `supabase/functions/analyze-lead/index.ts` | Reativar análise de compliance, separar mensagens, incluir playbook no prompt |
 
-### Benefícios
+## Considerações
 
-1. **Precisão**: Categorias consistentes e comparáveis
-2. **Multi-Select**: Um lead pode ter múltiplas objeções (ex: preço E tempo)
-3. **Métricas confiáveis**: Ranking reflete padrões reais de objeção
-4. **Acionável**: Equipe pode criar estratégias por categoria
-5. **Retrocompatibilidade**: Mantém `objection_detail` para contexto detalhado
-
-### Observação sobre Leads Existentes
-
-Os leads já analisados terão `objection_categories = NULL`. O ranking exibirá apenas leads re-analisados. Opcionalmente, pode-se criar um script para re-analisar leads com objeções existentes.
-
+- Se não houver mensagens de vendedor, os campos de compliance continuarão `null`
+- Se não encontrar playbook para o produto, a análise de compliance não será feita
+- O sistema é retrocompatível - leads antigos sem mensagens de vendedor não serão afetados
