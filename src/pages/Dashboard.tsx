@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, X, AlertTriangle, Lightbulb } from "lucide-react";
-import { differenceInHours, parseISO, format, subDays } from "date-fns";
+import { Filter, X, AlertTriangle, Lightbulb, Search, Bell, Download } from "lucide-react";
+import { differenceInHours, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Chart Components
 import { LeadsKPICards } from "@/components/leads/LeadsKPICards";
@@ -26,6 +28,36 @@ import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart"
 import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
 import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
+
+// Objection category colors
+const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
+  'preco': { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', tag: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' },
+  'tempo': { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', tag: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' },
+  'distancia': { bg: 'bg-yellow-50 dark:bg-yellow-950/30', border: 'border-yellow-200 dark:border-yellow-800', tag: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300' },
+  'financiamento': { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', tag: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' },
+  'confianca': { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', tag: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
+  'concorrencia': { bg: 'bg-purple-50 dark:bg-purple-950/30', border: 'border-purple-200 dark:border-purple-800', tag: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' },
+  'tecnica': { bg: 'bg-cyan-50 dark:bg-cyan-950/30', border: 'border-cyan-200 dark:border-cyan-800', tag: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300' },
+  'indecisao': { bg: 'bg-slate-50 dark:bg-slate-950/30', border: 'border-slate-200 dark:border-slate-800', tag: 'bg-slate-100 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300' },
+};
+
+const objectionCategoryLabelsMap: Record<string, string> = {
+  'preco': 'Preço',
+  'tempo': 'Tempo',
+  'distancia': 'Distância',
+  'financiamento': 'Financiamento',
+  'confianca': 'Confiança',
+  'concorrencia': 'Concorrência',
+  'tecnica': 'Técnica',
+  'indecisao': 'Indecisão',
+};
+
+// Need type colors based on temperature/urgency
+const needTypeColors: Record<string, { bg: string; border: string; tag: string }> = {
+  'Quente': { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', tag: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' },
+  'Morno': { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', tag: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' },
+  'Frio': { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', tag: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
+};
 
 export default function Dashboard() {
   // Global Filters State
@@ -492,14 +524,57 @@ export default function Dashboard() {
       .slice(0, 5) || [];
   }, [globalFilteredLeads]);
 
+  // Helper to get objection category from lead
+  const getLeadObjectionCategory = (lead: any): string | null => {
+    const categories = lead.objection_categories as string[] | null;
+    if (categories && categories.length > 0) {
+      return categories[0];
+    }
+    return null;
+  };
+
+  // Helper to get temperature
+  const getLeadTemperature = (lead: any): string => {
+    const temp = lead.lead_temperature;
+    if (temp) {
+      return temp.charAt(0).toUpperCase() + temp.slice(1).toLowerCase();
+    }
+    return 'Frio';
+  };
+
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Visão Geral</h2>
-        <p className="text-muted-foreground">
-          Panorama completo das suas operações comerciais
-        </p>
+      {/* Enhanced Header with Search, Notifications, Export */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">Visão Geral</h2>
+          <p className="text-muted-foreground">
+            Panorama completo das suas operações comerciais
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Search Bar (decorative for now) */}
+          <div className="relative hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar..." 
+              className="pl-9 w-[200px] bg-background"
+              disabled
+            />
+          </div>
+          {/* Notifications */}
+          <Button variant="outline" size="icon" className="relative">
+            <Bell className="h-4 w-4" />
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
+              3
+            </span>
+          </Button>
+          {/* Export Button */}
+          <Button className="gap-2">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Exportar</span>
+          </Button>
+        </div>
       </div>
 
       {/* Global Filters Bar */}
@@ -617,9 +692,9 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Feeds Section - 2 columns */}
+      {/* Colorful Feeds Section - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Objections Feed */}
+        {/* Recent Objections Feed with Colors */}
         {recentObjections.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
@@ -629,30 +704,48 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {recentObjections.map((lead) => (
-                <Link
-                  key={lead.session_id}
-                  to={`/leads/${lead.session_id}`}
-                  className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">Lead #{lead.session_id}</span>
-                    {lead.lead_intent && (
-                      <Badge variant="outline" className="text-xs">
-                        {lead.lead_intent}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    "{lead.objection_detail}"
-                  </p>
-                </Link>
-              ))}
+              {recentObjections.map((lead) => {
+                const category = getLeadObjectionCategory(lead);
+                const colorScheme = category && objectionCategoryColors[category] 
+                  ? objectionCategoryColors[category] 
+                  : { bg: 'bg-muted/50', border: 'border-border/50', tag: 'bg-muted text-muted-foreground' };
+                const categoryLabel = category ? objectionCategoryLabelsMap[category] || category : null;
+                const timeAgo = formatDistanceToNow(new Date(lead.last_updated || lead.created_at), { 
+                  addSuffix: true, 
+                  locale: ptBR 
+                });
+
+                return (
+                  <Link
+                    key={lead.session_id}
+                    to={`/leads/${lead.session_id}`}
+                    className={`block p-3 rounded-lg transition-all hover:shadow-md border ${colorScheme.bg} ${colorScheme.border}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      {categoryLabel && (
+                        <Badge className={`text-xs font-medium ${colorScheme.tag} border-0`}>
+                          {categoryLabel}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">Lead #{lead.session_id}</span>
+                      {lead.lead_intent && (
+                        <span className="text-xs text-muted-foreground">• {lead.lead_intent}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 italic">
+                      "{lead.objection_detail}"
+                    </p>
+                  </Link>
+                );
+              })}
             </CardContent>
           </Card>
         )}
 
-        {/* Recent Needs Feed */}
+        {/* Recent Needs Feed with Colors */}
         {recentNeeds.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
@@ -662,25 +755,38 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {recentNeeds.map((lead) => (
-                <Link
-                  key={lead.session_id}
-                  to={`/leads/${lead.session_id}`}
-                  className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">Lead #{lead.session_id}</span>
-                    {lead.service_desired && (
-                      <Badge variant="outline" className="text-xs">
-                        {lead.service_desired}
+              {recentNeeds.map((lead) => {
+                const temperature = getLeadTemperature(lead);
+                const colorScheme = needTypeColors[temperature] || needTypeColors['Frio'];
+                const timeAgo = formatDistanceToNow(new Date(lead.last_updated || lead.created_at), { 
+                  addSuffix: true, 
+                  locale: ptBR 
+                });
+
+                return (
+                  <Link
+                    key={lead.session_id}
+                    to={`/leads/${lead.session_id}`}
+                    className={`block p-3 rounded-lg transition-all hover:shadow-md border ${colorScheme.bg} ${colorScheme.border}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className={`text-xs font-medium ${colorScheme.tag} border-0`}>
+                        {temperature}
                       </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {(lead as any).need_summary}
-                  </p>
-                </Link>
-              ))}
+                      <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">Lead #{lead.session_id}</span>
+                      {lead.service_desired && (
+                        <span className="text-xs text-muted-foreground">• {lead.service_desired}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {(lead as any).need_summary}
+                    </p>
+                  </Link>
+                );
+              })}
             </CardContent>
           </Card>
         )}
