@@ -1,5 +1,6 @@
 import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +12,7 @@ interface KPICardProps {
   trend?: {
     value: number;
     isPositive: boolean;
-    isNegativeChange?: boolean; // True when the actual change was negative (e.g., -77%)
+    isNegativeChange?: boolean;
   };
   variant?: "default" | "success" | "warning" | "destructive";
 }
@@ -24,12 +25,18 @@ export function KPICard({
   trend,
   variant = "default",
 }: KPICardProps) {
-  const variantStyles = {
-    default: "text-primary",
-    success: "text-emerald-500",
-    warning: "text-amber-500",
-    destructive: "text-red-500",
+  // Icon background colors based on variant
+  const iconBgStyles = {
+    default: "bg-primary/10 text-primary",
+    success: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+    warning: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+    destructive: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
   };
+
+  // Trend badge styles
+  const trendBadgeStyles = trend?.isPositive 
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800";
 
   return (
     <MagicBentoCard
@@ -42,29 +49,43 @@ export function KPICard({
       className="rounded-lg"
     >
       <Card className="bg-card border-border h-full">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className={cn("h-4 w-4", variantStyles[variant])} />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-2xl font-bold">{value}</span>
+        <CardContent className="p-4">
+          {/* Top row: Icon + Badge */}
+          <div className="flex items-start justify-between mb-3">
+            {/* Large Icon with colored background */}
+            <div className={cn(
+              "flex items-center justify-center w-11 h-11 rounded-xl",
+              iconBgStyles[variant]
+            )}>
+              <Icon className="h-5 w-5" />
+            </div>
+            
+            {/* Trend Badge in top right */}
             {trend && (
-              <span
+              <Badge 
+                variant="outline" 
                 className={cn(
-                  "text-sm font-medium inline-flex items-center gap-1",
-                  trend.isPositive ? "text-emerald-500" : "text-amber-500"
+                  "text-xs font-semibold px-2 py-0.5 flex items-center gap-1",
+                  trendBadgeStyles
                 )}
               >
                 {trend.isNegativeChange ? (
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-3 w-3" />
                 ) : (
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-3 w-3" />
                 )}
-                {trend.isNegativeChange ? "-" : "+"}{trend.value}% vs. período ant.
-              </span>
+                {trend.isNegativeChange ? "-" : "+"}{trend.value}%
+              </Badge>
             )}
           </div>
+          
+          {/* Title */}
+          <p className="text-sm text-muted-foreground mb-1">{title}</p>
+          
+          {/* Value */}
+          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          
+          {/* Description */}
           {description && (
             <p className="text-xs text-muted-foreground mt-1">{description}</p>
           )}

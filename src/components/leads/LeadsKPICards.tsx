@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export type ScorePeriod = "all" | "7" | "30" | "90";
 
 const RESPONSE_TIME_THRESHOLD_KEY = "leads_response_time_threshold";
-const DEFAULT_THRESHOLD = 60; // 60 minutos
+const DEFAULT_THRESHOLD = 60;
 
 interface LeadsKPICardsProps {
   conversionRate: number;
@@ -41,12 +41,11 @@ const periodLabels: Record<ScorePeriod, string> = {
   "90": "90 dias"
 };
 
-// Formata minutos para exibição legível
 const formatResponseTime = (minutes: number): string => {
   if (minutes === 0) return "N/A";
   if (minutes < 1) return "< 1 min";
   if (minutes < 60) return `${Math.round(minutes)} min`;
-  if (minutes < 1440) { // menos de 24h
+  if (minutes < 1440) {
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
@@ -118,7 +117,6 @@ export function LeadsKPICards({
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [alertDismissed, setAlertDismissed] = useState(false);
 
-  // Carregar threshold do localStorage
   useEffect(() => {
     const saved = localStorage.getItem(RESPONSE_TIME_THRESHOLD_KEY);
     if (saved) {
@@ -129,7 +127,6 @@ export function LeadsKPICards({
     }
   }, []);
 
-  // Escutar mudanças no localStorage (para sincronizar com Settings)
   useEffect(() => {
     const handleStorageChange = () => {
       const saved = localStorage.getItem(RESPONSE_TIME_THRESHOLD_KEY);
@@ -143,7 +140,6 @@ export function LeadsKPICards({
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // Também verificar periodicamente para mudanças na mesma aba
     const interval = setInterval(handleStorageChange, 1000);
     
     return () => {
@@ -152,7 +148,6 @@ export function LeadsKPICards({
     };
   }, []);
 
-  // Resetar alerta quando o tempo de resposta mudar
   useEffect(() => {
     setAlertDismissed(false);
   }, [medianFirstResponseTime]);
@@ -194,22 +189,40 @@ export function LeadsKPICards({
         </Alert>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* Header with Period Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">Indicadores de Performance</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Período:</span>
-          <Select value={scorePeriod} onValueChange={(v) => onScorePeriodChange(v as ScorePeriod)}>
-            <SelectTrigger className="h-8 w-[110px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <ToggleGroup 
+          type="single" 
+          value={scorePeriod} 
+          onValueChange={(v) => v && onScorePeriodChange(v as ScorePeriod)}
+          className="bg-muted p-1 rounded-lg"
+        >
+          <ToggleGroupItem 
+            value="7" 
+            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+          >
+            7 dias
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="30" 
+            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+          >
+            30 dias
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="90" 
+            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+          >
+            90 dias
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="all" 
+            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
+          >
+            Todos
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
       
       <TooltipProvider delayDuration={200}>
