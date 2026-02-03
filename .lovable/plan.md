@@ -1,135 +1,132 @@
 
-# Plano: Migração de Métricas e Gráficos para o Dashboard
+# Plano: Melhorias de UX/UI baseadas no Design de Referência
 
-## Resumo da Mudança
+## Análise Comparativa
 
-Mover **todos os KPIs, gráficos e métricas** da página de Leads para o Dashboard, mantendo apenas a **tabela de leads** na aba de Leads.
+### Estado Atual vs Referência
 
----
-
-## Estado Atual
-
-### Dashboard (antes)
-- 2 KPIs simples (Leads Processados, Score Médio)
-- 4 gráficos básicos (Canal, Produtos, Sentimento, Temperatura, Timeline)
-- Sem filtros globais
-- Sem comparações de período
-
-### Leads (antes)
-- 6 KPIs avançados com comparações de período
-- 8 gráficos completos
-- Filtros globais (Canal, Status, Idioma)
-- Seletor de período
-- Feed de objeções e necessidades
-- Tabela de leads com filtros
+| Elemento | Estado Atual | Referência |
+|----------|--------------|------------|
+| **KPI Cards** | Ícone pequeno no canto, badge de variação ao lado do valor | Ícone grande colorido, badge no canto superior direito |
+| **Feeds de Objeções/Necessidades** | Cards simples com fundo uniforme | Cards com fundo colorido por categoria, tags coloridas |
+| **Sidebar** | Seção única "Menu" | Múltiplas seções organizadas, badges de contagem, perfil |
+| **Header** | Título + descrição simples | Busca global, notificações, botão exportar |
+| **Período dos KPIs** | Select dropdown | Toggle buttons inline (7d, 30d, 90d, Todos) |
 
 ---
 
-## Estado Final
+## Alterações Propostas
 
-### Dashboard (depois) - Completo
-Terá **todos** os elementos analíticos:
-- Filtros globais no topo
-- 6 KPIs com comparações de período
-- Gráfico de timeline com seletor de período
-- 8 gráficos de distribuição
-- Feed de objeções recentes
-- Feed de necessidades recentes
+### 1. Novo Design dos KPI Cards
 
-### Leads (depois) - Apenas Tabela
-Terá **somente** a tabela:
-- Header com título
-- Filtros de tabela (busca, status processado, datas, produto, sentimento, temperatura)
-- Tabela de leads com ações
-
----
-
-## Organização UI/UX do Dashboard
-
-Layout organizado por hierarquia visual (mais importante primeiro):
-
+**Antes:**
 ```text
-┌─────────────────────────────────────────────────────┐
-│  Header: "Visão Geral" + Descrição                  │
-├─────────────────────────────────────────────────────┤
-│  [Filtros Globais] Canal | Status | Idioma | Limpar │
-├─────────────────────────────────────────────────────┤
-│  [6 KPIs] em grid 3x2                               │
-│  Conversão | Score | Novos 24h                      │
-│  Cotação | Valor Médio | Tempo Resposta             │
-├─────────────────────────────────────────────────────┤
-│  [Timeline] - Gráfico de linha (largura total)      │
-├─────────────────────────────────────────────────────┤
-│  [Gráficos Primários] 3 colunas                     │
-│  Canal | Status | Temperatura                       │
-├─────────────────────────────────────────────────────┤
-│  [Gráficos Secundários] 3 colunas                   │
-│  Idioma | Sentimento | Top Produtos                 │
-├─────────────────────────────────────────────────────┤
-│  [Gráficos Operacionais] 2 colunas                  │
-│  Objeções | Compliance                              │
-├─────────────────────────────────────────────────────┤
-│  [Feeds] 2 colunas lado a lado                      │
-│  Objeções Recentes | Necessidades Recentes          │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────┐
+│ Título            [ícone]│
+│ 25.4%  +6.0% ↑          │
+│ Descrição                │
+└─────────────────────────┘
 ```
 
----
+**Depois:**
+```text
+┌─────────────────────────┐
+│ [ícone]          [+6.0%]│
+│  grande                  │
+│ Título                   │
+│ 25.4%                    │
+└─────────────────────────┘
+```
 
-## Alterações Técnicas
+**Mudanças técnicas:**
+- Ícone em quadrado arredondado com fundo colorido (40x40px)
+- Badge de variação posicionado no canto superior direito
+- Layout vertical: ícone → título → valor
+- Cores de fundo do ícone baseadas no tipo de KPI
 
-### 1. Dashboard.tsx - Reescrever Completamente
+### 2. Novo Design dos Feeds (Objeções/Necessidades)
 
-**Adicionar imports:**
-- Todos os componentes de chart de `@/components/leads/*`
-- Hooks: `useState`, `useMemo`
-- date-fns functions
-- Icons necessários
-- Componentes UI (Select, Button, Card, etc.)
-
-**Adicionar states:**
+**Cores por categoria de objeção:**
 ```typescript
-// Filtros globais
-const [channelFilter, setChannelFilter] = useState("all");
-const [statusFilter, setStatusFilter] = useState("all");
-const [languageFilter, setLanguageFilter] = useState("all");
-
-// Controles de período
-const [scorePeriod, setScorePeriod] = useState("7");
-const [timelinePeriod, setTimelinePeriod] = useState("30");
-const [channelMode, setChannelMode] = useState("all");
+const objectionColors = {
+  'preco': { bg: 'bg-red-50', border: 'border-red-200', tag: 'bg-red-100 text-red-700' },
+  'tempo': { bg: 'bg-amber-50', border: 'border-amber-200', tag: 'bg-amber-100 text-amber-700' },
+  'distancia': { bg: 'bg-yellow-50', border: 'border-yellow-200', tag: 'bg-yellow-100 text-yellow-700' },
+  'concorrencia': { bg: 'bg-orange-50', border: 'border-orange-200', tag: 'bg-orange-100 text-orange-700' },
+  'confianca': { bg: 'bg-blue-50', border: 'border-blue-200', tag: 'bg-blue-100 text-blue-700' },
+};
 ```
 
-**Adicionar queries:**
-- Query de KPIs via RPC (`get_leads_kpis`)
-- Query de interaction counts
+**Cores por tipo de necessidade:**
+```typescript
+const needColors = {
+  'urgente': { bg: 'bg-red-50', tag: 'bg-red-100 text-red-700' },
+  'qualificado': { bg: 'bg-blue-50', tag: 'bg-blue-100 text-blue-700' },
+  'alto_valor': { bg: 'bg-purple-50', tag: 'bg-purple-100 text-purple-700' },
+  'recorrente': { bg: 'bg-cyan-50', tag: 'bg-cyan-100 text-cyan-700' },
+  'expansao': { bg: 'bg-indigo-50', tag: 'bg-indigo-100 text-indigo-700' },
+};
+```
 
-**Adicionar lógica:**
-- Funções de normalização (channel, status, sentiment)
-- useMemo para filtros globais com contagem
-- useMemo para `globalFilteredLeads`
-- useMemo para `chartData` (todos os 8 charts)
-- useMemo para `kpiMetrics`
-- useMemo para feeds (objeções, necessidades)
+**Estrutura do card:**
+```text
+┌────────────────────────────────────────┐
+│ [TAG COLORIDA]               2 min atrás│
+│ Lead #4521 - Maria Santos              │
+│ "O valor está acima do meu orçamento"  │
+└────────────────────────────────────────┘
+```
 
-### 2. Leads.tsx - Simplificar Drasticamente
+### 3. Sidebar Reestruturada
 
-**Remover:**
-- Imports dos componentes de chart
-- States de filtros globais e períodos
-- Queries de KPIs via RPC
-- Todos os useMemo de chartData, kpiMetrics, feeds
-- Funções de normalização (já não serão usadas)
-- JSX dos KPIs, charts e feeds
+**Nova estrutura de seções:**
+```text
+PRINCIPAL
+  ▸ Visão Geral (ativa)
+  ▸ Leads [342]
+  ▸ Conversas
 
-**Manter:**
-- Query básica de leads
-- Query de interaction counts
-- States de filtros da tabela (search, processed, product, sentiment, temperature, dates)
-- Lógica de filtro da tabela (`filteredLeads`)
-- Funções auxiliares da tabela (getTemperatureDisplay, getStatusColor, etc.)
-- Lógica de análise de lead
-- JSX da tabela completa
+ANÁLISES
+  ▸ Performance
+
+CONFIGURAÇÕES
+  ▸ Configurações
+  ▸ Ajuda
+
+─────────────────
+[Avatar] João Silva
+        Administrador
+```
+
+**Mudanças:**
+- Agrupar itens por categoria (Principal, Análises, Configurações)
+- Badge de contagem no item "Leads"
+- Footer com perfil do usuário (placeholder por enquanto)
+- Renomear "Dashboard" para "Visão Geral"
+
+### 4. Header do Dashboard Aprimorado
+
+**Novo layout:**
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Visão Geral                    [🔍 Buscar...] [🔔] [Exportar]│
+│ Acompanhe suas métricas...                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Componentes:**
+- Campo de busca global (decorativo por agora)
+- Ícone de notificações com badge vermelho
+- Botão "Exportar" azul
+
+### 5. Toggle de Período dos KPIs
+
+**Antes:** Select dropdown com "Últimos 7 dias"
+
+**Depois:** Grupo de botões inline
+```text
+Indicadores Principais        [7 dias] [30 dias] [90 dias] [Todos]
+```
 
 ---
 
@@ -137,32 +134,42 @@ const [channelMode, setChannelMode] = useState("all");
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/Dashboard.tsx` | **REESCREVER** - Adicionar toda a lógica e UI de métricas |
-| `src/pages/Leads.tsx` | **SIMPLIFICAR** - Remover métricas, manter apenas tabela |
+| `src/components/dashboard/KPICard.tsx` | Redesign completo do layout do card |
+| `src/components/leads/LeadsKPICards.tsx` | Trocar Select por ToggleGroup para período |
+| `src/pages/Dashboard.tsx` | Novo header com busca/notificações, redesign dos feeds |
+| `src/components/layout/AppSidebar.tsx` | Reestruturar em seções, adicionar badges e perfil |
 
 ---
 
-## Compatibilidade Verificada
+## Considerações de Implementação
 
-- Todos os componentes de chart já existem em `src/components/leads/`
-- O componente `LeadsKPICards` é independente e portável
-- As queries RPC já existem no banco (`get_leads_kpis`)
-- Nenhuma alteração em componentes filhos necessária
-- Filtros globais podem ser removidos de Leads sem quebrar a tabela
+### Prioridade de Mudanças
+
+1. **Alta Prioridade**: KPI Cards (maior impacto visual)
+2. **Alta Prioridade**: Feeds de Objeções/Necessidades (melhora a usabilidade)
+3. **Média Prioridade**: Toggle de período (melhor UX)
+4. **Média Prioridade**: Sidebar (organização)
+5. **Baixa Prioridade**: Header (decorativo por enquanto)
+
+### Dependências
+
+- Componente `ToggleGroup` do shadcn/ui já está instalado
+- Cores semânticas já definidas no design system
+- Nenhuma nova biblioteca necessária
+
+### Compatibilidade
+
+- Todas as mudanças são backward-compatible
+- Props existentes dos componentes serão mantidas
+- Dark mode será preservado (usar variantes dark: para cores)
 
 ---
 
-## Considerações Adicionais
+## Resultado Visual Esperado
 
-1. **Performance**: Dashboard terá mais queries, mas são as mesmas que já rodavam na Leads
-2. **Links**: Os cards de objeções/necessidades linkam para `/leads/:id` - funcionarão normalmente
-3. **Responsividade**: Manter grid responsivo com breakpoints existentes
-4. **Consistência**: Usar mesmos estilos e cores já definidos
-
----
-
-## Resultado Esperado
-
-- **Dashboard**: Central de análise completa com todas as métricas de negócio
-- **Leads**: Tela operacional focada em gestão individual de leads
-- **Navegação natural**: Usuário analisa métricas no Dashboard → clica em lead → vai para Leads ou detalhes
+Após as alterações, o Dashboard terá:
+- Visual mais limpo e moderno alinhado com padrões SaaS
+- Hierarquia visual mais clara nos KPIs
+- Feeds coloridos que facilitam identificação rápida de categorias
+- Sidebar organizada por contexto de uso
+- Período dos KPIs mais acessível com toggle buttons
