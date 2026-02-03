@@ -9,7 +9,7 @@ const corsHeaders = {
 // Lovable AI Gateway
 const AI_GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const AI_MODEL = 'google/gemini-2.5-flash';
-const AI_VERSION = 'lovable-ai-gemini-flash-v2';
+const AI_VERSION = 'lovable-ai-gemini-flash-v3';
 
 // Max messages to send to AI (first 15 + last 15 if > 30)
 const MAX_MESSAGES = 30;
@@ -73,7 +73,7 @@ serve(async (req) => {
       );
     }
 
-    // Fetch interactions (client messages only)
+    // Fetch interactions (all messages)
     const { data: interactions, error: interactionsError } = await supabase
       .from('interaction_db')
       .select('*')
@@ -106,21 +106,39 @@ serve(async (req) => {
 
     const productList = products?.map((p: any) => `- ${p.product_name}`).join('\n') || 'Nenhum produto cadastrado';
 
+    // Separate messages by sender type
+    const allInteractions = interactions || [];
+    const clientMessages = allInteractions.filter((i: any) => i.sender_type === 'client' || !i.sender_type);
+    const agentMessages = allInteractions.filter((i: any) => i.sender_type === 'agent');
+    
+    console.log(`[analyze-lead] Total interactions: ${allInteractions.length}, Client: ${clientMessages.length}, Agent: ${agentMessages.length}`);
+
     // Limit messages if too many (first 15 + last 15)
-    let limitedInteractions = interactions || [];
+    let limitedInteractions = allInteractions;
     if (limitedInteractions.length > MAX_MESSAGES) {
       const firstHalf = limitedInteractions.slice(0, 15);
       const lastHalf = limitedInteractions.slice(-15);
       limitedInteractions = [...firstHalf, ...lastHalf];
-      console.log(`[analyze-lead] Truncated interactions from ${interactions?.length} to ${limitedInteractions.length}`);
+      console.log(`[analyze-lead] Truncated interactions from ${allInteractions.length} to ${limitedInteractions.length}`);
     }
 
-    // Build conversation text (focus on client messages)
+    // Build conversation text with sender identification
     const conversationText = limitedInteractions.map((i: any) => {
-      const sender = i.sender_type || 'cliente';
+      const sender = i.sender_type === 'agent' ? 'VENDEDOR' : 'CLIENTE';
       const time = new Date(i.timestamp).toLocaleString('pt-BR');
       return `[${time}] ${sender}: ${i.message_text || ''}`;
     }).join('\n');
+
+    // Build separate texts for client and agent messages
+    const clientMessagesText = clientMessages.map((i: any) => {
+      const time = new Date(i.timestamp).toLocaleString('pt-BR');
+      return `[${time}] ${i.message_text || ''}`;
+    }).join('\n') || 'Nenhuma mensagem do cliente';
+
+    const agentMessagesText = agentMessages.map((i: any) => {
+      const time = new Date(i.timestamp).toLocaleString('pt-BR');
+      return `[${time}] ${i.message_text || ''}`;
+    }).join('\n') || 'Nenhuma mensagem do vendedor';
 
     // Build call summary if available
     const callSummary = calls?.length > 0 
@@ -129,25 +147,44 @@ serve(async (req) => {
 
     console.log(`[analyze-lead] Interactions: ${limitedInteractions.length}, Calls: ${calls?.length || 0}`);
 
-    // Single unified AI call for lead qualification
-    const systemPrompt = `Você é um analista de qualificação de leads especializado em vendas.
+    // Determine if we have agent messages for compliance analysis
+    const hasAgentMessages = agentMessages.length > 0;
+
+    // Build system prompt based on whether we have agent messages
+    let systemPrompt = `Você é um analista de qualificação de leads especializado em vendas.
 
 Sua tarefa é analisar as mensagens de uma conversa e qualificar o lead.
 
 IMPORTANTE:
 - Foque em entender as NECESSIDADES e INTENÇÕES do cliente
 - Identifique qual produto/serviço o cliente deseja
-- Avalie o potencial de conversão
+- Avalie o potencial de conversão`;
+
+    if (hasAgentMessages) {
+      systemPrompt += `
+- TAMBÉM avalie o desempenho do VENDEDOR em seguir o playbook de vendas
+- Verifique se o vendedor seguiu todos os passos obrigatórios
+- Identifique violações ou passos pulados`;
+    }
+
+    systemPrompt += `
 
 Responda usando a função 'analyze_lead' com os campos solicitados.`;
 
-    const userPrompt = `Analise esta conversa e qualifique o lead.
+    // Build user prompt
+    let userPrompt = `Analise esta conversa e qualifique o lead.
 
 PRODUTOS/SERVIÇOS DISPONÍVEIS:
 ${productList}
 
-HISTÓRICO DE MENSAGENS:
-${conversationText || 'Nenhuma mensagem disponível'}
+CONVERSA COMPLETA:
+${conversationText}
+
+MENSAGENS DO CLIENTE:
+${clientMessagesText}
+
+MENSAGENS DO VENDEDOR:
+${agentMessagesText}
 
 RESUMO DE LIGAÇÕES:
 ${callSummary}
@@ -155,7 +192,70 @@ ${callSummary}
 INFORMAÇÕES ADICIONAIS DO LEAD:
 - Canal: ${lead.channel || 'N/A'}
 - Idioma: ${lead.lead_language || 'N/A'}
-- Status atual: ${lead.sales_status || 'N/A'}
+- Status atual: ${lead.sales_status || 'N/A'}`;
+
+    // If we have agent messages, fetch and include playbook
+    let playbook: any = null;
+    if (hasAgentMessages) {
+      // First, try to identify product from existing lead data or from products list
+      let productType: string | null = null;
+      
+      if (lead.service_desired && products) {
+        const matchedProduct = products.find((p: any) => 
+          p.product_name.toLowerCase() === lead.service_desired?.toLowerCase() ||
+          lead.service_desired?.toLowerCase().includes(p.product_name.toLowerCase())
+        );
+        productType = matchedProduct?.product_type || null;
+      }
+
+      // Fetch playbook if we have a product type
+      if (productType) {
+        const { data: playbookData, error: playbookError } = await supabase
+          .from('playbooks')
+          .select('title, content, steps')
+          .eq('product_type', productType)
+          .single();
+
+        if (!playbookError && playbookData) {
+          playbook = playbookData;
+          console.log(`[analyze-lead] Found playbook for product_type: ${productType}`);
+        } else {
+          console.log(`[analyze-lead] No playbook found for product_type: ${productType}`);
+        }
+      }
+
+      // If no product type yet, fetch a general playbook or skip compliance
+      if (!playbook) {
+        // Try to get any playbook to use as reference (will be refined after product identification)
+        const { data: anyPlaybook } = await supabase
+          .from('playbooks')
+          .select('title, content, steps')
+          .limit(1)
+          .single();
+        
+        if (anyPlaybook) {
+          playbook = anyPlaybook;
+          console.log(`[analyze-lead] Using default playbook as reference`);
+        }
+      }
+
+      if (playbook) {
+        userPrompt += `
+
+PLAYBOOK DE VENDAS A SER SEGUIDO (${playbook.title}):
+${playbook.content}
+
+AVALIAÇÃO DO VENDEDOR:
+Analise se o vendedor seguiu corretamente o playbook acima. Verifique:
+1. Quais passos foram executados corretamente
+2. Quais passos foram pulados ou esquecidos
+3. Se houve violações das diretrizes (ex: não se apresentou, não perguntou nome, pulou etapas importantes)
+4. Dê uma nota geral do atendimento (0-10)
+5. Calcule o score de aderência ao playbook (0-100)`;
+      }
+    }
+
+    userPrompt += `
 
 Analise e responda:
 1. Qual produto/serviço o cliente demonstra interesse? (escolha da lista ou null se não identificado)
@@ -179,7 +279,119 @@ Analise e responda:
     - tecnica (dúvida técnica, compatibilidade)
     - indecisao (precisa pensar, não está pronto)`;
 
+    if (hasAgentMessages && playbook) {
+      userPrompt += `
+13. Score de aderência ao playbook (0-100) - quanto o vendedor seguiu o roteiro
+14. Lista de passos do playbook que foram seguidos corretamente
+15. Lista de passos do playbook que NÃO foram seguidos
+16. Violações críticas identificadas no atendimento (se houver)
+17. Nota geral do atendimento do vendedor (0-10)`;
+    }
+
     console.log(`[analyze-lead] Calling Lovable AI Gateway...`);
+
+    // Build tool parameters - base parameters for all analyses
+    const toolParameters: any = {
+      type: 'object',
+      properties: {
+        service_desired: {
+          type: 'string',
+          nullable: true,
+          description: 'Produto/serviço que o cliente deseja (da lista fornecida ou null)'
+        },
+        lead_temperature: {
+          type: 'string',
+          enum: ['quente', 'morno', 'frio'],
+          description: 'Temperatura do lead baseada na intenção de compra'
+        },
+        sentiment: {
+          type: 'string',
+          enum: ['Positivo', 'Neutro', 'Negativo'],
+          description: 'Sentimento geral do cliente na conversa'
+        },
+        lead_score: {
+          type: 'number',
+          minimum: 0,
+          maximum: 100,
+          description: 'Potencial de conversão de 0 a 100'
+        },
+        ai_tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '3-5 tags para categorizar o lead'
+        },
+        upsell_opportunity: {
+          type: 'string',
+          nullable: true,
+          description: 'Oportunidades de upsell identificadas'
+        },
+        customer_needs_summary: {
+          type: 'string',
+          description: 'Resumo das principais necessidades do cliente (2-3 frases)'
+        },
+        need_summary: {
+          type: 'string',
+          description: 'Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras)'
+        },
+        lead_intent: {
+          type: 'string',
+          enum: ['Orçamento', 'Dúvida', 'Negociar', 'Comparar', 'Agendamento'],
+          description: 'Intenção principal do lead'
+        },
+        has_objection: {
+          type: 'boolean',
+          description: 'Se o cliente apresentou objeção no atendimento'
+        },
+        objection_detail: {
+          type: 'string',
+          nullable: true,
+          description: 'Detalhe da objeção em uma frase (se houver)'
+        },
+        objection_categories: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['preco', 'tempo', 'distancia', 'financiamento', 'confianca', 'concorrencia', 'tecnica', 'indecisao']
+          },
+          description: 'Categorias de objeção identificadas (pode ser múltiplas)'
+        }
+      },
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
+    };
+
+    // Add compliance fields if we have agent messages and a playbook
+    if (hasAgentMessages && playbook) {
+      toolParameters.properties.playbook_compliance_score = {
+        type: 'number',
+        minimum: 0,
+        maximum: 100,
+        description: 'Score de aderência ao playbook (0-100) - quanto o vendedor seguiu o roteiro de vendas'
+      };
+      toolParameters.properties.playbook_steps_completed = {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Lista de passos do playbook que foram seguidos corretamente pelo vendedor'
+      };
+      toolParameters.properties.playbook_steps_missing = {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Lista de passos do playbook que NÃO foram seguidos pelo vendedor'
+      };
+      toolParameters.properties.playbook_violations = {
+        type: 'string',
+        nullable: true,
+        description: 'Violações críticas identificadas no atendimento do vendedor (ex: não se apresentou, foi rude, pulou etapas obrigatórias)'
+      };
+      toolParameters.properties.service_rating = {
+        type: 'number',
+        minimum: 0,
+        maximum: 10,
+        description: 'Nota geral do atendimento do vendedor (0-10)'
+      };
+      
+      // Add to required fields
+      toolParameters.required.push('playbook_compliance_score', 'service_rating');
+    }
 
     const aiResponse = await fetch(AI_GATEWAY, {
       method: 'POST',
@@ -198,74 +410,8 @@ Analise e responda:
             type: 'function',
             function: {
               name: 'analyze_lead',
-              description: 'Analisa e qualifica um lead com base na conversa',
-              parameters: {
-                type: 'object',
-                properties: {
-                  service_desired: {
-                    type: 'string',
-                    nullable: true,
-                    description: 'Produto/serviço que o cliente deseja (da lista fornecida ou null)'
-                  },
-                  lead_temperature: {
-                    type: 'string',
-                    enum: ['quente', 'morno', 'frio'],
-                    description: 'Temperatura do lead baseada na intenção de compra'
-                  },
-                  sentiment: {
-                    type: 'string',
-                    enum: ['Positivo', 'Neutro', 'Negativo'],
-                    description: 'Sentimento geral do cliente na conversa'
-                  },
-                  lead_score: {
-                    type: 'number',
-                    minimum: 0,
-                    maximum: 100,
-                    description: 'Potencial de conversão de 0 a 100'
-                  },
-                  ai_tags: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: '3-5 tags para categorizar o lead'
-                  },
-                  upsell_opportunity: {
-                    type: 'string',
-                    nullable: true,
-                    description: 'Oportunidades de upsell identificadas'
-                  },
-                  customer_needs_summary: {
-                    type: 'string',
-                    description: 'Resumo das principais necessidades do cliente (2-3 frases)'
-                  },
-                  need_summary: {
-                    type: 'string',
-                    description: 'Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras)'
-                  },
-                  lead_intent: {
-                    type: 'string',
-                    enum: ['Orçamento', 'Dúvida', 'Negociar', 'Comparar', 'Agendamento'],
-                    description: 'Intenção principal do lead'
-                  },
-                  has_objection: {
-                    type: 'boolean',
-                    description: 'Se o cliente apresentou objeção no atendimento'
-                  },
-                  objection_detail: {
-                    type: 'string',
-                    nullable: true,
-                    description: 'Detalhe da objeção em uma frase (se houver)'
-                  },
-                  objection_categories: {
-                    type: 'array',
-                    items: {
-                      type: 'string',
-                      enum: ['preco', 'tempo', 'distancia', 'financiamento', 'confianca', 'concorrencia', 'tecnica', 'indecisao']
-                    },
-                    description: 'Categorias de objeção identificadas (pode ser múltiplas). preco: preço alto ou busca desconto; tempo: agenda ocupada ou tempo de espera; distancia: localização longe; financiamento: parcelamento ou forma de pagamento; confianca: qualidade ou garantia; concorrencia: comparando com outros; tecnica: dúvida técnica; indecisao: precisa pensar mais'
-                  }
-                },
-                required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
-              }
+              description: 'Analisa e qualifica um lead com base na conversa, incluindo avaliação de compliance do vendedor se houver mensagens do vendedor',
+              parameters: toolParameters
             }
           }
         ],
@@ -323,7 +469,7 @@ Analise e responda:
       finalServiceDesired = matchedProduct?.product_name || lead.service_desired || null;
     }
 
-    // Prepare update payload (only lead-focused metrics)
+    // Prepare update payload
     const updatePayload: any = {
       session_id: session_id,
       sentiment: analysisResult.sentiment || 'Neutro',
@@ -341,12 +487,12 @@ Analise e responda:
       processed: true,
       ai_version: AI_VERSION,
       last_ai_update: new Date().toISOString(),
-      // Explicitly set salesperson-related fields to null (not relevant without salesperson messages)
-      playbook_compliance_score: null,
-      playbook_steps_completed: null,
-      playbook_steps_missing: null,
-      playbook_violations: null,
-      service_rating: null,
+      // Compliance fields - only populate if we analyzed agent messages
+      playbook_compliance_score: hasAgentMessages && playbook ? (analysisResult.playbook_compliance_score || null) : null,
+      playbook_steps_completed: hasAgentMessages && playbook ? (analysisResult.playbook_steps_completed || null) : null,
+      playbook_steps_missing: hasAgentMessages && playbook ? (analysisResult.playbook_steps_missing || null) : null,
+      playbook_violations: hasAgentMessages && playbook ? (analysisResult.playbook_violations || null) : null,
+      service_rating: hasAgentMessages && playbook ? (analysisResult.service_rating || null) : null,
       // Mark this as AI analysis for history tracking
       change_source: 'ai_analysis'
     };
@@ -364,7 +510,7 @@ Analise e responda:
     const duration = Date.now() - startTime;
     console.log(`[analyze-lead] Analysis completed in ${duration}ms`);
 
-    // Log success
+    // Log success with compliance info
     await logEvent(supabase, 'lead_analysis_completed', {
       session_id,
       duration_ms: duration,
@@ -372,7 +518,11 @@ Analise e responda:
       service_desired: updatePayload.service_desired,
       lead_temperature: updatePayload.lead_temperature,
       lead_score: updatePayload.lead_score,
-      sentiment: updatePayload.sentiment
+      sentiment: updatePayload.sentiment,
+      has_agent_messages: hasAgentMessages,
+      has_playbook: !!playbook,
+      playbook_compliance_score: updatePayload.playbook_compliance_score,
+      service_rating: updatePayload.service_rating
     });
 
     return new Response(
@@ -387,7 +537,15 @@ Analise e responda:
           ai_tags: updatePayload.ai_tags,
           upsell_opportunity: updatePayload.upsell_opportunity,
           customer_needs_summary: updatePayload.improvement_point,
-          need_summary: updatePayload.need_summary
+          need_summary: updatePayload.need_summary,
+          // Compliance results
+          playbook_compliance_score: updatePayload.playbook_compliance_score,
+          playbook_steps_completed: updatePayload.playbook_steps_completed,
+          playbook_steps_missing: updatePayload.playbook_steps_missing,
+          playbook_violations: updatePayload.playbook_violations,
+          service_rating: updatePayload.service_rating,
+          has_agent_messages: hasAgentMessages,
+          has_playbook: !!playbook
         },
         duration_ms: duration,
         ai_version: AI_VERSION
