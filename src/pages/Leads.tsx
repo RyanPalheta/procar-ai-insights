@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, AlertTriangle, Lightbulb } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, AlertTriangle, Lightbulb, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, differenceInDays, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -1138,6 +1138,12 @@ export default function Leads() {
                         <Sparkles className="h-3 w-3 text-primary" />
                       </span>
                     </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        Compliance
+                        <Sparkles className="h-3 w-3 text-primary" />
+                      </span>
+                    </TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -1206,6 +1212,26 @@ export default function Leads() {
                         )}
                       </TableCell>
                       <TableCell>{lead.service_desired || "N/A"}</TableCell>
+                      <TableCell>
+                        {lead.playbook_compliance_score !== null ? (
+                          <div className="flex items-center gap-1.5">
+                            <ClipboardCheck className={`h-4 w-4 ${
+                              lead.playbook_compliance_score >= 80 ? 'text-green-500' :
+                              lead.playbook_compliance_score >= 50 ? 'text-yellow-500' :
+                              'text-red-500'
+                            }`} />
+                            <span className={`font-medium ${
+                              lead.playbook_compliance_score >= 80 ? 'text-green-600' :
+                              lead.playbook_compliance_score >= 50 ? 'text-yellow-600' :
+                              'text-red-600'
+                            }`}>
+                              {lead.playbook_compliance_score}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(lead.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
