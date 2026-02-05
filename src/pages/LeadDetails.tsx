@@ -535,6 +535,17 @@ export default function LeadDetails() {
                     <span className="text-muted-foreground">Não</span>
                   )}
                 </span>
+                {(lead as any).has_objection && (lead as any).objection_overcome !== null && (
+                  <Badge 
+                    variant={(lead as any).objection_overcome ? "success" : "destructive"}
+                    className={(lead as any).objection_overcome 
+                      ? "bg-green-500 hover:bg-green-600 text-white" 
+                      : "bg-red-500 hover:bg-red-600 text-white"
+                    }
+                  >
+                    {(lead as any).objection_overcome ? "✅ Contornada" : "❌ Não Contornada"}
+                  </Badge>
+                )}
               </div>
               {(lead as any).has_objection && (lead as any).objection_detail && (
                 <p className="text-sm text-muted-foreground mt-1 italic">
