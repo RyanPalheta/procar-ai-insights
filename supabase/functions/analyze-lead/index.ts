@@ -164,7 +164,8 @@ IMPORTANTE:
       systemPrompt += `
 - TAMBÉM avalie o desempenho do VENDEDOR em seguir o playbook de vendas
 - Verifique se o vendedor seguiu todos os passos obrigatórios
-- Identifique violações ou passos pulados`;
+- Identifique violações ou passos pulados
+- Verifique se o vendedor utilizou estratégias de venda (ofertas, promoções, ancoragem de preço)`;
     }
 
     systemPrompt += `
@@ -251,7 +252,10 @@ Analise se o vendedor seguiu corretamente o playbook acima. Verifique:
 2. Quais passos foram pulados ou esquecidos
 3. Se houve violações das diretrizes (ex: não se apresentou, não perguntou nome, pulou etapas importantes)
 4. Dê uma nota geral do atendimento (0-10)
-5. Calcule o score de aderência ao playbook (0-100)`;
+5. Calcule o score de aderência ao playbook (0-100)
+6. Verifique se o vendedor usou técnicas de vendas (ofertas, ancoragem)
+   - Usar estratégias de venda AUMENTA a nota do atendimento em até +2 pontos
+   - Não usar estratégias em momento oportuno PODE diminuir a nota`;
       }
     }
 
@@ -280,7 +284,13 @@ Analise e responda:
     - indecisao (precisa pensar, não está pronto)
 13. Se o cliente apresentou objeção, o vendedor conseguiu contorná-la?
     - Contornada (true): O vendedor apresentou argumentos, ofereceu soluções, ou o cliente demonstrou aceitar/entender
-    - Não contornada (false): A objeção permaneceu sem resposta adequada ou o cliente manteve a resistência`;
+    - Não contornada (false): A objeção permaneceu sem resposta adequada ou o cliente manteve a resistência
+14. O vendedor ofereceu alguma promoção, desconto ou condição especial durante a conversa? (sim/não)
+    - Exemplos: desconto, promoção, oferta especial, condição especial, frete grátis, brinde, parcelamento sem juros
+15. Se ofereceu, descreva qual oferta/promoção foi usada em uma frase curta
+16. O vendedor utilizou estratégia de ancoragem de preço? (sim/não)
+    - Exemplos: Mostrou preço "de X por Y", comparou com concorrência, apresentou valor agregado antes do preço, ofereceu pacote com mais valor percebido
+17. Se usou ancoragem, descreva qual estratégia em uma frase curta`;
 
     if (hasAgentMessages && playbook) {
       userPrompt += `
@@ -362,9 +372,27 @@ Analise e responda:
           type: 'boolean',
           nullable: true,
           description: 'Se a objeção apresentada foi contornada pelo vendedor (true/false, null se não houver objeção)'
+        },
+        used_offer: {
+          type: 'boolean',
+          description: 'Se o vendedor ofereceu promoção, desconto ou condição especial'
+        },
+        offer_detail: {
+          type: 'string',
+          nullable: true,
+          description: 'Descrição da oferta/promoção utilizada pelo vendedor'
+        },
+        used_anchoring: {
+          type: 'boolean',
+          description: 'Se o vendedor usou estratégia de ancoragem de preço'
+        },
+        anchoring_detail: {
+          type: 'string',
+          nullable: true,
+          description: 'Descrição da estratégia de ancoragem utilizada'
         }
       },
-      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'used_offer', 'used_anchoring']
     };
 
     // Add compliance fields if we have agent messages and a playbook
@@ -502,6 +530,11 @@ Analise e responda:
       playbook_steps_missing: hasAgentMessages && playbook ? (analysisResult.playbook_steps_missing || null) : null,
       playbook_violations: hasAgentMessages && playbook ? (analysisResult.playbook_violations || null) : null,
       service_rating: hasAgentMessages && playbook ? (analysisResult.service_rating || null) : null,
+      // Sales strategy fields
+      used_offer: hasAgentMessages ? (analysisResult.used_offer || false) : null,
+      offer_detail: hasAgentMessages ? (analysisResult.offer_detail || null) : null,
+      used_anchoring: hasAgentMessages ? (analysisResult.used_anchoring || false) : null,
+      anchoring_detail: hasAgentMessages ? (analysisResult.anchoring_detail || null) : null,
       // Mark this as AI analysis for history tracking
       change_source: 'ai_analysis'
     };

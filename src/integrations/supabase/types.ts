@@ -133,6 +133,7 @@ export type Database = {
         Row: {
           ai_tags: string[] | null
           ai_version: string | null
+          anchoring_detail: string | null
           channel: string | null
           created_at: string
           has_objection: boolean | null
@@ -149,6 +150,7 @@ export type Database = {
           objection_categories: string[] | null
           objection_detail: string | null
           objection_overcome: boolean | null
+          offer_detail: string | null
           playbook_compliance_score: number | null
           playbook_steps_completed: string[] | null
           playbook_steps_missing: string[] | null
@@ -161,10 +163,13 @@ export type Database = {
           service_rating: number | null
           session_id: number
           upsell_opportunity: string | null
+          used_anchoring: boolean | null
+          used_offer: boolean | null
         }
         Insert: {
           ai_tags?: string[] | null
           ai_version?: string | null
+          anchoring_detail?: string | null
           channel?: string | null
           created_at?: string
           has_objection?: boolean | null
@@ -181,6 +186,7 @@ export type Database = {
           objection_categories?: string[] | null
           objection_detail?: string | null
           objection_overcome?: boolean | null
+          offer_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
@@ -193,10 +199,13 @@ export type Database = {
           service_rating?: number | null
           session_id: number
           upsell_opportunity?: string | null
+          used_anchoring?: boolean | null
+          used_offer?: boolean | null
         }
         Update: {
           ai_tags?: string[] | null
           ai_version?: string | null
+          anchoring_detail?: string | null
           channel?: string | null
           created_at?: string
           has_objection?: boolean | null
@@ -213,6 +222,7 @@ export type Database = {
           objection_categories?: string[] | null
           objection_detail?: string | null
           objection_overcome?: boolean | null
+          offer_detail?: string | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
@@ -225,6 +235,8 @@ export type Database = {
           service_rating?: number | null
           session_id?: number
           upsell_opportunity?: string | null
+          used_anchoring?: boolean | null
+          used_offer?: boolean | null
         }
         Relationships: []
       }
