@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Percent, Clock, Star, RefreshCw } from "lucide-react";
+import { Users, Percent, Clock, Star, RefreshCw, Home } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -389,6 +390,15 @@ export default function TVDashboard() {
         className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8"
       >
         <div className="flex items-center gap-4">
+          {/* Back to Home Button */}
+          <Link 
+            to="/"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-sm transition-all"
+            title="Voltar ao Dashboard"
+          >
+            <Home className="h-5 w-5" />
+          </Link>
+          
           <motion.img 
             src={logo} 
             alt="PROCAR Logo" 
@@ -399,7 +409,7 @@ export default function TVDashboard() {
           />
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
-              Dashboard de Performance
+              Painel 360°
             </h1>
             <p className="text-slate-500">Atualização em tempo real</p>
           </div>
