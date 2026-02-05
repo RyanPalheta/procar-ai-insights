@@ -343,6 +343,15 @@ export type Database = {
       }
     }
     Functions: {
+      get_conversion_by_response_time: {
+        Args: { period_days?: number }
+        Returns: {
+          conversion_rate: number
+          converted_leads: number
+          time_bracket: string
+          total_leads: number
+        }[]
+      }
       get_interaction_counts: {
         Args: never
         Returns: {
