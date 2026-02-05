@@ -28,6 +28,7 @@ import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart"
 import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
 import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
+import { LeadsConversionByResponseTimeChart } from "@/components/leads/LeadsConversionByResponseTimeChart";
 
 // Objection category colors
 const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
@@ -735,6 +736,13 @@ export default function Dashboard() {
           data={chartData.complianceData} 
           avgScore={chartData.avgCompliance}
           totalAudited={chartData.totalWithCompliance}
+        />
+      </div>
+
+      {/* Conversion by Response Time Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LeadsConversionByResponseTimeChart 
+          periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
         />
       </div>
 
