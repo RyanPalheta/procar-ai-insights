@@ -722,11 +722,23 @@ export default function Dashboard() {
                     className={`block p-3 rounded-lg transition-all hover:shadow-md border ${colorScheme.bg} ${colorScheme.border}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      {categoryLabel && (
-                        <Badge className={`text-xs font-medium ${colorScheme.tag} border-0`}>
-                          {categoryLabel}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {categoryLabel && (
+                          <Badge className={`text-xs font-medium ${colorScheme.tag} border-0`}>
+                            {categoryLabel}
+                          </Badge>
+                        )}
+                        {lead.objection_overcome !== null && (
+                          <Badge 
+                            variant={lead.objection_overcome ? "default" : "destructive"} 
+                            className={`text-xs font-medium ${lead.objection_overcome 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-0' 
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 border-0'}`}
+                          >
+                            {lead.objection_overcome ? '✅ Contornada' : '❌ Não Contornada'}
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">{timeAgo}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
