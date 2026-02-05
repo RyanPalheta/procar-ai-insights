@@ -150,6 +150,19 @@ Deno.serve(async (req) => {
     if (body.objection_overcome !== undefined) {
       updateData.objection_overcome = body.objection_overcome
     }
+    // Sales strategy fields
+    if (body.used_offer !== undefined) {
+      updateData.used_offer = body.used_offer
+    }
+    if (body.offer_detail !== undefined) {
+      updateData.offer_detail = body.offer_detail
+    }
+    if (body.used_anchoring !== undefined) {
+      updateData.used_anchoring = body.used_anchoring
+    }
+    if (body.anchoring_detail !== undefined) {
+      updateData.anchoring_detail = body.anchoring_detail
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 

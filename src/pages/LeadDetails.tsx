@@ -44,7 +44,9 @@ import {
   ClipboardCheck,
   XCircle,
   Star,
-  ShieldAlert
+  ShieldAlert,
+  Gift,
+  Anchor
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -774,6 +776,70 @@ export default function LeadDetails() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Estratégias de Venda */}
+            {((lead as any).used_offer !== null || (lead as any).used_anchoring !== null) && (
+              <>
+                <Separator />
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1 mb-3">
+                    <TrendingUp className="h-4 w-4" />
+                    Estratégias de Venda
+                    <Sparkles className="h-3 w-3 text-primary" />
+                  </label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ofertas/Promoções */}
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Gift className="h-4 w-4 text-green-500" />
+                        <span className="font-medium text-sm">Oferta/Promoção</span>
+                        {(lead as any).used_offer !== null && (
+                          <Badge 
+                            variant={(lead as any).used_offer ? "success" : "secondary"}
+                            className={(lead as any).used_offer 
+                              ? "bg-green-500 hover:bg-green-600 text-white text-xs" 
+                              : "text-xs"
+                            }
+                          >
+                            {(lead as any).used_offer ? "✅ Usou" : "Não usou"}
+                          </Badge>
+                        )}
+                      </div>
+                      {(lead as any).offer_detail && (
+                        <p className="text-sm text-muted-foreground italic mt-1">
+                          "{(lead as any).offer_detail}"
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Ancoragem */}
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Anchor className="h-4 w-4 text-blue-500" />
+                        <span className="font-medium text-sm">Ancoragem de Preço</span>
+                        {(lead as any).used_anchoring !== null && (
+                          <Badge 
+                            variant={(lead as any).used_anchoring ? "success" : "secondary"}
+                            className={(lead as any).used_anchoring 
+                              ? "bg-blue-500 hover:bg-blue-600 text-white text-xs" 
+                              : "text-xs"
+                            }
+                          >
+                            {(lead as any).used_anchoring ? "✅ Usou" : "Não usou"}
+                          </Badge>
+                        )}
+                      </div>
+                      {(lead as any).anchoring_detail && (
+                        <p className="text-sm text-muted-foreground italic mt-1">
+                          "{(lead as any).anchoring_detail}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
