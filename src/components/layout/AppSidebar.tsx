@@ -31,7 +31,7 @@ const navigationSections = [
     items: [
       { title: "Visão Geral", url: "/", icon: LayoutDashboard },
       { title: "Leads", url: "/leads", icon: Users, showUnviewedCount: true },
-      { title: "Dashboard TV", url: "/tv", icon: Monitor },
+      { title: "Painel 360°", url: "/tv", icon: Monitor },
     ],
   },
   {
