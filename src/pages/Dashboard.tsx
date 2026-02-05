@@ -325,7 +325,11 @@ export default function Dashboard() {
       objectionsData: [],
       complianceData: [],
       avgCompliance: 0,
-      totalWithCompliance: 0
+      totalWithCompliance: 0,
+      totalObjections: 0,
+      objectionsOvercome: 0,
+      objectionsNotOvercome: 0,
+      overcomeRate: 0
     };
 
     // Channel distribution
@@ -468,6 +472,13 @@ export default function Dashboard() {
       }))
       .sort((a, b) => b.value - a.value);
 
+    // Objection overcome stats
+    const leadsWithObjections = globalFilteredLeads.filter(l => l.has_objection === true);
+    const objectionsOvercome = leadsWithObjections.filter(l => l.objection_overcome === true).length;
+    const objectionsNotOvercome = leadsWithObjections.filter(l => l.objection_overcome === false).length;
+    const totalObjections = leadsWithObjections.length;
+    const overcomeRate = totalObjections > 0 ? (objectionsOvercome / totalObjections) * 100 : 0;
+
     // Compliance distribution
     const leadsWithCompliance = globalFilteredLeads.filter(
       l => l.playbook_compliance_score !== null && l.playbook_compliance_score !== undefined
@@ -504,7 +515,12 @@ export default function Dashboard() {
       objectionsData,
       complianceData,
       avgCompliance,
-      totalWithCompliance
+      totalWithCompliance,
+      // Objection overcome stats
+      totalObjections,
+      objectionsOvercome,
+      objectionsNotOvercome,
+      overcomeRate
     };
   }, [globalFilteredLeads, timelinePeriod]);
 
@@ -691,6 +707,54 @@ export default function Dashboard() {
           totalAudited={chartData.totalWithCompliance}
         />
       </div>
+
+      {/* Objection Overcome Stats */}
+      {chartData.totalObjections > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Taxa de Objeções Contornadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* Main percentage */}
+              <div className="flex flex-col items-center">
+                <span className={`text-4xl font-bold ${chartData.overcomeRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {chartData.overcomeRate.toFixed(1)}%
+                </span>
+                <span className="text-sm text-muted-foreground">Taxa de Sucesso</span>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="flex-1 w-full max-w-md">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-green-600 dark:text-green-400 font-medium">
+                    ✅ Contornadas: {chartData.objectionsOvercome}
+                  </span>
+                  <span className="text-red-600 dark:text-red-400 font-medium">
+                    ❌ Não Contornadas: {chartData.objectionsNotOvercome}
+                  </span>
+                </div>
+                <div className="h-4 bg-muted rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${chartData.overcomeRate}%` }}
+                  />
+                  <div 
+                    className="h-full bg-red-500 transition-all duration-300"
+                    style={{ width: `${100 - chartData.overcomeRate}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Total de {chartData.totalObjections} leads com objeções registradas
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Colorful Feeds Section - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
