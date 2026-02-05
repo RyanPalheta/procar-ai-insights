@@ -343,6 +343,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_conversion_by_quote_bracket: {
+        Args: { period_days?: number }
+        Returns: {
+          avg_quote_value: number
+          conversion_rate: number
+          converted_leads: number
+          quote_bracket: string
+          total_leads: number
+        }[]
+      }
       get_conversion_by_response_time: {
         Args: { period_days?: number }
         Returns: {
