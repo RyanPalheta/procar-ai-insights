@@ -277,7 +277,10 @@ Analise e responda:
     - confianca (qualidade, garantia, desconfiança)
     - concorrencia (comparando com outros, já tem proposta)
     - tecnica (dúvida técnica, compatibilidade)
-    - indecisao (precisa pensar, não está pronto)`;
+    - indecisao (precisa pensar, não está pronto)
+13. Se o cliente apresentou objeção, o vendedor conseguiu contorná-la?
+    - Contornada (true): O vendedor apresentou argumentos, ofereceu soluções, ou o cliente demonstrou aceitar/entender
+    - Não contornada (false): A objeção permaneceu sem resposta adequada ou o cliente manteve a resistência`;
 
     if (hasAgentMessages && playbook) {
       userPrompt += `
@@ -354,6 +357,11 @@ Analise e responda:
             enum: ['preco', 'tempo', 'distancia', 'financiamento', 'confianca', 'concorrencia', 'tecnica', 'indecisao']
           },
           description: 'Categorias de objeção identificadas (pode ser múltiplas)'
+        },
+        objection_overcome: {
+          type: 'boolean',
+          nullable: true,
+          description: 'Se a objeção apresentada foi contornada pelo vendedor (true/false, null se não houver objeção)'
         }
       },
       required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection']
@@ -484,6 +492,7 @@ Analise e responda:
       has_objection: analysisResult.has_objection || false,
       objection_detail: analysisResult.objection_detail || null,
       objection_categories: analysisResult.objection_categories || null,
+      objection_overcome: analysisResult.has_objection ? (analysisResult.objection_overcome ?? false) : null,
       processed: true,
       ai_version: AI_VERSION,
       last_ai_update: new Date().toISOString(),

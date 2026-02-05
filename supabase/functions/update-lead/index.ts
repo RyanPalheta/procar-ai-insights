@@ -147,6 +147,9 @@ Deno.serve(async (req) => {
     if (body.objection_categories !== undefined) {
       updateData.objection_categories = body.objection_categories
     }
+    if (body.objection_overcome !== undefined) {
+      updateData.objection_overcome = body.objection_overcome
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 

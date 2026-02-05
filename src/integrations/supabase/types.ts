@@ -148,6 +148,7 @@ export type Database = {
           need_summary: string | null
           objection_categories: string[] | null
           objection_detail: string | null
+          objection_overcome: boolean | null
           playbook_compliance_score: number | null
           playbook_steps_completed: string[] | null
           playbook_steps_missing: string[] | null
@@ -179,6 +180,7 @@ export type Database = {
           need_summary?: string | null
           objection_categories?: string[] | null
           objection_detail?: string | null
+          objection_overcome?: boolean | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
@@ -210,6 +212,7 @@ export type Database = {
           need_summary?: string | null
           objection_categories?: string[] | null
           objection_detail?: string | null
+          objection_overcome?: boolean | null
           playbook_compliance_score?: number | null
           playbook_steps_completed?: string[] | null
           playbook_steps_missing?: string[] | null
