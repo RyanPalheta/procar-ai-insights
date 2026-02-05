@@ -46,7 +46,7 @@ const initialTasks: Task[] = [
     status: "pending",
     subtasks: [
       { id: "2.1", title: "Carregar lista de produtos", status: "pending" },
-      { id: "2.2", title: "Análise de conversas com GPT", status: "pending" },
+      { id: "2.2", title: "Análise de conversas com IA", status: "pending" },
       { id: "2.3", title: "Validar produto identificado", status: "pending" },
     ]
   },
@@ -63,11 +63,11 @@ const initialTasks: Task[] = [
   {
     id: "4",
     title: "Auditoria de Vendas",
-    description: "Análise detalhada com GPT-5",
+    description: "Análise detalhada com IA",
     status: "pending",
     subtasks: [
       { id: "4.1", title: "Preparar contexto da conversa", status: "pending" },
-      { id: "4.2", title: "Enviar para análise GPT-5", status: "pending" },
+      { id: "4.2", title: "Enviar para análise de IA", status: "pending" },
       { id: "4.3", title: "Extrair compliance score", status: "pending" },
       { id: "4.4", title: "Identificar etapas cumpridas", status: "pending" },
       { id: "4.5", title: "Identificar etapas faltantes", status: "pending" },

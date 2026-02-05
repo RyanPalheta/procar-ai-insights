@@ -227,7 +227,10 @@ export default function LeadDetails() {
   };
 
   const handleAnalysisComplete = () => {
-    // Called when animation completes
+    // Auto-close dialog after 1.5 seconds to let user see completion
+    setTimeout(() => {
+      setShowAnalysisDialog(false);
+    }, 1500);
   };
 
   const handleUpdateSalesStatus = async (newStatus: string) => {
