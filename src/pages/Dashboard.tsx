@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, X, AlertTriangle, Lightbulb, Search, Bell, Download } from "lucide-react";
+import { Filter, X, AlertTriangle, Lightbulb, Search, Bell, Download, Gift, Anchor, TrendingUp } from "lucide-react";
 import { differenceInHours, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -329,7 +329,15 @@ export default function Dashboard() {
       totalObjections: 0,
       objectionsOvercome: 0,
       objectionsNotOvercome: 0,
-      overcomeRate: 0
+      overcomeRate: 0,
+      // Sales strategies
+      totalWithAgentMessages: 0,
+      usedOffer: 0,
+      notUsedOffer: 0,
+      offerRate: 0,
+      usedAnchoring: 0,
+      notUsedAnchoring: 0,
+      anchoringRate: 0
     };
 
     // Channel distribution
@@ -503,6 +511,20 @@ export default function Dashboard() {
       { name: "Baixo", value: complianceRanges.low, percentage: totalWithCompliance > 0 ? (complianceRanges.low / totalWithCompliance) * 100 : 0 },
     ].filter(item => item.value > 0);
 
+    // Sales strategies stats
+    const leadsWithAgentMessages = globalFilteredLeads.filter(l => 
+      (l as any).used_offer !== null || (l as any).used_anchoring !== null
+    );
+    const totalWithAgentMessages = leadsWithAgentMessages.length;
+    
+    const usedOffer = leadsWithAgentMessages.filter(l => (l as any).used_offer === true).length;
+    const notUsedOffer = leadsWithAgentMessages.filter(l => (l as any).used_offer === false).length;
+    const offerRate = totalWithAgentMessages > 0 ? (usedOffer / totalWithAgentMessages) * 100 : 0;
+    
+    const usedAnchoring = leadsWithAgentMessages.filter(l => (l as any).used_anchoring === true).length;
+    const notUsedAnchoring = leadsWithAgentMessages.filter(l => (l as any).used_anchoring === false).length;
+    const anchoringRate = totalWithAgentMessages > 0 ? (usedAnchoring / totalWithAgentMessages) * 100 : 0;
+
     return {
       channelData,
       closedChannelData,
@@ -520,7 +542,15 @@ export default function Dashboard() {
       totalObjections,
       objectionsOvercome,
       objectionsNotOvercome,
-      overcomeRate
+      overcomeRate,
+      // Sales strategies stats
+      totalWithAgentMessages,
+      usedOffer,
+      notUsedOffer,
+      offerRate,
+      usedAnchoring,
+      notUsedAnchoring,
+      anchoringRate
     };
   }, [globalFilteredLeads, timelinePeriod]);
 
@@ -752,6 +782,80 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sales Strategies Stats */}
+      {chartData.totalWithAgentMessages > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Uso de Estratégias de Venda
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Offers/Promotions */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-green-500" />
+                  <span className="font-medium">Ofertas/Promoções</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`text-3xl font-bold ${chartData.offerRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {chartData.offerRate.toFixed(1)}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">Taxa de Uso</span>
+                </div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-green-600 dark:text-green-400">✅ Usou: {chartData.usedOffer}</span>
+                  <span className="text-muted-foreground">Não usou: {chartData.notUsedOffer}</span>
+                </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${chartData.offerRate}%` }}
+                  />
+                  <div 
+                    className="h-full bg-muted-foreground/30 transition-all duration-300"
+                    style={{ width: `${100 - chartData.offerRate}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Price Anchoring */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Anchor className="h-5 w-5 text-blue-500" />
+                  <span className="font-medium">Ancoragem de Preço</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`text-3xl font-bold ${chartData.anchoringRate >= 50 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {chartData.anchoringRate.toFixed(1)}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">Taxa de Uso</span>
+                </div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-blue-600 dark:text-blue-400">✅ Usou: {chartData.usedAnchoring}</span>
+                  <span className="text-muted-foreground">Não usou: {chartData.notUsedAnchoring}</span>
+                </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${chartData.anchoringRate}%` }}
+                  />
+                  <div 
+                    className="h-full bg-muted-foreground/30 transition-all duration-300"
+                    style={{ width: `${100 - chartData.anchoringRate}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              Total de {chartData.totalWithAgentMessages} leads analisados com mensagens do vendedor
+            </p>
           </CardContent>
         </Card>
       )}
