@@ -29,6 +29,7 @@ import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
 import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
 import { LeadsConversionByResponseTimeChart } from "@/components/leads/LeadsConversionByResponseTimeChart";
+import { LeadsConversionByQuoteChart } from "@/components/leads/LeadsConversionByQuoteChart";
 
 // Objection category colors
 const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
@@ -739,9 +740,12 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Conversion by Response Time Chart */}
+      {/* Conversion by Response Time & Quote Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LeadsConversionByResponseTimeChart 
+          periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
+        />
+        <LeadsConversionByQuoteChart 
           periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
         />
       </div>
