@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Percent, Clock, Star, RefreshCw, TrendingUp, Target } from "lucide-react";
+import { Users, Percent, Clock, Star, RefreshCw } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,58 @@ const periodOptions = [
   { value: "30", label: "30 dias", days: 30 },
 ];
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+};
+
+const headerVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 20,
+    },
+  },
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, x: -30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 80,
+      damping: 20,
+    },
+  },
+};
+
 export default function TVDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("7");
   const periodDays = parseInt(selectedPeriod);
@@ -43,7 +96,6 @@ export default function TVDashboard() {
     document.documentElement.classList.add('light');
     
     return () => {
-      // Restore previous theme when leaving
       document.documentElement.classList.remove('light');
       if (previousTheme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -114,19 +166,16 @@ export default function TVDashboard() {
 
     const auditedLeads = filteredLeads.filter(l => l.last_ai_update);
     
-    // Average service rating
     const ratingsCount = auditedLeads.filter(l => l.service_rating !== null);
     const avgRating = ratingsCount.length > 0 
       ? ratingsCount.reduce((sum, l) => sum + (l.service_rating || 0), 0) / ratingsCount.length
       : 0;
 
-    // Playbook compliance
     const complianceScores = auditedLeads.filter(l => l.playbook_compliance_score !== null);
     const avgCompliance = complianceScores.length > 0
       ? complianceScores.reduce((sum, l) => sum + (l.playbook_compliance_score || 0), 0) / complianceScores.length
       : 0;
 
-    // Steps completion rates
     const stepsAnalysis = auditedLeads.reduce((acc, lead) => {
       const completed = lead.playbook_steps_completed || [];
       if (completed.includes("saudacao")) acc.saudacao++;
@@ -142,7 +191,6 @@ export default function TVDashboard() {
       ? Math.round((stepsAnalysis.qualificacao / stepsAnalysis.total) * 100)
       : 0;
 
-    // Sales strategies usage
     const strategiesAnalysis = auditedLeads.reduce((acc, lead) => {
       if (lead.used_offer) acc.offer++;
       if (lead.used_anchoring) acc.anchoring++;
@@ -162,7 +210,6 @@ export default function TVDashboard() {
       ? Math.round((strategiesAnalysis.objectionOvercome / strategiesAnalysis.hasObjection) * 100)
       : 0;
 
-    // Objection categories ranking
     const objectionCounts: Record<string, { total: number; overcome: number }> = {};
     auditedLeads.forEach(lead => {
       const categories = lead.objection_categories || [];
@@ -193,7 +240,6 @@ export default function TVDashboard() {
         count: item.count,
       }));
 
-    // Find lowest overcome rate objection for alert
     const lowestObjection = objectionRanking.reduce((lowest, current) => 
       current.overcomeRate < lowest.overcomeRate ? current : lowest
     , objectionRanking[0] || { label: "", overcomeRate: 100 });
@@ -212,25 +258,22 @@ export default function TVDashboard() {
     };
   }, [filteredLeads]);
 
-  // Calculate metrics for previous period (for comparison)
+  // Calculate metrics for previous period
   const previousMetrics = useMemo(() => {
     if (!previousPeriodLeads.length) return null;
 
     const auditedLeads = previousPeriodLeads.filter(l => l.last_ai_update);
     
-    // Average service rating
     const ratingsCount = auditedLeads.filter(l => l.service_rating !== null);
     const avgRating = ratingsCount.length > 0 
       ? ratingsCount.reduce((sum, l) => sum + (l.service_rating || 0), 0) / ratingsCount.length
       : 0;
 
-    // Playbook compliance
     const complianceScores = auditedLeads.filter(l => l.playbook_compliance_score !== null);
     const avgCompliance = complianceScores.length > 0
       ? complianceScores.reduce((sum, l) => sum + (l.playbook_compliance_score || 0), 0) / complianceScores.length
       : 0;
 
-    // Steps completion rates
     const stepsAnalysis = auditedLeads.reduce((acc, lead) => {
       const completed = lead.playbook_steps_completed || [];
       if (completed.includes("saudacao")) acc.saudacao++;
@@ -246,7 +289,6 @@ export default function TVDashboard() {
       ? Math.round((stepsAnalysis.qualificacao / stepsAnalysis.total) * 100)
       : 0;
 
-    // Sales strategies usage
     const strategiesAnalysis = auditedLeads.reduce((acc, lead) => {
       if (lead.used_offer) acc.offer++;
       if (lead.used_anchoring) acc.anchoring++;
@@ -282,38 +324,20 @@ export default function TVDashboard() {
   const trends = useMemo(() => {
     if (!kpisData?.previous_period || !metrics || !previousMetrics) return null;
 
-    // Leads trend
     const leadsDiff = metrics.leadsCount - previousMetrics.leadsCount;
     const leadsDiffPercent = previousMetrics.leadsCount > 0
       ? Math.round((leadsDiff / previousMetrics.leadsCount) * 100)
       : 0;
 
-    // Conversion trend (from RPC)
     const conversionDiff = kpisData.conversion_rate - kpisData.previous_period.conversion_rate;
 
-    // Response time trend (from RPC)
     const responseDiff = (kpisData.median_first_response_time_minutes || 0) - 
                          (kpisData.previous_period.median_first_response_time_minutes || 0);
 
-    // Rating trend
     const ratingDiff = metrics.avgRating - previousMetrics.avgRating;
-
-    // Compliance trend
     const complianceDiff = metrics.avgCompliance - previousMetrics.avgCompliance;
-
-    // Saudação trend
     const saudacaoDiff = metrics.saudacaoRate - previousMetrics.saudacaoRate;
-
-    // Qualificação trend
     const qualificacaoDiff = metrics.qualificacaoRate - previousMetrics.qualificacaoRate;
-
-    // Offer rate trend
-    const offerDiff = metrics.offerRate - previousMetrics.offerRate;
-
-    // Anchoring rate trend
-    const anchoringDiff = metrics.anchoringRate - previousMetrics.anchoringRate;
-
-    // Objection overcome trend
     const objectionDiff = metrics.objectionOvercomeRate - previousMetrics.objectionOvercomeRate;
 
     return {
@@ -327,7 +351,7 @@ export default function TVDashboard() {
       },
       response: {
         value: `${responseDiff >= 0 ? '+' : ''}${Math.round(responseDiff)}m`,
-        isPositive: responseDiff <= 0, // Lower is better for response time
+        isPositive: responseDiff <= 0,
       },
       rating: {
         value: `${ratingDiff >= 0 ? '+' : ''}${ratingDiff.toFixed(1)}`,
@@ -345,14 +369,6 @@ export default function TVDashboard() {
         value: `${qualificacaoDiff >= 0 ? '+' : ''}${qualificacaoDiff}%`,
         isPositive: qualificacaoDiff >= 0,
       },
-      offer: {
-        value: `${offerDiff >= 0 ? '+' : ''}${offerDiff}%`,
-        isPositive: offerDiff >= 0,
-      },
-      anchoring: {
-        value: `${anchoringDiff >= 0 ? '+' : ''}${anchoringDiff}%`,
-        isPositive: anchoringDiff >= 0,
-      },
       objection: {
         value: `${objectionDiff >= 0 ? '+' : ''}${objectionDiff}%`,
         isPositive: objectionDiff >= 0,
@@ -364,11 +380,23 @@ export default function TVDashboard() {
   const periodLabel = periodOptions.find(p => p.value === selectedPeriod)?.label || "7 dias";
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 p-6 lg:p-8 overflow-hidden">
       {/* Header */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+      <motion.header 
+        variants={headerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8"
+      >
         <div className="flex items-center gap-4">
-          <img src={logo} alt="PROCAR Logo" className="h-12 w-12 object-contain" />
+          <motion.img 
+            src={logo} 
+            alt="PROCAR Logo" 
+            className="h-12 w-12 object-contain"
+            initial={{ rotate: -180, opacity: 0 }}
+            animate={{ rotate: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          />
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
               Dashboard de Performance
@@ -377,7 +405,12 @@ export default function TVDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <motion.div 
+          className="flex items-center gap-6"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           {/* Period Toggle */}
           <div className="flex items-center gap-3">
             <span className="text-slate-500 text-sm font-medium">Período:</span>
@@ -411,134 +444,162 @@ export default function TVDashboard() {
               Auto-refresh: 30s • Última: {lastUpdate}
             </span>
           </div>
-        </div>
-      </header>
+        </motion.div>
+      </motion.header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <TVKPICard
-          title={`Leads (${periodLabel})`}
-          value={metrics?.leadsCount ?? 0}
-          icon={Users}
-          trend={trends?.leads}
-          subtitle="vs. período anterior"
-        />
-        <TVKPICard
-          title="Conversão"
-          value={`${Math.round(kpisData?.conversion_rate ?? 0)}%`}
-          icon={Percent}
-          trend={trends?.conversion}
-          subtitle="vs. período anterior"
-        />
-        <TVKPICard
-          title="1ª Resposta"
-          value={`${Math.round(kpisData?.median_first_response_time_minutes ?? 0)}m`}
-          icon={Clock}
-          trend={trends?.response}
-          isAlert={(kpisData?.median_first_response_time_minutes ?? 0) > 15}
-          subtitle="tempo mediano"
-        />
-        <TVKPICard
-          title="Nota Média"
-          value={(metrics?.avgRating ?? 0).toFixed(1)}
-          icon={Star}
-          trend={trends?.rating}
-          subtitle="avaliação de atendimento"
-        />
-      </div>
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8"
+      >
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title={`Leads (${periodLabel})`}
+            value={metrics?.leadsCount ?? 0}
+            icon={Users}
+            trend={trends?.leads}
+            subtitle="vs. período anterior"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title="Conversão"
+            value={`${Math.round(kpisData?.conversion_rate ?? 0)}%`}
+            icon={Percent}
+            trend={trends?.conversion}
+            subtitle="vs. período anterior"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title="1ª Resposta"
+            value={`${Math.round(kpisData?.median_first_response_time_minutes ?? 0)}m`}
+            icon={Clock}
+            trend={trends?.response}
+            isAlert={(kpisData?.median_first_response_time_minutes ?? 0) > 15}
+            subtitle="tempo mediano"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title="Nota Média"
+            value={(metrics?.avgRating ?? 0).toFixed(1)}
+            icon={Star}
+            trend={trends?.rating}
+            subtitle="avaliação de atendimento"
+          />
+        </motion.div>
+      </motion.div>
 
-      {/* Secondary KPI Cards - Additional Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <div className="bg-white rounded-2xl shadow-md p-5 border border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-500 text-sm font-medium">Compliance Script</span>
-            {trends?.compliance && (
-              <span className={cn(
-                "text-xs font-semibold px-2 py-1 rounded-full",
-                trends.compliance.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-              )}>
-                {trends.compliance.value}
-              </span>
-            )}
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{metrics?.avgCompliance ?? 0}%</div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-5 border border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-500 text-sm font-medium">Saudação Inicial</span>
-            {trends?.saudacao && (
-              <span className={cn(
-                "text-xs font-semibold px-2 py-1 rounded-full",
-                trends.saudacao.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-              )}>
-                {trends.saudacao.value}
-              </span>
-            )}
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{metrics?.saudacaoRate ?? 0}%</div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-5 border border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-500 text-sm font-medium">Qualificação</span>
-            {trends?.qualificacao && (
-              <span className={cn(
-                "text-xs font-semibold px-2 py-1 rounded-full",
-                trends.qualificacao.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-              )}>
-                {trends.qualificacao.value}
-              </span>
-            )}
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{metrics?.qualificacaoRate ?? 0}%</div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-5 border border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-500 text-sm font-medium">Objeções Contornadas</span>
-            {trends?.objection && (
-              <span className={cn(
-                "text-xs font-semibold px-2 py-1 rounded-full",
-                trends.objection.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-              )}>
-                {trends.objection.value}
-              </span>
-            )}
-          </div>
-          <div className="text-3xl font-bold text-slate-800">{metrics?.objectionOvercomeRate ?? 0}%</div>
-        </div>
-      </div>
+      {/* Secondary KPI Cards */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8"
+      >
+        {[
+          { label: "Compliance Script", value: metrics?.avgCompliance ?? 0, trend: trends?.compliance, unit: "%" },
+          { label: "Saudação Inicial", value: metrics?.saudacaoRate ?? 0, trend: trends?.saudacao, unit: "%" },
+          { label: "Qualificação", value: metrics?.qualificacaoRate ?? 0, trend: trends?.qualificacao, unit: "%" },
+          { label: "Objeções Contornadas", value: metrics?.objectionOvercomeRate ?? 0, trend: trends?.objection, unit: "%" },
+        ].map((item, index) => (
+          <motion.div 
+            key={item.label}
+            variants={itemVariants}
+            whileHover={{ scale: 1.02, y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="bg-white rounded-2xl shadow-md p-5 border border-slate-100 cursor-default"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-500 text-sm font-medium">{item.label}</span>
+              {item.trend && (
+                <motion.span 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5 + index * 0.1, type: "spring" }}
+                  className={cn(
+                    "text-xs font-semibold px-2 py-1 rounded-full",
+                    item.trend.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                  )}
+                >
+                  {item.trend.value}
+                </motion.span>
+              )}
+            </div>
+            <motion.div 
+              className="text-3xl font-bold text-slate-800"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 100 }}
+            >
+              {item.value}{item.unit}
+            </motion.div>
+          </motion.div>
+        ))}
+      </motion.div>
 
       {/* Middle Section - Quality & Efficiency */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <TVQualitySection
-          metrics={[
-            { label: "Compliance de Script", value: metrics?.avgCompliance ?? 0, showAlert: true },
-            { label: "Saudação Inicial", value: metrics?.saudacaoRate ?? 0, showAlert: true },
-            { label: "Qualificação de Lead", value: metrics?.qualificacaoRate ?? 0, showAlert: true },
-          ]}
-          insight="Atendimentos com compliance alto convertem 28% mais"
-        />
-        <TVEfficiencySection
-          metrics={[
-            { label: "Financeira Apresentada", icon: "financial", value: metrics?.offerRate ?? 0 },
-            { label: "Promoções/Âncora", icon: "promo", value: metrics?.anchoringRate ?? 0 },
-            { label: "Contorno de Objeções", icon: "objection", value: metrics?.objectionOvercomeRate ?? 0 },
-          ]}
-        />
-      </div>
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.2, delayChildren: 0.4 }
+          }
+        }}
+      >
+        <motion.div 
+          variants={sectionVariants}
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <TVQualitySection
+            metrics={[
+              { label: "Compliance de Script", value: metrics?.avgCompliance ?? 0, showAlert: true },
+              { label: "Saudação Inicial", value: metrics?.saudacaoRate ?? 0, showAlert: true },
+              { label: "Qualificação de Lead", value: metrics?.qualificacaoRate ?? 0, showAlert: true },
+            ]}
+            insight="Atendimentos com compliance alto convertem 28% mais"
+          />
+        </motion.div>
+        <motion.div 
+          variants={sectionVariants}
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <TVEfficiencySection
+            metrics={[
+              { label: "Financeira Apresentada", icon: "financial", value: metrics?.offerRate ?? 0 },
+              { label: "Promoções/Âncora", icon: "promo", value: metrics?.anchoringRate ?? 0 },
+              { label: "Contorno de Objeções", icon: "objection", value: metrics?.objectionOvercomeRate ?? 0 },
+            ]}
+          />
+        </motion.div>
+      </motion.div>
 
       {/* Bottom Section - Objection Ranking */}
-      <TVObjectionRanking
-        objections={metrics?.objectionRanking ?? []}
-        overallRate={metrics?.objectionOvercomeRate ?? 0}
-        alertMessage={
-          metrics?.lowestObjection && metrics.lowestObjection.overcomeRate < 60
-            ? `Objeção "${metrics.lowestObjection.label}" está com baixo contorno neste período`
-            : undefined
-        }
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, type: "spring", stiffness: 80, damping: 20 }}
+        whileHover={{ scale: 1.005 }}
+      >
+        <TVObjectionRanking
+          objections={metrics?.objectionRanking ?? []}
+          overallRate={metrics?.objectionOvercomeRate ?? 0}
+          alertMessage={
+            metrics?.lowestObjection && metrics.lowestObjection.overcomeRate < 60
+              ? `Objeção "${metrics.lowestObjection.label}" está com baixo contorno neste período`
+              : undefined
+          }
+        />
+      </motion.div>
     </div>
   );
 }
