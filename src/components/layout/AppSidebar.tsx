@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -31,6 +31,7 @@ const navigationSections = [
     items: [
       { title: "Visão Geral", url: "/", icon: LayoutDashboard },
       { title: "Leads", url: "/leads", icon: Users, showUnviewedCount: true },
+      { title: "Dashboard TV", url: "/tv", icon: Monitor },
     ],
   },
   {

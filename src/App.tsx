@@ -11,6 +11,7 @@ import Calls from "./pages/Calls";
 import Interactions from "./pages/Interactions";
 import Settings from "./pages/Settings";
 import Logs from "./pages/Logs";
+import TVDashboard from "./pages/TVDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,8 @@ const App = () => (
               </AppLayout>
             }
           />
+          {/* TV Dashboard - Fullscreen without AppLayout */}
+          <Route path="/tv" element={<TVDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
