@@ -750,127 +750,120 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Objection Overcome Stats */}
-      {chartData.totalObjections > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Taxa de Objeções Contornadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Main percentage */}
-              <div className="flex flex-col items-center">
-                <span className={`text-4xl font-bold ${chartData.overcomeRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {chartData.overcomeRate.toFixed(1)}%
-                </span>
-                <span className="text-sm text-muted-foreground">Taxa de Sucesso</span>
-              </div>
-              
-              {/* Progress bar */}
-              <div className="flex-1 w-full max-w-md">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-green-600 dark:text-green-400 font-medium">
-                    ✅ Contornadas: {chartData.objectionsOvercome}
+      {/* Objection & Sales Strategy Stats - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Objection Overcome Stats */}
+        {chartData.totalObjections > 0 && (
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Taxa de Objeções Contornadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                {/* Main percentage */}
+                <div className="flex flex-col items-center">
+                  <span className={`text-4xl font-bold ${chartData.overcomeRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {chartData.overcomeRate.toFixed(1)}%
                   </span>
-                  <span className="text-red-600 dark:text-red-400 font-medium">
-                    ❌ Não Contornadas: {chartData.objectionsNotOvercome}
-                  </span>
+                  <span className="text-sm text-muted-foreground">Taxa de Sucesso</span>
                 </div>
-                <div className="h-4 bg-muted rounded-full overflow-hidden flex">
-                  <div 
-                    className="h-full bg-green-500 transition-all duration-300"
-                    style={{ width: `${chartData.overcomeRate}%` }}
-                  />
-                  <div 
-                    className="h-full bg-red-500 transition-all duration-300"
-                    style={{ width: `${100 - chartData.overcomeRate}%` }}
-                  />
+                
+                {/* Progress bar */}
+                <div className="w-full">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-green-600 dark:text-green-400 font-medium">
+                      ✅ Contornadas: {chartData.objectionsOvercome}
+                    </span>
+                    <span className="text-red-600 dark:text-red-400 font-medium">
+                      ❌ Não Contornadas: {chartData.objectionsNotOvercome}
+                    </span>
+                  </div>
+                  <div className="h-4 bg-muted rounded-full overflow-hidden flex">
+                    <div 
+                      className="h-full bg-green-500 transition-all duration-300"
+                      style={{ width: `${chartData.overcomeRate}%` }}
+                    />
+                    <div 
+                      className="h-full bg-red-500 transition-all duration-300"
+                      style={{ width: `${100 - chartData.overcomeRate}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Total de {chartData.totalObjections} leads com objeções registradas
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Total de {chartData.totalObjections} leads com objeções registradas
-                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Sales Strategies Stats */}
-      {chartData.totalWithAgentMessages > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Uso de Estratégias de Venda
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Offers/Promotions */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-green-500" />
-                  <span className="font-medium">Ofertas/Promoções</span>
+        {/* Sales Strategies Stats */}
+        {chartData.totalWithAgentMessages > 0 && (
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Uso de Estratégias de Venda
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Offers/Promotions */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-green-500" />
+                    <span className="font-medium text-sm">Ofertas/Promoções</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${chartData.offerRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {chartData.offerRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-green-600 dark:text-green-400">✅ {chartData.usedOffer}</span>
+                    <span className="text-muted-foreground">❌ {chartData.notUsedOffer}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden flex">
+                    <div 
+                      className="h-full bg-green-500 transition-all duration-300"
+                      style={{ width: `${chartData.offerRate}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className={`text-3xl font-bold ${chartData.offerRate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                    {chartData.offerRate.toFixed(1)}%
-                  </span>
-                  <span className="text-sm text-muted-foreground">Taxa de Uso</span>
-                </div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-green-600 dark:text-green-400">✅ Usou: {chartData.usedOffer}</span>
-                  <span className="text-muted-foreground">Não usou: {chartData.notUsedOffer}</span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden flex">
-                  <div 
-                    className="h-full bg-green-500 transition-all duration-300"
-                    style={{ width: `${chartData.offerRate}%` }}
-                  />
-                  <div 
-                    className="h-full bg-muted-foreground/30 transition-all duration-300"
-                    style={{ width: `${100 - chartData.offerRate}%` }}
-                  />
-                </div>
-              </div>
 
-              {/* Price Anchoring */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Anchor className="h-5 w-5 text-blue-500" />
-                  <span className="font-medium">Ancoragem de Preço</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className={`text-3xl font-bold ${chartData.anchoringRate >= 50 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                    {chartData.anchoringRate.toFixed(1)}%
-                  </span>
-                  <span className="text-sm text-muted-foreground">Taxa de Uso</span>
-                </div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-blue-600 dark:text-blue-400">✅ Usou: {chartData.usedAnchoring}</span>
-                  <span className="text-muted-foreground">Não usou: {chartData.notUsedAnchoring}</span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden flex">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${chartData.anchoringRate}%` }}
-                  />
-                  <div 
-                    className="h-full bg-muted-foreground/30 transition-all duration-300"
-                    style={{ width: `${100 - chartData.anchoringRate}%` }}
-                  />
+                {/* Price Anchoring */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Anchor className="h-4 w-4 text-blue-500" />
+                    <span className="font-medium text-sm">Ancoragem de Preço</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${chartData.anchoringRate >= 50 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {chartData.anchoringRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-blue-600 dark:text-blue-400">✅ {chartData.usedAnchoring}</span>
+                    <span className="text-muted-foreground">❌ {chartData.notUsedAnchoring}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden flex">
+                    <div 
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${chartData.anchoringRate}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4 text-center">
-              Total de {chartData.totalWithAgentMessages} leads analisados com mensagens do vendedor
-            </p>
-          </CardContent>
-        </Card>
-      )}
+              <p className="text-xs text-muted-foreground mt-4 text-center">
+                Total de {chartData.totalWithAgentMessages} leads analisados
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Colorful Feeds Section - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
