@@ -290,7 +290,9 @@ Analise e responda:
 15. Se ofereceu, descreva qual oferta/promoção foi usada em uma frase curta
 16. O vendedor utilizou estratégia de ancoragem de preço? (sim/não)
     - Exemplos: Mostrou preço "de X por Y", comparou com concorrência, apresentou valor agregado antes do preço, ofereceu pacote com mais valor percebido
-17. Se usou ancoragem, descreva qual estratégia em uma frase curta`;
+17. Se usou ancoragem, descreva qual estratégia em uma frase curta
+18. Foi mencionado algum valor/preço na conversa pelo vendedor? Se sim, extraia o valor numérico (ex: "$85" → 85, "R$ 450,00" → 450)
+19. Uma cotação formal de preço foi apresentada ao cliente?`;
 
     if (hasAgentMessages && playbook) {
       userPrompt += `
@@ -390,9 +392,18 @@ Analise e responda:
           type: 'string',
           nullable: true,
           description: 'Descrição da estratégia de ancoragem utilizada'
+        },
+        quoted_price: {
+          type: 'number',
+          nullable: true,
+          description: 'Valor monetário cotado pelo vendedor (ex: 85 para "$85", 450 para "R$ 450,00"). Null se nenhum preço foi mencionado.'
+        },
+        has_quote: {
+          type: 'boolean',
+          description: 'Se uma cotação ou preço formal foi apresentado ao cliente'
         }
       },
-      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'used_offer', 'used_anchoring']
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'used_offer', 'used_anchoring', 'has_quote']
     };
 
     // Add compliance fields if we have agent messages and a playbook
@@ -502,7 +513,7 @@ Analise e responda:
         p.product_name.toLowerCase() === analysisResult.service_desired?.toLowerCase() ||
         analysisResult.service_desired?.toLowerCase().includes(p.product_name.toLowerCase())
       );
-      finalServiceDesired = matchedProduct?.product_name || lead.service_desired || null;
+      finalServiceDesired = matchedProduct?.product_name || analysisResult.service_desired || lead.service_desired || null;
     }
 
     // Prepare update payload
@@ -535,6 +546,8 @@ Analise e responda:
       offer_detail: hasAgentMessages ? (analysisResult.offer_detail || null) : null,
       used_anchoring: hasAgentMessages ? (analysisResult.used_anchoring || false) : null,
       anchoring_detail: hasAgentMessages ? (analysisResult.anchoring_detail || null) : null,
+      // Price extraction
+      lead_price: analysisResult.quoted_price || null,
       // Mark this as AI analysis for history tracking
       change_source: 'ai_analysis'
     };
