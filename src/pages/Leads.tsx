@@ -174,6 +174,15 @@ export default function Leads() {
       
       if (!matchesSearch) return false;
 
+      // Exclude leads with null values in analyzed fields
+      if (lead.service_desired === null || 
+          lead.sentiment === null || 
+          lead.lead_temperature === null || 
+          lead.lead_score === null || 
+          lead.playbook_compliance_score === null) {
+        return false;
+      }
+
       if (processedFilter === "processed" && !lead.processed) return false;
       if (processedFilter === "unprocessed" && lead.processed) return false;
 
