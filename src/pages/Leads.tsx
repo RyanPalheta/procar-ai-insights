@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,26 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+
+// Normalize channel names for consistent display and filtering
+const normalizeChannel = (channel: string | null): string => {
+  if (!channel) return "N/A";
+  switch (channel.toLowerCase()) {
+    case "whatsapp":
+      return "WhatsApp";
+    case "facebook":
+      return "Facebook";
+    case "instagram_business":
+    case "instagram":
+      return "Instagram";
+    default:
+      return channel;
+  }
+};
+
+type SortField = "created_at" | "lead_score" | "playbook_compliance_score" | "lead_temperature" | "session_id";
+type SortDirection = "asc" | "desc";
 
 export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,19 +54,42 @@ export default function Leads() {
   const [productFilter, setProductFilter] = useState<string>("all");
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
+  const [channelFilter, setChannelFilter] = useState<string>("all");
+  const [salesStatusFilter, setSalesStatusFilter] = useState<string>("all");
+  const [scoreRange, setScoreRange] = useState<[number, number]>([0, 10]);
+  const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [activeDatePreset, setActiveDatePreset] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 30;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Fetch ALL leads using recursive pagination to bypass 1000-row limit
   const { data: leads, isLoading } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lead_db").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("lead_db")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        allData.push(...(data || []));
+        hasMore = (data?.length || 0) === batchSize;
+        from += batchSize;
+      }
+      return allData;
     },
   });
 
@@ -83,7 +126,7 @@ export default function Leads() {
     },
   });
 
-  // Extract unique products and sentiments for filters
+  // Extract unique values for filter dropdowns
   const uniqueProducts = useMemo(() => {
     const products = new Set<string>();
     leads?.forEach(lead => {
@@ -100,59 +143,156 @@ export default function Leads() {
     return Array.from(sentiments).sort();
   }, [leads]);
 
-  // Table filter
-  const filteredLeads = leads?.filter((lead) => {
-    const matchesSearch = 
-      lead.session_id?.toString().includes(searchTerm) ||
-      lead.channel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.sales_status?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (!matchesSearch) return false;
-
-    if (processedFilter === "processed" && !lead.processed) return false;
-    if (processedFilter === "unprocessed" && lead.processed) return false;
-
-    if (productFilter !== "all" && lead.service_desired !== productFilter) return false;
-
-    if (sentimentFilter !== "all" && lead.sentiment !== sentimentFilter) return false;
-
-    if (temperatureFilter !== "all" && (lead as any).lead_temperature !== temperatureFilter) return false;
-
-    if (dateFrom || dateTo) {
-      const leadDate = parseISO(lead.created_at);
-      
-      if (dateFrom && dateTo) {
-        const fromDate = startOfDay(parseISO(dateFrom));
-        const toDate = endOfDay(parseISO(dateTo));
-        if (!isWithinInterval(leadDate, { start: fromDate, end: toDate })) return false;
-      } else if (dateFrom) {
-        const fromDate = startOfDay(parseISO(dateFrom));
-        if (leadDate < fromDate) return false;
-      } else if (dateTo) {
-        const toDate = endOfDay(parseISO(dateTo));
-        if (leadDate > toDate) return false;
+  const uniqueChannels = useMemo(() => {
+    const channels = new Map<string, number>();
+    leads?.forEach(lead => {
+      const normalized = normalizeChannel(lead.channel);
+      if (normalized !== "N/A") {
+        channels.set(normalized, (channels.get(normalized) || 0) + 1);
       }
-    }
+    });
+    return Array.from(channels.entries()).sort((a, b) => b[1] - a[1]);
+  }, [leads]);
 
-    return true;
-  });
+  const uniqueSalesStatuses = useMemo(() => {
+    const statuses = new Map<string, number>();
+    leads?.forEach(lead => {
+      if (lead.sales_status) {
+        statuses.set(lead.sales_status, (statuses.get(lead.sales_status) || 0) + 1);
+      }
+    });
+    return Array.from(statuses.entries()).sort((a, b) => b[1] - a[1]);
+  }, [leads]);
+
+  // Filter logic
+  const filteredLeads = useMemo(() => {
+    let result = leads?.filter((lead) => {
+      const matchesSearch = 
+        lead.session_id?.toString().includes(searchTerm) ||
+        lead.channel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.sales_status?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+
+      if (processedFilter === "processed" && !lead.processed) return false;
+      if (processedFilter === "unprocessed" && lead.processed) return false;
+
+      if (productFilter !== "all" && lead.service_desired !== productFilter) return false;
+      if (sentimentFilter !== "all" && lead.sentiment !== sentimentFilter) return false;
+      if (temperatureFilter !== "all" && lead.lead_temperature !== temperatureFilter) return false;
+
+      // Channel filter (normalized comparison)
+      if (channelFilter !== "all" && normalizeChannel(lead.channel) !== channelFilter) return false;
+
+      // Sales status filter
+      if (salesStatusFilter !== "all" && lead.sales_status !== salesStatusFilter) return false;
+
+      // Score range filter
+      if (lead.lead_score !== null && lead.lead_score !== undefined) {
+        if (lead.lead_score < scoreRange[0] || lead.lead_score > scoreRange[1]) return false;
+      } else if (scoreRange[0] > 0) {
+        return false; // exclude nulls when min is set above 0
+      }
+
+      // Compliance range filter
+      if (lead.playbook_compliance_score !== null && lead.playbook_compliance_score !== undefined) {
+        if (lead.playbook_compliance_score < complianceRange[0] || lead.playbook_compliance_score > complianceRange[1]) return false;
+      } else if (complianceRange[0] > 0) {
+        return false;
+      }
+
+      if (dateFrom || dateTo) {
+        const leadDate = parseISO(lead.created_at);
+        
+        if (dateFrom && dateTo) {
+          const fromDate = startOfDay(parseISO(dateFrom));
+          const toDate = endOfDay(parseISO(dateTo));
+          if (!isWithinInterval(leadDate, { start: fromDate, end: toDate })) return false;
+        } else if (dateFrom) {
+          const fromDate = startOfDay(parseISO(dateFrom));
+          if (leadDate < fromDate) return false;
+        } else if (dateTo) {
+          const toDate = endOfDay(parseISO(dateTo));
+          if (leadDate > toDate) return false;
+        }
+      }
+
+      return true;
+    }) || [];
+
+    // Sort
+    result.sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (sortField) {
+        case "lead_score":
+          aVal = a.lead_score ?? -1;
+          bVal = b.lead_score ?? -1;
+          break;
+        case "playbook_compliance_score":
+          aVal = a.playbook_compliance_score ?? -1;
+          bVal = b.playbook_compliance_score ?? -1;
+          break;
+        case "lead_temperature": {
+          const tempOrder: Record<string, number> = { quente: 3, morno: 2, frio: 1 };
+          aVal = tempOrder[a.lead_temperature?.toLowerCase() || ""] ?? 0;
+          bVal = tempOrder[b.lead_temperature?.toLowerCase() || ""] ?? 0;
+          break;
+        }
+        case "session_id":
+          aVal = a.session_id;
+          bVal = b.session_id;
+          break;
+        default:
+          aVal = new Date(a.created_at).getTime();
+          bVal = new Date(b.created_at).getTime();
+      }
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection]);
+
+  // Pagination
+  const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
+  const paginatedLeads = filteredLeads?.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Reset page when filters change
+  const resetPage = () => setCurrentPage(1);
 
   const clearFilters = () => {
     setProcessedFilter("all");
     setProductFilter("all");
     setSentimentFilter("all");
     setTemperatureFilter("all");
+    setChannelFilter("all");
+    setSalesStatusFilter("all");
+    setScoreRange([0, 10]);
+    setComplianceRange([0, 100]);
     setDateFrom("");
     setDateTo("");
+    setActiveDatePreset(null);
+    resetPage();
   };
 
-  const hasActiveFilters = 
-    processedFilter !== "all" ||
-    productFilter !== "all" ||
-    sentimentFilter !== "all" ||
-    temperatureFilter !== "all" ||
-    dateFrom !== "" ||
-    dateTo !== "";
+  const activeFilterCount = [
+    processedFilter !== "all",
+    productFilter !== "all",
+    sentimentFilter !== "all",
+    temperatureFilter !== "all",
+    channelFilter !== "all",
+    salesStatusFilter !== "all",
+    scoreRange[0] !== 0 || scoreRange[1] !== 10,
+    complianceRange[0] !== 0 || complianceRange[1] !== 100,
+    dateFrom !== "",
+    dateTo !== "",
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const getTemperatureDisplay = (temperature: string | null) => {
     switch (temperature?.toLowerCase()) {
@@ -170,6 +310,8 @@ export default function Leads() {
   const applyQuickDateFilter = (period: "today" | "last7days" | "last30days" | "lastMonth") => {
     const today = new Date();
     const todayStr = format(today, "yyyy-MM-dd");
+    setActiveDatePreset(period);
+    resetPage();
 
     switch (period) {
       case "today":
@@ -190,6 +332,23 @@ export default function Leads() {
         setDateTo(format(endOfMonth(lastMonth), "yyyy-MM-dd"));
         break;
     }
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+    resetPage();
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDirection === "asc" 
+      ? <ArrowUp className="h-3 w-3 ml-1" /> 
+      : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
   const handleAnalyzeLead = async (sessionId: number, e: React.MouseEvent) => {
@@ -258,6 +417,7 @@ export default function Leads() {
           <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
           <p className="text-muted-foreground">
             Gerencie e acompanhe todos os seus leads
+            {leads && <span className="ml-1">({leads.length} total)</span>}
           </p>
         </div>
       </div>
@@ -286,7 +446,7 @@ export default function Leads() {
                 className="h-8"
               >
                 <Filter className="h-4 w-4 mr-1" />
-                Filtros {hasActiveFilters && `(${[processedFilter !== "all", productFilter !== "all", sentimentFilter !== "all", temperatureFilter !== "all", dateFrom !== "", dateTo !== ""].filter(Boolean).length})`}
+                Filtros {hasActiveFilters && `(${activeFilterCount})`}
               </Button>
             </div>
           </div>
@@ -295,11 +455,11 @@ export default function Leads() {
             <Input
               placeholder="Buscar por lead ID, canal ou status..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); resetPage(); }}
               className="max-w-sm"
             />
             
-            <Tabs value={processedFilter} onValueChange={setProcessedFilter} className="w-auto">
+            <Tabs value={processedFilter} onValueChange={(v) => { setProcessedFilter(v); resetPage(); }} className="w-auto">
               <TabsList>
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="processed">Prontos</TabsTrigger>
@@ -317,34 +477,21 @@ export default function Leads() {
                   Filtros Rápidos de Período
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => applyQuickDateFilter("today")}
-                  >
-                    Hoje
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => applyQuickDateFilter("last7days")}
-                  >
-                    Últimos 7 dias
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => applyQuickDateFilter("last30days")}
-                  >
-                    Últimos 30 dias
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => applyQuickDateFilter("lastMonth")}
-                  >
-                    Último mês
-                  </Button>
+                  {([
+                    { key: "today", label: "Hoje" },
+                    { key: "last7days", label: "Últimos 7 dias" },
+                    { key: "last30days", label: "Últimos 30 dias" },
+                    { key: "lastMonth", label: "Último mês" },
+                  ] as const).map(({ key, label }) => (
+                    <Button
+                      key={key}
+                      variant={activeDatePreset === key ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => applyQuickDateFilter(key)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
                 </div>
               </div>
 
@@ -357,7 +504,7 @@ export default function Leads() {
                   <Input
                     type="date"
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={(e) => { setDateFrom(e.target.value); setActiveDatePreset(null); resetPage(); }}
                     max={dateTo || undefined}
                   />
                 </div>
@@ -369,17 +516,53 @@ export default function Leads() {
                   <Input
                     type="date"
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={(e) => { setDateTo(e.target.value); setActiveDatePreset(null); resetPage(); }}
                     min={dateFrom || undefined}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Canal */}
+                <div className="space-y-2">
+                  <Label>Canal</Label>
+                  <Select value={channelFilter} onValueChange={(v) => { setChannelFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos os canais" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos os canais</SelectItem>
+                      {uniqueChannels.map(([channel, count]) => (
+                        <SelectItem key={channel} value={channel}>
+                          {channel} ({count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status de Venda */}
+                <div className="space-y-2">
+                  <Label>Status de Venda</Label>
+                  <Select value={salesStatusFilter} onValueChange={(v) => { setSalesStatusFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      {uniqueSalesStatuses.map(([status, count]) => (
+                        <SelectItem key={status} value={status}>
+                          {status} ({count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Produto Desejado */}
                 <div className="space-y-2">
                   <Label>Produto Desejado</Label>
-                  <Select value={productFilter} onValueChange={setProductFilter}>
+                  <Select value={productFilter} onValueChange={(v) => { setProductFilter(v); resetPage(); }}>
                     <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todos os produtos" />
                     </SelectTrigger>
@@ -397,7 +580,7 @@ export default function Leads() {
                 {/* Sentimento */}
                 <div className="space-y-2">
                   <Label>Sentimento</Label>
-                  <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+                  <Select value={sentimentFilter} onValueChange={(v) => { setSentimentFilter(v); resetPage(); }}>
                     <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todos os sentimentos" />
                     </SelectTrigger>
@@ -415,7 +598,7 @@ export default function Leads() {
                 {/* Temperatura */}
                 <div className="space-y-2">
                   <Label>Temperatura</Label>
-                  <Select value={temperatureFilter} onValueChange={setTemperatureFilter}>
+                  <Select value={temperatureFilter} onValueChange={(v) => { setTemperatureFilter(v); resetPage(); }}>
                     <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Todas as temperaturas" />
                     </SelectTrigger>
@@ -441,6 +624,32 @@ export default function Leads() {
                 </div>
               </div>
 
+              {/* Score & Compliance Range Sliders */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+                <div className="space-y-3">
+                  <Label>Score: {scoreRange[0]} — {scoreRange[1]}</Label>
+                  <Slider
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={scoreRange}
+                    onValueChange={(v) => { setScoreRange(v as [number, number]); resetPage(); }}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label>Compliance: {complianceRange[0]}% — {complianceRange[1]}%</Label>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={complianceRange}
+                    onValueChange={(v) => { setComplianceRange(v as [number, number]); resetPage(); }}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
                   {filteredLeads?.length || 0} lead(s) encontrado(s)
@@ -452,173 +661,248 @@ export default function Leads() {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-4">Carregando...</div>
-          ) : filteredLeads && filteredLeads.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lead ID</TableHead>
-                    <TableHead>Canal</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1">
-                        Temp.
-                        <Sparkles className="h-3 w-3 text-primary" />
-                      </span>
-                    </TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1">
-                        Score
-                        <Sparkles className="h-3 w-3 text-primary" />
-                      </span>
-                    </TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1">
-                        Sentimento
-                        <Sparkles className="h-3 w-3 text-primary" />
-                      </span>
-                    </TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1">
-                        Serviço
-                        <Sparkles className="h-3 w-3 text-primary" />
-                      </span>
-                    </TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1">
-                        Compliance
-                        <Sparkles className="h-3 w-3 text-primary" />
-                      </span>
-                    </TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeads.map((lead) => (
-                    <TableRow 
-                      key={lead.session_id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/leads/${lead.session_id}`)}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {lead.session_id || "N/A"}
-                          {lead.processed && (
-                            <Badge variant="outline" className="text-xs">
-                              ✓
-                            </Badge>
-                          )}
-                          {isNewLead(lead.created_at) && (
-                            <Badge variant="default" className="text-xs">
-                              Novo
-                            </Badge>
-                          )}
-                          {(interactionCounts?.[lead.session_id] || 0) >= 5 && !lead.processed && (
-                            <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                              Pronto
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{lead.channel || "N/A"}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusColor(lead.sales_status) as any}>
-                          {lead.sales_status || "N/A"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const temp = getTemperatureDisplay((lead as any).lead_temperature);
-                          if (temp) {
-                            return (
-                              <Badge className={`text-xs ${temp.className}`}>
-                                {temp.icon}
-                                <span className="ml-1">{temp.label}</span>
-                              </Badge>
-                            );
-                          }
-                          return <span className="text-muted-foreground">-</span>;
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {lead.lead_score || "N/A"}
-                          {isHighQualityLead(lead.lead_score) && (
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {lead.sentiment ? (
-                          <Badge variant="outline">{lead.sentiment}</Badge>
-                        ) : (
-                          "N/A"
-                        )}
-                      </TableCell>
-                      <TableCell>{lead.service_desired || "N/A"}</TableCell>
-                      <TableCell>
-                        {lead.playbook_compliance_score !== null ? (
-                          <div className="flex items-center gap-1.5">
-                            <ClipboardCheck className={`h-4 w-4 ${
-                              lead.playbook_compliance_score >= 80 ? 'text-green-500' :
-                              lead.playbook_compliance_score >= 50 ? 'text-yellow-500' :
-                              'text-red-500'
-                            }`} />
-                            <span className={`font-medium ${
-                              lead.playbook_compliance_score >= 80 ? 'text-green-600' :
-                              lead.playbook_compliance_score >= 50 ? 'text-yellow-600' :
-                              'text-red-600'
-                            }`}>
-                              {lead.playbook_compliance_score}%
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(lead.created_at).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => handleAnalyzeLead(lead.session_id, e)}
-                            disabled={analyzingLeads.has(lead.session_id)}
-                          >
-                            {analyzingLeads.has(lead.session_id) ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                Analisando...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-1" />
-                                Analisar
-                              </>
-                            )}
-                          </Button>
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/leads/${lead.session_id}`);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+          ) : paginatedLeads && paginatedLeads.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => handleSort("session_id")}>
+                          Lead ID
+                          <SortIcon field="session_id" />
+                        </button>
+                      </TableHead>
+                      <TableHead>Canal</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => handleSort("lead_temperature")}>
+                          <span className="flex items-center gap-1">
+                            Temp.
+                            <Sparkles className="h-3 w-3 text-primary" />
+                          </span>
+                          <SortIcon field="lead_temperature" />
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => handleSort("lead_score")}>
+                          <span className="flex items-center gap-1">
+                            Score
+                            <Sparkles className="h-3 w-3 text-primary" />
+                          </span>
+                          <SortIcon field="lead_score" />
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <span className="flex items-center gap-1">
+                          Sentimento
+                          <Sparkles className="h-3 w-3 text-primary" />
+                        </span>
+                      </TableHead>
+                      <TableHead>
+                        <span className="flex items-center gap-1">
+                          Serviço
+                          <Sparkles className="h-3 w-3 text-primary" />
+                        </span>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => handleSort("playbook_compliance_score")}>
+                          <span className="flex items-center gap-1">
+                            Compliance
+                            <Sparkles className="h-3 w-3 text-primary" />
+                          </span>
+                          <SortIcon field="playbook_compliance_score" />
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => handleSort("created_at")}>
+                          Data
+                          <SortIcon field="created_at" />
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedLeads.map((lead) => (
+                      <TableRow 
+                        key={lead.session_id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => navigate(`/leads/${lead.session_id}`)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {lead.session_id || "N/A"}
+                            {lead.processed && (
+                              <Badge variant="outline" className="text-xs">
+                                ✓
+                              </Badge>
+                            )}
+                            {isNewLead(lead.created_at) && (
+                              <Badge variant="default" className="text-xs">
+                                Novo
+                              </Badge>
+                            )}
+                            {(interactionCounts?.[lead.session_id] || 0) >= 5 && !lead.processed && (
+                              <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Pronto
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{normalizeChannel(lead.channel)}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusColor(lead.sales_status) as any}>
+                            {lead.sales_status || "N/A"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const temp = getTemperatureDisplay(lead.lead_temperature);
+                            if (temp) {
+                              return (
+                                <Badge className={`text-xs ${temp.className}`}>
+                                  {temp.icon}
+                                  <span className="ml-1">{temp.label}</span>
+                                </Badge>
+                              );
+                            }
+                            return <span className="text-muted-foreground">-</span>;
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {lead.lead_score || "N/A"}
+                            {isHighQualityLead(lead.lead_score) && (
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {lead.sentiment ? (
+                            <Badge variant="outline">{lead.sentiment}</Badge>
+                          ) : (
+                            "N/A"
+                          )}
+                        </TableCell>
+                        <TableCell>{lead.service_desired || "N/A"}</TableCell>
+                        <TableCell>
+                          {lead.playbook_compliance_score !== null ? (
+                            <div className="flex items-center gap-1.5">
+                              <ClipboardCheck className={`h-4 w-4 ${
+                                lead.playbook_compliance_score >= 80 ? 'text-green-500' :
+                                lead.playbook_compliance_score >= 50 ? 'text-yellow-500' :
+                                'text-red-500'
+                              }`} />
+                              <span className={`font-medium ${
+                                lead.playbook_compliance_score >= 80 ? 'text-green-600' :
+                                lead.playbook_compliance_score >= 50 ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {lead.playbook_compliance_score}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(lead.created_at).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => handleAnalyzeLead(lead.session_id, e)}
+                              disabled={analyzingLeads.has(lead.session_id)}
+                            >
+                              {analyzingLeads.has(lead.session_id) ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                  Analisando...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-1" />
+                                  Analisar
+                                </>
+                              )}
+                            </Button>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/leads/${lead.session_id}`);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, filteredLeads.length)} de {filteredLeads.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 7) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 4) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 3) {
+                          pageNum = totalPages - 6 + i;
+                        } else {
+                          pageNum = currentPage - 3 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Próximo
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               {searchTerm || hasActiveFilters ? (
