@@ -1,294 +1,117 @@
 
-# Plano: Dashboard TV para Vendas e Atendimento
 
-## Objetivo
-Criar uma nova aba/rota de dashboard otimizada para exibicao em TV de time comercial. O design sera white theme, moderno, clean, altamente legivel a distancia e focado em motivacao da equipe de vendas.
+## Analise e Melhorias dos Filtros da Pagina de Leads
 
----
+### Problemas Identificados
 
-## Arquitetura da Solucao
+**1. Filtros Ausentes para Colunas Importantes**
+A tabela exibe Canal, Status de Venda, Score e Compliance, mas nenhum desses campos possui filtro dedicado. O usuario precisa usar a busca por texto para filtrar por canal ou status, o que e impreciso.
 
-### Nova Rota
-- **Rota:** `/tv` (acesso fullscreen, sem sidebar)
-- **Arquivo:** `src/pages/TVDashboard.tsx`
-- **Layout:** Fullscreen sem AppLayout (para uso em TV)
+**2. Limite de 1000 Registros na Query**
+A query atual (`supabase.from("lead_db").select("*")`) esta limitada a 1000 registros pelo default do banco. Com 4.315 leads na base, **mais de 3.000 leads sao invisveis** para o usuario. Todos os filtros operam sobre dados incompletos.
 
-### Estrutura Visual (16:9)
+**3. Dados de Canal Nao Normalizados**
+Existem duplicatas: `facebook`/`Facebook`, `whatsapp`/`WhatsApp`, `instagram_business`/`Instagram`. Isso causa inconsistencias nos filtros e contagens.
 
-```text
-+----------------------------------------------------------------------+
-|  [LOGO] Dashboard de Performance              [Auto-refresh: 30s]    |
-+----------------------------------------------------------------------+
-|                                                                       |
-|   +-----------------+  +-----------------+  +-----------------+  +---+|
-|   |   LEADS HOJE    |  |    CONVERSAO    |  |  1a RESPOSTA   |  |NOT||
-|   |      247        |  |      34%        |  |      8m        |  |4.7||
-|   |    +12% ↑       |  |     +5% ↑       |  |    +2m ⚠️      |  |+.2||
-|   +-----------------+  +-----------------+  +-----------------+  +---+|
-|                                                                       |
-+-------------------+------------------------+--------------------------+
-|  QUALIDADE DE ATENDIMENTO                  |   EFICIENCIA COMERCIAL  |
-|  ┌─────────────────────────────────────┐   |   ┌──────┐ ┌──────┐ ┌──┐|
-|  │ Script          87% ████████████░░░ │   |   │  $   │ │  🏷️  │ │💬│|
-|  │ Saudacao ⚠️     72% █████████░░░░░░ │   |   │Finan.│ │Promo │ │Obj│
-|  │ Qualificacao ⚠️ 68% ████████░░░░░░░ │   |   └──────┘ └──────┘ └──┘|
-|  └─────────────────────────────────────┘   |                         |
-|  💡 Atendimentos com script alto           |   Visual minimalista    |
-|     convertem 28% mais                     |   com icones grandes    |
-+--------------------------------------------+--------------------------+
-|                    FOCO DE MELHORIA                                  |
-|  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   Contorno    |
-|  │ 1o Preco     │  │ 2o Tempo     │  │ 3o Concorr.  │   Geral:      |
-|  │    58%       │  │    71%       │  │    69%       │   [64%]       |
-|  │ ████████░░░░ │  │ █████████░░░ │  │ █████████░░░ │               |
-|  └──────────────┘  └──────────────┘  └──────────────┘               |
-|                                                                      |
-|  ⚠️ Objecao "Preco" esta com baixo contorno hoje                    |
-+----------------------------------------------------------------------+
-```
+**4. Botoes de Periodo Rapido Sem Indicacao Visual**
+Os botoes "Hoje", "Ultimos 7 dias" etc. nao mostram qual esta ativo. O usuario nao sabe qual periodo selecionou apos clicar.
+
+**5. Sem Paginacao**
+Todos os leads filtrados sao renderizados de uma vez na tabela, o que prejudica performance com volumes altos.
+
+**6. Sem Ordenacao nas Colunas**
+A tabela nao permite ordenar por Score, Data, Compliance ou outros campos.
+
+**7. Sem Filtro de Faixa de Score**
+O score aparece na tabela mas nao ha como filtrar por faixa (ex: score >= 7).
+
+**8. Sem Filtro de Faixa de Compliance**
+O compliance aparece na tabela mas nao ha filtro de faixa (ex: >= 80%).
 
 ---
 
-## Componentes a Criar
+### Plano de Melhorias
 
-### 1. Pagina Principal: `TVDashboard.tsx`
+#### Correçao 1: Resolver Limite de 1000 Registros (Critico)
+Implementar paginacao na query do banco para buscar todos os registros, usando chamadas sequenciais de 1000 em 1000 ate esgotar os dados, ou migrar para filtragem server-side via query parametrizada.
 
-**Caracteristicas:**
-- Tema claro forcado (ignora preferencia do sistema)
-- Layout fullscreen sem sidebar
-- Auto-refresh dos dados a cada 30 segundos
-- Tipografia extra grande para legibilidade a distancia
-- Animacoes suaves e nao distrativas
+**Abordagem recomendada**: Filtragem server-side -- enviar os filtros ativos como parametros da query Supabase para que o banco faca o trabalho pesado e retorne apenas os resultados relevantes, com paginacao real (offset/limit).
 
-### 2. Componentes Internos
+#### Correçao 2: Adicionar Filtro por Canal
+Dropdown com as opcoes: WhatsApp, Facebook, Instagram. Com contagem de leads por canal.
 
-#### `TVKPICard`
-Card grande para KPIs principais com:
-- Icone colorido
-- Valor em fonte extra grande (text-6xl ou maior)
-- Indicador de tendencia colorido (verde/laranja)
-- Barra de progresso sutil opcional
+#### Correçao 3: Adicionar Filtro por Status de Venda
+Dropdown dinamico populado pelos 17 status unicos existentes na base, com contagem por status.
 
-#### `TVQualitySection`
-Card horizontal com barras de progresso grossas para:
-- Compliance de script
-- Saudacao inicial
-- Qualificacao de lead
-- Insight motivacional
+#### Correçao 4: Adicionar Filtro de Faixa de Score
+Dois inputs numericos (min/max) ou um slider duplo para filtrar leads por faixa de score (0-10).
 
-#### `TVEfficiencySection`
-Card com 3 icones grandes centralizados:
-- Financeira apresentada (icone cifrao)
-- Promocoes/Ancora (icone etiqueta)
-- Contorno de objecoes (icone balao)
+#### Correçao 5: Adicionar Filtro de Faixa de Compliance
+Slider duplo para filtrar por faixa de compliance (0-100%).
 
-#### `TVObjectionRanking`
-Ranking visual de objecoes com:
-- Cards medios para top 3 objecoes
-- Barra de progresso em cada item
-- Badge lateral com taxa geral de contorno
+#### Correçao 6: Indicacao Visual do Periodo Rapido Ativo
+Rastrear qual botao de periodo rapido foi clicado e aplicar estilo `variant="default"` ao botao ativo.
+
+#### Correçao 7: Paginacao na Tabela
+Adicionar controles de paginacao (anterior/proximo, paginas) com 25-50 leads por pagina.
+
+#### Correçao 8: Ordenacao nas Colunas
+Permitir clicar nos headers da tabela para ordenar por Score, Data, Compliance, Temperatura (asc/desc).
 
 ---
 
-## Dados Necessarios (ja disponiveis)
+### Detalhes Tecnicos
 
-| Metrica | Fonte | Campo |
-|---------|-------|-------|
-| Leads Hoje | lead_db | COUNT WHERE created_at >= hoje |
-| Conversao | RPC get_leads_kpis | won_leads / total_audited |
-| 1a Resposta | RPC get_leads_kpis | median_first_response_time_minutes |
-| Nota Media | lead_db | AVG(service_rating) |
-| Script/Compliance | lead_db | playbook_compliance_score |
-| Saudacao/Qualif. | lead_db | playbook_steps_completed |
-| Estrategias | lead_db | used_offer, used_anchoring |
-| Objecoes | lead_db | objection_categories, objection_overcome |
-
----
-
-## Paleta de Cores (White Theme)
-
-| Elemento | Cor |
-|----------|-----|
-| Background | #FFFFFF |
-| Cards | #F8FAFC (gray-50) |
-| Texto principal | #1E293B (slate-800) |
-| Texto secundario | #64748B (slate-500) |
-| Positivo (sucesso) | #22C55E (green-500) |
-| Alerta (atencao) | #F97316 (orange-500) |
-| Negativo | #EF4444 (red-500) |
-| Bordas | #E2E8F0 (slate-200) |
-| Sombras | rgba(0,0,0,0.05) |
-
----
-
-## Secao Tecnica
-
-### Estrutura de Arquivos
-
-```text
-src/
-├── pages/
-│   └── TVDashboard.tsx          # Pagina principal TV
-├── components/
-│   └── tv/
-│       ├── TVKPICard.tsx        # Card de KPI grande
-│       ├── TVQualitySection.tsx # Secao qualidade
-│       ├── TVEfficiencySection.tsx # Secao eficiencia
-│       └── TVObjectionRanking.tsx  # Ranking objecoes
+**Busca paginada (Correçao 1)**:
+```typescript
+// Substituir a query atual por uma que busca todos os registros
+const fetchAllLeads = async () => {
+  let allData = [];
+  let from = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+  while (hasMore) {
+    const { data } = await supabase
+      .from("lead_db")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, from + pageSize - 1);
+    allData.push(...(data || []));
+    hasMore = (data?.length || 0) === pageSize;
+    from += pageSize;
+  }
+  return allData;
+};
 ```
 
-### Rota (App.tsx)
-
-```tsx
-// Nova rota SEM AppLayout para fullscreen
-<Route path="/tv" element={<TVDashboard />} />
+**Novos estados de filtro (Correçoes 2-5)**:
+```typescript
+const [channelFilter, setChannelFilter] = useState<string>("all");
+const [salesStatusFilter, setSalesStatusFilter] = useState<string>("all");
+const [scoreRange, setScoreRange] = useState<[number, number]>([0, 10]);
+const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
+const [activeDatePreset, setActiveDatePreset] = useState<string | null>(null);
 ```
 
-### Navegacao (AppSidebar.tsx)
-
-```tsx
-// Adicionar link na secao PRINCIPAL
-{ title: "Dashboard TV", url: "/tv", icon: Monitor }
+**Paginacao (Correçao 7)**:
+```typescript
+const [currentPage, setCurrentPage] = useState(1);
+const pageSize = 30;
+const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
+const paginatedLeads = filteredLeads?.slice(
+  (currentPage - 1) * pageSize,
+  currentPage * pageSize
+);
 ```
 
-### Auto-refresh
-
-```tsx
-// Refetch automatico a cada 30s
-const { data: leads, refetch } = useQuery({
-  queryKey: ["tv-leads"],
-  queryFn: async () => {...},
-  refetchInterval: 30000,
-});
+**Ordenacao (Correçao 8)**:
+```typescript
+const [sortField, setSortField] = useState<string>("created_at");
+const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+// Headers clicaveis com icone de seta indicando direcao
 ```
 
-### Tema Claro Forcado
+**Normalizacao de canal no filtro**: Comparar em lowercase para unificar `facebook`/`Facebook` etc.
 
-```tsx
-// Forcando light mode na pagina TV
-useEffect(() => {
-  document.documentElement.classList.remove('dark');
-  document.documentElement.classList.add('light');
-  return () => {
-    // Restaura tema anterior ao sair
-  };
-}, []);
-```
+**Arquivos modificados**: Apenas `src/pages/Leads.tsx`
 
-### KPI Card Estilizado
-
-```tsx
-function TVKPICard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  trend, 
-  isAlert 
-}: TVKPICardProps) {
-  return (
-    <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={cn(
-          "p-3 rounded-xl",
-          isAlert ? "bg-orange-100" : "bg-green-100"
-        )}>
-          <Icon className={cn(
-            "h-6 w-6",
-            isAlert ? "text-orange-600" : "text-green-600"
-          )} />
-        </div>
-        <span className="text-slate-500 text-lg font-medium">{title}</span>
-      </div>
-      <div className="text-6xl font-bold text-slate-800 mb-2">
-        {value}
-      </div>
-      {trend && (
-        <div className={cn(
-          "inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold",
-          trend.isPositive 
-            ? "bg-green-100 text-green-700" 
-            : "bg-orange-100 text-orange-700"
-        )}>
-          {trend.isPositive ? <TrendingUp /> : <TrendingDown />}
-          {trend.value}
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-### Progress Bar Grosso
-
-```tsx
-function TVProgressBar({ 
-  label, 
-  value, 
-  showAlert 
-}: TVProgressBarProps) {
-  const isLow = value < 70;
-  
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-slate-700 font-medium text-lg flex items-center gap-2">
-          {label}
-          {showAlert && isLow && (
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
-          )}
-        </span>
-        <span className={cn(
-          "text-2xl font-bold",
-          isLow ? "text-orange-600" : "text-green-600"
-        )}>
-          {value}%
-        </span>
-      </div>
-      <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-        <div 
-          className={cn(
-            "h-full rounded-full transition-all duration-500",
-            isLow ? "bg-orange-500" : "bg-green-500"
-          )}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-```
-
----
-
-## Arquivos a Serem Criados/Modificados
-
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| `src/pages/TVDashboard.tsx` | Criar | Pagina principal do dashboard TV |
-| `src/components/tv/TVKPICard.tsx` | Criar | Componente de KPI para TV |
-| `src/components/tv/TVQualitySection.tsx` | Criar | Secao de qualidade de atendimento |
-| `src/components/tv/TVEfficiencySection.tsx` | Criar | Secao de eficiencia comercial |
-| `src/components/tv/TVObjectionRanking.tsx` | Criar | Ranking de objecoes |
-| `src/App.tsx` | Modificar | Adicionar rota /tv |
-| `src/components/layout/AppSidebar.tsx` | Modificar | Adicionar link para Dashboard TV |
-
----
-
-## Valor para o Negocio
-
-1. **Visibilidade constante** - Equipe de vendas ve metricas em tempo real
-2. **Motivacao visual** - Design positivo e inspirador
-3. **Identificacao rapida de problemas** - Alertas visuais claros
-4. **Competicao saudavel** - Rankings e metas visiveis
-5. **Foco em melhoria** - Destaque para areas que precisam de atencao
-
----
-
-## UX e Hierarquia Visual
-
-- Leitura clara em ate 5 segundos
-- Numeros grandes (6xl-8xl) com alto contraste
-- Sem tabelas complexas
-- Cores semanticas consistentes
-- Visual motivador, nao punitivo
-- Espacamento generoso entre elementos
