@@ -56,7 +56,7 @@ export default function Leads() {
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [salesStatusFilter, setSalesStatusFilter] = useState<string>("all");
-  const [scoreRange, setScoreRange] = useState<[number, number]>([0, 10]);
+  const [scoreRange, setScoreRange] = useState<[number, number]>([0, 100]);
   const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
@@ -271,7 +271,7 @@ export default function Leads() {
     setTemperatureFilter("all");
     setChannelFilter("all");
     setSalesStatusFilter("all");
-    setScoreRange([0, 10]);
+    setScoreRange([0, 100]);
     setComplianceRange([0, 100]);
     setDateFrom("");
     setDateTo("");
@@ -286,7 +286,7 @@ export default function Leads() {
     temperatureFilter !== "all",
     channelFilter !== "all",
     salesStatusFilter !== "all",
-    scoreRange[0] !== 0 || scoreRange[1] !== 10,
+    scoreRange[0] !== 0 || scoreRange[1] !== 100,
     complianceRange[0] !== 0 || complianceRange[1] !== 100,
     dateFrom !== "",
     dateTo !== "",
@@ -630,8 +630,8 @@ export default function Leads() {
                   <Label>Score: {scoreRange[0]} — {scoreRange[1]}</Label>
                   <Slider
                     min={0}
-                    max={10}
-                    step={1}
+                    max={100}
+                    step={5}
                     value={scoreRange}
                     onValueChange={(v) => { setScoreRange(v as [number, number]); resetPage(); }}
                     className="w-full"
