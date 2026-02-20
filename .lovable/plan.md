@@ -1,59 +1,62 @@
 
-## Correção: Leads "Quentes", "Mornos" e Auditados Não Aparecem
 
-### Causa Raiz
+## Substituir IA: Lovable AI Gateway → Google Gemini 2.5 Flash (API direta)
 
-O slider de **Score** está configurado com `max={10}` (escala 0-10), mas os valores reais no banco estão na escala **0-100** (mínimo: 10, máximo: 95, média: 70).
+### O que muda
 
-Como o slider inicia com range `[0, 10]`, ele automaticamente **exclui os 434 leads que têm score acima de 10** -- que são exatamente todos os leads auditados pela IA (incluindo todos os quentes, mornos e frios).
+A funcao `analyze-lead` atualmente usa o Lovable AI Gateway com o modelo `google/gemini-2.5-flash`. Vamos trocar para chamar a API do Google Gemini diretamente com sua propria API key.
 
-Resultado visível:
-- Total: 4316 leads, mas apenas 3883 aparecem (433 excluídos pelo slider)
-- Filtrar por "Quente" retorna 0 (todos os 201 quentes têm score entre 75-85)
-- Leads auditados são invisíveis com as configurações padrão
+### Abordagem
 
-### Correção
+O Google oferece um endpoint compativel com o formato OpenAI, o que significa que as mudancas sao minimas -- apenas URL, modelo e autenticacao mudam. O formato de tools/tool_choice permanece identico.
 
-**Arquivo**: `src/pages/Leads.tsx`
+### Passos
 
-1. Alterar o estado inicial do `scoreRange` de `[0, 10]` para `[0, 100]`
-2. Alterar o slider de Score para `max={100}` e `step={5}`
-3. Atualizar a contagem de filtros ativos para comparar com os novos valores padrão `[0, 100]`
+1. **Solicitar sua Google API Key** via ferramenta de secrets (nome: `GOOGLE_GEMINI_API_KEY`)
+2. **Atualizar `supabase/functions/analyze-lead/index.ts`**:
+   - URL: de `https://ai.gateway.lovable.dev/v1/chat/completions` para `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
+   - Modelo: de `google/gemini-2.5-flash` para `gemini-2.5-flash`
+   - Auth: de `LOVABLE_API_KEY` para `GOOGLE_GEMINI_API_KEY`
+   - Versao: atualizar `AI_VERSION` para refletir a mudanca
+3. **Deploy** da edge function
 
 ### Detalhes Tecnicos
 
-Mudancas especificas no arquivo `src/pages/Leads.tsx`:
-
-**Estado inicial** (~linha 59):
+**Linhas 9-12** (constantes):
 ```typescript
 // De:
-const [scoreRange, setScoreRange] = useState<[number, number]>([0, 10]);
+const AI_GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const AI_MODEL = 'google/gemini-2.5-flash';
+const AI_VERSION = 'lovable-ai-gemini-flash-v3';
+
 // Para:
-const [scoreRange, setScoreRange] = useState<[number, number]>([0, 100]);
+const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const AI_MODEL = 'gemini-2.5-flash';
+const AI_VERSION = 'google-gemini-flash-v1';
 ```
 
-**Slider de Score** (~linha 631-638):
+**Linhas 55-59** (autenticacao):
 ```typescript
 // De:
-<Slider min={0} max={10} step={1} value={scoreRange} .../>
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+if (!lovableApiKey) {
+  throw new Error('LOVABLE_API_KEY is not configured');
+}
+
 // Para:
-<Slider min={0} max={100} step={5} value={scoreRange} .../>
+const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+if (!geminiApiKey) {
+  throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+}
 ```
 
-**Reset de filtros** (~linha 274):
+**Linha 446** (header):
 ```typescript
 // De:
-setScoreRange([0, 10]);
+'Authorization': `Bearer ${lovableApiKey}`,
 // Para:
-setScoreRange([0, 100]);
+'Authorization': `Bearer ${geminiApiKey}`,
 ```
 
-**Contagem de filtros ativos** (~linha 289):
-```typescript
-// De:
-scoreRange[0] !== 0 || scoreRange[1] !== 10,
-// Para:
-scoreRange[0] !== 0 || scoreRange[1] !== 100,
-```
+Nenhuma outra mudanca necessaria -- o formato de tools, tool_choice e parsing da resposta sao identicos entre o Lovable AI Gateway e o endpoint OpenAI-compativel do Google.
 
-Essas 4 alteracoes resolvem o problema. Nenhum outro arquivo precisa ser modificado.
