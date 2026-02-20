@@ -6,10 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lovable AI Gateway
-const AI_GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const AI_MODEL = 'google/gemini-2.5-flash';
-const AI_VERSION = 'lovable-ai-gemini-flash-v3';
+// Google Gemini API (OpenAI-compatible endpoint)
+const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const AI_MODEL = 'gemini-2.5-flash';
+const AI_VERSION = 'google-gemini-flash-v1';
 
 // Max messages to send to AI (first 15 + last 15 if > 30)
 const MAX_MESSAGES = 30;
@@ -52,10 +52,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get Lovable API Key
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    // Get Google Gemini API Key
+    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
     }
 
     // Fetch lead data
@@ -303,7 +303,7 @@ Analise e responda:
 17. Nota geral do atendimento do vendedor (0-10)`;
     }
 
-    console.log(`[analyze-lead] Calling Lovable AI Gateway...`);
+    console.log(`[analyze-lead] Calling Google Gemini API...`);
 
     // Build tool parameters - base parameters for all analyses
     const toolParameters: any = {
@@ -443,7 +443,7 @@ Analise e responda:
     const aiResponse = await fetch(AI_GATEWAY, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${geminiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
