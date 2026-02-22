@@ -105,15 +105,31 @@ export default function TVDashboard() {
   }, []);
 
   // Fetch leads data with auto-refresh every 30 seconds
+  // Use pagination to get all leads (default limit is 1000)
   const { data: leads, dataUpdatedAt } = useQuery({
     queryKey: ["tv-leads"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lead_db")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const allLeads: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("lead_db")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allLeads.push(...data);
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allLeads;
     },
     refetchInterval: 30000,
   });
@@ -124,20 +140,25 @@ export default function TVDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_leads_kpis", { period_days: periodDays });
       if (error) throw error;
-      return data as {
-        total_leads: number;
-        audited_leads: number;
-        won_leads: number;
-        lost_leads: number;
-        conversion_rate: number;
-        avg_score: number;
-        median_first_response_time_minutes: number;
+      // Map flat RPC response to structured format
+      const raw = data as any;
+      const totalAudited = raw.total_audited ?? 0;
+      const wonLeads = raw.won_leads ?? 0;
+      const totalAuditedPrev = raw.total_audited_previous ?? 0;
+      const wonLeadsPrev = raw.won_leads_previous ?? 0;
+      return {
+        total_audited: totalAudited,
+        won_leads: wonLeads,
+        conversion_rate: totalAudited > 0 ? Math.round((wonLeads / totalAudited) * 1000) / 10 : 0,
+        avg_score: raw.avg_score ?? 0,
+        median_first_response_time_minutes: raw.median_first_response_time_minutes ?? 0,
         previous_period: {
-          total_leads: number;
-          conversion_rate: number;
-          avg_score: number;
-          median_first_response_time_minutes: number;
-        };
+          total_audited: totalAuditedPrev,
+          won_leads: wonLeadsPrev,
+          conversion_rate: totalAuditedPrev > 0 ? Math.round((wonLeadsPrev / totalAuditedPrev) * 1000) / 10 : 0,
+          avg_score: raw.avg_score_previous ?? 0,
+          median_first_response_time_minutes: raw.median_first_response_time_minutes_previous ?? 0,
+        },
       };
     },
     refetchInterval: 30000,
