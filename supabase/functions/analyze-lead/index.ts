@@ -14,15 +14,27 @@ const AI_VERSION = 'google-gemini-flash-v1';
 // Max messages to send to AI (first 15 + last 15 if > 30)
 const MAX_MESSAGES = 30;
 
-async function logEvent(supabase: any, eventType: string, eventData: any) {
+async function logAudit(supabase: any, params: {
+  event_type: string;
+  session_id?: number;
+  status?: string;
+  error_message?: string;
+  event_details?: any;
+  execution_time_ms?: number;
+  function_name?: string;
+}) {
   try {
     await supabase.from('audit_logs').insert({
-      event_type: eventType,
-      event_data: eventData,
-      created_at: new Date().toISOString()
+      event_type: params.event_type,
+      session_id: params.session_id ?? null,
+      status: params.status ?? 'info',
+      error_message: params.error_message ?? null,
+      event_details: params.event_details ?? null,
+      execution_time_ms: params.execution_time_ms ?? null,
+      function_name: params.function_name ?? 'analyze-lead',
     });
   } catch (error) {
-    console.error('Error logging event:', error);
+    console.error('Error logging audit event:', error);
   }
 }
 
@@ -468,23 +480,44 @@ Analise e responda:
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error(`[analyze-lead] AI Gateway error: ${aiResponse.status}`, errorText);
-      
+      const aiStatus = aiResponse.status;
+      console.error(`[analyze-lead] AI Gateway error: ${aiStatus}`, errorText);
+
+      // Categorize and log the error to audit_logs for diagnostics
+      let errorCategory = 'ai_gateway_error';
+      if (aiStatus === 429) errorCategory = 'ai_rate_limit';
+      else if (aiStatus === 401 || aiStatus === 403) errorCategory = 'ai_auth_error';
+      else if (aiStatus === 402) errorCategory = 'ai_credits_exhausted';
+      else if (aiStatus === 408 || aiStatus === 504) errorCategory = 'ai_timeout';
+
+      await logAudit(supabase, {
+        event_type: errorCategory,
+        session_id: session_id,
+        status: 'error',
+        error_message: `Gemini ${aiStatus}: ${errorText.substring(0, 500)}`,
+        event_details: { 
+          http_status: aiStatus, 
+          response_body: errorText.substring(0, 1000),
+          interactions_count: allInteractions.length,
+        },
+        execution_time_ms: Date.now() - startTime,
+      });
+
       // Handle rate limits
-      if (aiResponse.status === 429) {
+      if (aiStatus === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.', category: errorCategory }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (aiResponse.status === 402) {
+      if (aiStatus === 402) {
         return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }),
+          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.', category: errorCategory }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw new Error(`AI Gateway error: ${aiResponse.status} - ${errorText}`);
+      throw new Error(`AI Gateway error: ${aiStatus} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
@@ -566,18 +599,23 @@ Analise e responda:
     console.log(`[analyze-lead] Analysis completed in ${duration}ms`);
 
     // Log success with compliance info
-    await logEvent(supabase, 'lead_analysis_completed', {
-      session_id,
-      duration_ms: duration,
-      ai_version: AI_VERSION,
-      service_desired: updatePayload.service_desired,
-      lead_temperature: updatePayload.lead_temperature,
-      lead_score: updatePayload.lead_score,
-      sentiment: updatePayload.sentiment,
-      has_agent_messages: hasAgentMessages,
-      has_playbook: !!playbook,
-      playbook_compliance_score: updatePayload.playbook_compliance_score,
-      service_rating: updatePayload.service_rating
+    await logAudit(supabase, {
+      event_type: 'ai_analysis_completed',
+      session_id: session_id,
+      status: 'success',
+      event_details: {
+        duration_ms: duration,
+        ai_version: AI_VERSION,
+        service_desired: updatePayload.service_desired,
+        lead_temperature: updatePayload.lead_temperature,
+        lead_score: updatePayload.lead_score,
+        sentiment: updatePayload.sentiment,
+        has_agent_messages: hasAgentMessages,
+        has_playbook: !!playbook,
+        playbook_compliance_score: updatePayload.playbook_compliance_score,
+        service_rating: updatePayload.service_rating
+      },
+      execution_time_ms: duration,
     });
 
     return new Response(
@@ -612,11 +650,20 @@ Analise e responda:
     const duration = Date.now() - startTime;
     console.error(`[analyze-lead] Error after ${duration}ms:`, error);
 
-    // Log error
+    // Log error with full details
     if (supabase) {
-      await logEvent(supabase, 'lead_analysis_error', {
-        error: error.message,
-        duration_ms: duration
+      const sessionId = (() => { try { return JSON.parse(JSON.stringify(error))?.session_id; } catch { return null; } })();
+      await logAudit(supabase, {
+        event_type: 'ai_analysis_error',
+        session_id: sessionId,
+        status: 'error',
+        error_message: error.message || 'Unknown error',
+        event_details: {
+          error_name: error.name,
+          error_stack: error.stack?.substring(0, 500),
+          duration_ms: duration,
+        },
+        execution_time_ms: duration,
       });
     }
 

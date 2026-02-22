@@ -192,18 +192,28 @@ Deno.serve(async (req) => {
           });
 
           if (analysisErr) {
-            console.error(`[ingest-interaction] Auto-analysis failed for lead ${sessionId}:`, analysisErr);
+            // Capture detailed error from response body (SDK returns data even on non-2xx)
+            let errorDetail = analysisErr.message;
+            try {
+              if (analysisResult) {
+                errorDetail = typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult);
+              }
+            } catch {}
+
+            console.error(`[ingest-interaction] Auto-analysis failed for lead ${sessionId}:`, errorDetail);
             
-            // Log the failed analysis attempt
+            // Log the failed analysis attempt with detailed error
             await supabase.from('audit_logs').insert({
               event_type: 'auto_analysis_failed',
               session_id: sessionId,
               event_details: { 
                 milestone: totalInteractions,
-                error: analysisErr.message 
+                error: errorDetail,
+                raw_response: analysisResult,
+                original_error: analysisErr.message
               },
               status: 'error',
-              error_message: analysisErr.message
+              error_message: errorDetail
             });
           } else {
             console.log(`[ingest-interaction] Auto-analysis completed for lead ${sessionId} at milestone ${totalInteractions}`);
