@@ -1,62 +1,77 @@
 
+## Corrigir falhas de auto-analise e melhorar diagnostico
 
-## Substituir IA: Lovable AI Gateway → Google Gemini 2.5 Flash (API direta)
+### Problema
+267 chamadas automaticas da `analyze-lead` falharam com erro generico "Edge Function returned a non-2xx status code". O sistema nao captura o motivo real da falha, impossibilitando o diagnostico.
 
-### O que muda
+### Solucao em 2 partes
 
-A funcao `analyze-lead` atualmente usa o Lovable AI Gateway com o modelo `google/gemini-2.5-flash`. Vamos trocar para chamar a API do Google Gemini diretamente com sua propria API key.
+#### Parte 1: Melhorar captura de erro no `ingest-interaction`
 
-### Abordagem
+**Arquivo**: `supabase/functions/ingest-interaction/index.ts`
 
-O Google oferece um endpoint compativel com o formato OpenAI, o que significa que as mudancas sao minimas -- apenas URL, modelo e autenticacao mudam. O formato de tools/tool_choice permanece identico.
+Quando `supabase.functions.invoke` falha, o objeto de erro contem um campo `context` com o body da resposta. Vamos capturar isso e gravar no audit_log:
 
-### Passos
-
-1. **Solicitar sua Google API Key** via ferramenta de secrets (nome: `GOOGLE_GEMINI_API_KEY`)
-2. **Atualizar `supabase/functions/analyze-lead/index.ts`**:
-   - URL: de `https://ai.gateway.lovable.dev/v1/chat/completions` para `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
-   - Modelo: de `google/gemini-2.5-flash` para `gemini-2.5-flash`
-   - Auth: de `LOVABLE_API_KEY` para `GOOGLE_GEMINI_API_KEY`
-   - Versao: atualizar `AI_VERSION` para refletir a mudanca
-3. **Deploy** da edge function
-
-### Detalhes Tecnicos
-
-**Linhas 9-12** (constantes):
 ```typescript
-// De:
-const AI_GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const AI_MODEL = 'google/gemini-2.5-flash';
-const AI_VERSION = 'lovable-ai-gemini-flash-v3';
+// Atual (linha ~190-210):
+const { data: analysisResult, error: analysisErr } = await supabase.functions.invoke('analyze-lead', {
+  body: { session_id: sessionId }
+});
 
-// Para:
-const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const AI_MODEL = 'gemini-2.5-flash';
-const AI_VERSION = 'google-gemini-flash-v1';
-```
-
-**Linhas 55-59** (autenticacao):
-```typescript
-// De:
-const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-if (!lovableApiKey) {
-  throw new Error('LOVABLE_API_KEY is not configured');
+if (analysisErr) {
+  // Apenas loga mensagem generica
+  await supabase.from('audit_logs').insert({
+    error_message: analysisErr.message  // "Edge Function returned a non-2xx status code"
+  });
 }
 
-// Para:
-const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-if (!geminiApiKey) {
-  throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+// Novo:
+const { data: analysisResult, error: analysisErr } = await supabase.functions.invoke('analyze-lead', {
+  body: { session_id: sessionId }
+});
+
+if (analysisErr) {
+  // Capturar detalhes reais do erro
+  let errorDetail = analysisErr.message;
+  try {
+    if (analysisResult) {
+      errorDetail = typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult);
+    }
+  } catch {}
+
+  await supabase.from('audit_logs').insert({
+    error_message: errorDetail,  // Agora com detalhes reais
+    event_details: { milestone, error: errorDetail, raw_response: analysisResult }
+  });
 }
 ```
 
-**Linha 446** (header):
-```typescript
-// De:
-'Authorization': `Bearer ${lovableApiKey}`,
-// Para:
-'Authorization': `Bearer ${geminiApiKey}`,
-```
+#### Parte 2: Adicionar tratamento de erro mais robusto na `analyze-lead`
 
-Nenhuma outra mudanca necessaria -- o formato de tools, tool_choice e parsing da resposta sao identicos entre o Lovable AI Gateway e o endpoint OpenAI-compativel do Google.
+**Arquivo**: `supabase/functions/analyze-lead/index.ts`
 
+Garantir que todos os erros internos (Gemini API, parsing, etc.) sejam logados no audit_logs antes de retornar o status de erro, para que tenhamos visibilidade mesmo sem acesso aos logs da edge function.
+
+Adicionar um try/catch mais granular ao redor da chamada ao Gemini para distinguir entre:
+- Erro de API key
+- Timeout
+- Rate limiting (429)
+- Erro de parsing da resposta
+
+### Detalhes tecnicos
+
+**ingest-interaction/index.ts** - Linhas ~188-215:
+- Alterar o bloco de captura de erro para extrair `analysisResult` (que contem o body do erro quando status != 2xx)
+- O SDK do Supabase retorna `data` com o corpo da resposta mesmo em caso de erro non-2xx
+
+**analyze-lead/index.ts** - Ao redor da chamada fetch ao Gemini (~linha 446):
+- Capturar o status code da resposta do Gemini
+- Se 429: logar "rate_limit" no audit_logs
+- Se 401/403: logar "auth_error" 
+- Se timeout: logar "timeout"
+- Gravar sempre o response body no audit_log para diagnostico futuro
+
+### Resultado esperado
+- Proximas falhas terao o **motivo real** registrado no audit_logs
+- A pagina de Logs mostrara detalhes uteis em vez de "Edge Function returned a non-2xx status code"
+- Sera possivel identificar e corrigir a causa raiz das 267+ falhas
