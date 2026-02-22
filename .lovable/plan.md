@@ -1,77 +1,94 @@
 
-## Corrigir falhas de auto-analise e melhorar diagnostico
 
-### Problema
-267 chamadas automaticas da `analyze-lead` falharam com erro generico "Edge Function returned a non-2xx status code". O sistema nao captura o motivo real da falha, impossibilitando o diagnostico.
+## Integracao Twilio: Gravacao + Transcricao + Analise IA
 
-### Solucao em 2 partes
+### Visao geral do fluxo
 
-#### Parte 1: Melhorar captura de erro no `ingest-interaction`
-
-**Arquivo**: `supabase/functions/ingest-interaction/index.ts`
-
-Quando `supabase.functions.invoke` falha, o objeto de erro contem um campo `context` com o body da resposta. Vamos capturar isso e gravar no audit_log:
-
-```typescript
-// Atual (linha ~190-210):
-const { data: analysisResult, error: analysisErr } = await supabase.functions.invoke('analyze-lead', {
-  body: { session_id: sessionId }
-});
-
-if (analysisErr) {
-  // Apenas loga mensagem generica
-  await supabase.from('audit_logs').insert({
-    error_message: analysisErr.message  // "Edge Function returned a non-2xx status code"
-  });
-}
-
-// Novo:
-const { data: analysisResult, error: analysisErr } = await supabase.functions.invoke('analyze-lead', {
-  body: { session_id: sessionId }
-});
-
-if (analysisErr) {
-  // Capturar detalhes reais do erro
-  let errorDetail = analysisErr.message;
-  try {
-    if (analysisResult) {
-      errorDetail = typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult);
-    }
-  } catch {}
-
-  await supabase.from('audit_logs').insert({
-    error_message: errorDetail,  // Agora com detalhes reais
-    event_details: { milestone, error: errorDetail, raw_response: analysisResult }
-  });
-}
+```text
+Twilio (chamada finalizada)
+    |
+    v
+[twilio-webhook] --> Recebe dados da chamada + URL da gravacao
+    |                 Salva no call_db
+    v
+[transcribe-call] --> Baixa audio do Twilio
+    |                  Transcreve com Google Gemini (suporta audio)
+    |                  Salva transcricao no call_db
+    v
+[analyze-call] --> Analisa transcricao com IA
+                   (compliance, sentimento, score)
+                   Salva resultados no call_db
 ```
 
-#### Parte 2: Adicionar tratamento de erro mais robusto na `analyze-lead`
+### O que sera feito
 
-**Arquivo**: `supabase/functions/analyze-lead/index.ts`
+#### 1. Novas colunas no `call_db`
 
-Garantir que todos os erros internos (Gemini API, parsing, etc.) sejam logados no audit_logs antes de retornar o status de erro, para que tenhamos visibilidade mesmo sem acesso aos logs da edge function.
+Adicionar campos para armazenar dados do Twilio e da transcricao:
 
-Adicionar um try/catch mais granular ao redor da chamada ao Gemini para distinguir entre:
-- Erro de API key
-- Timeout
-- Rate limiting (429)
-- Erro de parsing da resposta
+- `twilio_call_sid` (text) - identificador unico da chamada no Twilio
+- `from_number` (text) - numero de origem
+- `to_number` (text) - numero de destino
+- `call_status` (text) - status da chamada (completed, busy, no-answer, etc.)
+- `recording_url` (text) - URL da gravacao no Twilio
+- `recording_sid` (text) - SID da gravacao
+- `transcription_text` (text) - texto transcrito da chamada
+- `transcription_status` (text) - pending/processing/completed/failed
+- `ai_call_analysis` (jsonb) - resultado da analise de IA da chamada
+
+#### 2. Edge Function: `twilio-webhook`
+
+Recebe o webhook do Twilio no formato `application/x-www-form-urlencoded` (padrao do Twilio). Extrai os dados da chamada, vincula a um lead (pelo numero de telefone ou session_id customizado) e salva no `call_db`. Apos salvar, dispara automaticamente a transcricao.
+
+Campos recebidos do Twilio:
+- `CallSid`, `CallStatus`, `CallDuration`, `From`, `To`
+- `RecordingUrl`, `RecordingSid` (quando gravacao esta habilitada)
+
+#### 3. Edge Function: `transcribe-call`
+
+Baixa o audio da gravacao usando a API do Twilio (autenticacao via Account SID + Auth Token), envia o audio diretamente ao Google Gemini (que suporta entrada de audio nativamente) para transcrever, e salva o texto no `call_db`. Apos transcrever, dispara automaticamente a analise de IA.
+
+#### 4. Edge Function: `analyze-call`
+
+Similar ao `analyze-lead` existente, mas focado em chamadas telefonicas. Recebe o `call_id`, busca a transcricao do `call_db`, e envia ao Gemini para analise de:
+- Compliance com playbook de vendas
+- Sentimento do cliente
+- Objecoes identificadas
+- Score de qualidade da chamada
+- Resumo executivo
+
+#### 5. Atualizacao da pagina de Chamadas
+
+- Exibir novos campos: numero de origem/destino, status Twilio, status da transcricao
+- Botao para ver transcricao completa (dialog)
+- Botao para ver analise de IA da chamada
+- Badge de status da transcricao (pendente/processando/concluida)
+
+#### 6. Secrets necessarios
+
+Serao solicitados ao usuario:
+- `TWILIO_ACCOUNT_SID` - Account SID do Twilio
+- `TWILIO_AUTH_TOKEN` - Auth Token do Twilio
+
+### Como configurar o Twilio (orientacao para voce)
+
+Apos a implementacao, voce precisara:
+
+1. **Criar conta no Twilio** em twilio.com (tem plano trial gratuito)
+2. **Obter credenciais**: Account SID e Auth Token (encontrados no dashboard do Twilio)
+3. **Configurar o webhook**: No Twilio, apontar o "Status Callback URL" das suas chamadas para a URL da edge function que sera gerada
+4. **Habilitar gravacao**: Nas configuracoes de chamada do Twilio, ativar "Record Calls"
+
+A URL do webhook sera algo como:
+`https://hhxqmvkzhzrxzlirzlis.supabase.co/functions/v1/twilio-webhook`
 
 ### Detalhes tecnicos
 
-**ingest-interaction/index.ts** - Linhas ~188-215:
-- Alterar o bloco de captura de erro para extrair `analysisResult` (que contem o body do erro quando status != 2xx)
-- O SDK do Supabase retorna `data` com o corpo da resposta mesmo em caso de erro non-2xx
+**twilio-webhook** - Parsing de `application/x-www-form-urlencoded` (nao JSON), validacao de assinatura Twilio opcional, auto-criacao de call no banco, trigger assincrono de transcricao.
 
-**analyze-lead/index.ts** - Ao redor da chamada fetch ao Gemini (~linha 446):
-- Capturar o status code da resposta do Gemini
-- Se 429: logar "rate_limit" no audit_logs
-- Se 401/403: logar "auth_error" 
-- Se timeout: logar "timeout"
-- Gravar sempre o response body no audit_log para diagnostico futuro
+**transcribe-call** - Download do audio via `https://api.twilio.com/2010-04-01/Accounts/{SID}/Recordings/{RecordingSid}.mp3` com Basic Auth, envio como base64 ao Gemini com instrucao de transcrever em portugues, salvamento do texto.
 
-### Resultado esperado
-- Proximas falhas terao o **motivo real** registrado no audit_logs
-- A pagina de Logs mostrara detalhes uteis em vez de "Edge Function returned a non-2xx status code"
-- Sera possivel identificar e corrigir a causa raiz das 267+ falhas
+**analyze-call** - Reutiliza o modelo Gemini 2.5 Flash e a mesma GOOGLE_GEMINI_API_KEY ja configurada. Prompt customizado para analise de chamadas telefonicas de vendas.
+
+**Config TOML** - Adicionar `[functions.twilio-webhook]`, `[functions.transcribe-call]`, e `[functions.analyze-call]` com `verify_jwt = false`.
+
