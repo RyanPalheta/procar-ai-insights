@@ -53,35 +53,62 @@ export type Database = {
       call_db: {
         Row: {
           ai_analysis_status: string | null
+          ai_call_analysis: Json | null
           call_duration: number | null
           call_id: string
           call_result: string | null
+          call_status: string | null
           call_tag: string | null
           created_at: string
+          from_number: string | null
           lead_score: number | null
+          recording_sid: string | null
+          recording_url: string | null
           session_id: number | null
+          to_number: string | null
+          transcription_status: string | null
+          transcription_text: string | null
+          twilio_call_sid: string | null
           type: string | null
         }
         Insert: {
           ai_analysis_status?: string | null
+          ai_call_analysis?: Json | null
           call_duration?: number | null
           call_id?: string
           call_result?: string | null
+          call_status?: string | null
           call_tag?: string | null
           created_at?: string
+          from_number?: string | null
           lead_score?: number | null
+          recording_sid?: string | null
+          recording_url?: string | null
           session_id?: number | null
+          to_number?: string | null
+          transcription_status?: string | null
+          transcription_text?: string | null
+          twilio_call_sid?: string | null
           type?: string | null
         }
         Update: {
           ai_analysis_status?: string | null
+          ai_call_analysis?: Json | null
           call_duration?: number | null
           call_id?: string
           call_result?: string | null
+          call_status?: string | null
           call_tag?: string | null
           created_at?: string
+          from_number?: string | null
           lead_score?: number | null
+          recording_sid?: string | null
+          recording_url?: string | null
           session_id?: number | null
+          to_number?: string | null
+          transcription_status?: string | null
+          transcription_text?: string | null
+          twilio_call_sid?: string | null
           type?: string | null
         }
         Relationships: [
