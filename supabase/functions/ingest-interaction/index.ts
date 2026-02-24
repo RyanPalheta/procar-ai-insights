@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 // Milestones that trigger automatic AI analysis
-const ANALYSIS_MILESTONES = [10, 20, 30, 40];
+const ANALYSIS_MILESTONES = [5, 10, 20, 30, 40];
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
