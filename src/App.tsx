@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Logs from "./pages/Logs";
 import TVDashboard from "./pages/TVDashboard";
 import Login from "./pages/Login";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,16 @@ const App = () => (
                 <ProtectedRoute requiredRole="admin">
                   <AppLayout>
                     <Logs />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AppLayout>
+                    <UserManagement />
                   </AppLayout>
                 </ProtectedRoute>
               }
