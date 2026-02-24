@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Percent, Clock, Star, RefreshCw, Home } from "lucide-react";
+import { Users, Percent, Clock, Star, RefreshCw, Home, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { format, subDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
@@ -89,6 +90,9 @@ const sectionVariants = {
 export default function TVDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("7");
   const periodDays = parseInt(selectedPeriod);
+  const { role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const isAdmin = role === "admin";
 
   // Force light mode for TV display
   useEffect(() => {
@@ -411,14 +415,27 @@ export default function TVDashboard() {
         className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8"
       >
         <div className="flex items-center gap-4">
-          {/* Back to Home Button */}
-          <Link 
-            to="/"
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-sm transition-all"
-            title="Voltar ao Dashboard"
-          >
-            <Home className="h-5 w-5" />
-          </Link>
+          {/* Back to Home Button - admin only */}
+          {isAdmin && (
+            <Link 
+              to="/"
+              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-sm transition-all"
+              title="Voltar ao Dashboard"
+            >
+              <Home className="h-5 w-5" />
+            </Link>
+          )}
+          
+          {/* Logout Button - for regular users */}
+          {!isAdmin && (
+            <button
+              onClick={async () => { await signOut(); navigate("/login"); }}
+              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-300 hover:shadow-sm transition-all"
+              title="Sair"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          )}
           
           <motion.img 
             src={logo} 

@@ -1,6 +1,7 @@
-import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor } from "lucide-react";
+import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor, LogOut } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
@@ -53,6 +54,8 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
   const collapsed = state === "collapsed";
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   
   // Track viewed leads in localStorage
   const [viewedLeads, setViewedLeads] = useState<number[]>(() => {
@@ -198,13 +201,20 @@ export function AppSidebar() {
             <Avatar className="h-9 w-9">
               <AvatarImage src="" />
               <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                AD
+                {user?.email?.substring(0, 2).toUpperCase() ?? "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Administrador</p>
-              <p className="text-xs text-muted-foreground truncate">admin@procar.com</p>
+              <p className="text-sm font-medium truncate">{user?.email?.split("@")[0] ?? "Usuário"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email ?? ""}</p>
             </div>
+            <button
+              onClick={async () => { await signOut(); navigate("/login"); }}
+              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </SidebarFooter>
       )}
