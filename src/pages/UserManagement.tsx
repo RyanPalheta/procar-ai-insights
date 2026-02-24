@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Shield, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Users, Plus, Trash2, Shield, ShieldCheck, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +84,11 @@ export default function UserManagement() {
   const [newRole, setNewRole] = useState<string>("user");
   const [showPassword, setShowPassword] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetUserId, setResetUserId] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const { data: users = [], isLoading } = useQuery<UserRecord[]>({
     queryKey: ["admin-users"],
@@ -126,6 +131,19 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (err: any) => toast.error(err.message || "Erro ao remover usuário"),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: () =>
+      invokeManageUsers("reset-password", { user_id: resetUserId, new_password: resetPassword }),
+    onSuccess: () => {
+      toast.success("Senha redefinida com sucesso");
+      setResetDialogOpen(false);
+      setResetPassword("");
+      setResetUserId("");
+      setResetEmail("");
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao redefinir senha"),
   });
 
   return (
@@ -285,6 +303,21 @@ export default function UserManagement() {
                       </SelectContent>
                     </Select>
 
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setResetUserId(u.id);
+                        setResetEmail(u.email);
+                        setResetPassword("");
+                        setShowResetPassword(false);
+                        setResetDialogOpen(true);
+                      }}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -316,6 +349,56 @@ export default function UserManagement() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir Senha</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              resetPasswordMutation.mutate();
+            }}
+            className="space-y-4"
+          >
+            <p className="text-sm text-muted-foreground">
+              Redefinir senha para <strong>{resetEmail}</strong>
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="reset-password">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="reset-password"
+                  type={showResetPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword(!showResetPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button type="submit" disabled={resetPasswordMutation.isPending}>
+                {resetPasswordMutation.isPending ? "Salvando..." : "Redefinir Senha"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
