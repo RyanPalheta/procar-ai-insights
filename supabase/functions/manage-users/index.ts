@@ -137,6 +137,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // RESET PASSWORD
+    if (req.method === "POST" && action === "reset-password") {
+      const { user_id, new_password } = await req.json();
+      if (!user_id || !new_password) {
+        return new Response(JSON.stringify({ error: "user_id and new_password required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        password: new_password,
+      });
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // DELETE USER
     if (req.method === "POST" && action === "delete") {
       const { user_id } = await req.json();
