@@ -14,8 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, X, AlertTriangle, Lightbulb, Search, Bell, Download, Gift, Anchor, TrendingUp } from "lucide-react";
-import { differenceInHours, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
+import { differenceInHours, parseISO, format, subDays, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 
 // Chart Components
 import { LeadsKPICards } from "@/components/leads/LeadsKPICards";
@@ -66,6 +67,8 @@ export default function Dashboard() {
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [languageFilter, setLanguageFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   
   // Period Controls
   const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("7");
@@ -192,16 +195,26 @@ export default function Dashboard() {
       if (languageFilter !== "all") {
         if (lead.lead_language !== languageFilter) return false;
       }
+      if (dateFrom) {
+        const createdAt = new Date(lead.created_at);
+        if (createdAt < startOfDay(dateFrom)) return false;
+      }
+      if (dateTo) {
+        const createdAt = new Date(lead.created_at);
+        if (createdAt > endOfDay(dateTo)) return false;
+      }
       return true;
     }) || [];
-  }, [leads, channelFilter, statusFilter, languageFilter]);
+  }, [leads, channelFilter, statusFilter, languageFilter, dateFrom, dateTo]);
 
-  const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all";
+  const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all" || !!dateFrom || !!dateTo;
 
   const clearGlobalFilters = () => {
     setChannelFilter("all");
     setStatusFilter("all");
     setLanguageFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
   };
 
   // KPI Calculations
@@ -678,6 +691,14 @@ export default function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Date Range Filter */}
+            <DateRangeFilter
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onDateFromChange={setDateFrom}
+              onDateToChange={setDateTo}
+            />
             
             {/* Clear Button */}
             {hasActiveGlobalFilters && (
