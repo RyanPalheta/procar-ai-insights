@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor, LogOut, UserCog } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ const navigationSections = [
   {
     label: "CONFIGURAÇÕES",
     items: [
+      { title: "Usuários", url: "/users", icon: UserCog },
       { title: "Configurações", url: "/settings", icon: Settings },
       { title: "Logs", url: "/logs", icon: FileText },
     ],
