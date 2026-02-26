@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor, LogOut, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Phone, Settings, FileText, ChevronLeft, Monitor, LogOut, UserCog, UserCheck } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,7 @@ const navigationSections = [
     items: [
       { title: "Visão Geral", url: "/", icon: LayoutDashboard },
       { title: "Leads", url: "/leads", icon: Users, showUnviewedCount: true },
+      { title: "Vendedores", url: "/sellers", icon: UserCheck },
       { title: "Painel 360°", url: "/tv", icon: Monitor },
     ],
   },
