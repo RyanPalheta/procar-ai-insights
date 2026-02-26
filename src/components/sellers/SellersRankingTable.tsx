@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, ArrowUpDown, ChevronDown, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, TrendingUp, Users, Target, Shield, Footprints, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GoalsSummary, GoalData, calculateGoalStatus } from "./SellerGoalStatus";
+import { Badge } from "@/components/ui/badge";
+import { GoalsSummary, GoalData } from "./SellerGoalStatus";
 import { SellerDetailView } from "./SellerDetailView";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export interface SellerKPI {
   seller_id: string;
@@ -29,16 +32,19 @@ interface SellersRankingTableProps {
 
 type SortKey = "seller_id" | "conversion_rate" | "leads_with_quote" | "objections_rate" | "total_audited" | "walking_leads";
 
-export function SellersRankingTable({ sellers, goals, sellerGoalsMap, periodDays }: SellersRankingTableProps) {
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "total_audited", label: "Mais Leads" },
+  { value: "conversion_rate", label: "Maior Conversão" },
+  { value: "leads_with_quote", label: "Mais Cotações" },
+  { value: "objections_rate", label: "Mais Objeções Sup." },
+  { value: "walking_leads", label: "Mais Presenciais" },
+  { value: "seller_id", label: "Nome (A-Z)" },
+];
+
+export function SellersRankingTable({ sellers, sellerGoalsMap, periodDays }: SellersRankingTableProps) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total_audited");
-  const [sortAsc, setSortAsc] = useState(false);
-  const [expandedSeller, setExpandedSeller] = useState<string | null>(null);
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) setSortAsc(!sortAsc);
-    else { setSortKey(key); setSortAsc(false); }
-  };
+  const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
 
   const enrichedSellers = useMemo(() => {
     return sellers.map(s => ({
@@ -55,87 +61,152 @@ export function SellersRankingTable({ sellers, goals, sellerGoalsMap, periodDays
       list = list.filter(s => s.seller_id.toLowerCase().includes(q));
     }
     list.sort((a, b) => {
-      const va = a[sortKey] ?? 0;
-      const vb = b[sortKey] ?? 0;
-      return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
+      if (sortKey === "seller_id") {
+        return a.seller_id.localeCompare(b.seller_id);
+      }
+      const va = (a as any)[sortKey] ?? 0;
+      const vb = (b as any)[sortKey] ?? 0;
+      return vb - va;
     });
     return list;
-  }, [enrichedSellers, search, sortKey, sortAsc]);
+  }, [enrichedSellers, search, sortKey]);
 
-  const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => (
-    <Button variant="ghost" size="sm" className="h-8 -ml-3 text-xs font-semibold" onClick={() => handleSort(sortKeyName)}>
-      {label}
-      <ArrowUpDown className="ml-1 h-3 w-3" />
-    </Button>
-  );
+  const selectedSellerData = useMemo(() => {
+    if (!selectedSeller) return null;
+    return enrichedSellers.find(s => s.seller_id === selectedSeller) || null;
+  }, [selectedSeller, enrichedSellers]);
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar vendedor..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      {/* Search + Sort */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar vendedor..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={sortKey} onValueChange={v => setSortKey(v as SortKey)}>
+          <SelectTrigger className="w-48">
+            <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(o => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8" />
-              <TableHead><SortHeader label="Vendedor" sortKeyName="seller_id" /></TableHead>
-              <TableHead className="text-right"><SortHeader label="Leads" sortKeyName="total_audited" /></TableHead>
-              <TableHead className="text-right"><SortHeader label="Conversão" sortKeyName="conversion_rate" /></TableHead>
-              <TableHead className="text-right"><SortHeader label="C/ Cotação" sortKeyName="leads_with_quote" /></TableHead>
-              <TableHead className="text-right"><SortHeader label="Objeções Sup." sortKeyName="objections_rate" /></TableHead>
-              <TableHead className="text-right"><SortHeader label="Presenciais" sortKeyName="walking_leads" /></TableHead>
-              <TableHead>Metas</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(seller => {
-              const isExpanded = expandedSeller === seller.seller_id;
-              const sellerGoals = sellerGoalsMap.get(seller.seller_id) || [];
-              return (
-                <TableRow key={seller.seller_id} className="group">
-                  <TableCell colSpan={8} className="p-0">
-                    <div
-                      className={cn("flex items-center cursor-pointer hover:bg-muted/50 transition-colors px-4 py-3", isExpanded && "bg-muted/30")}
-                      onClick={() => setExpandedSeller(isExpanded ? null : seller.seller_id)}
-                    >
-                      <div className="w-8 flex-shrink-0">
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1 font-medium">{seller.seller_id}</div>
-                      <div className="w-24 text-right text-sm">{seller.total_audited}</div>
-                      <div className="w-24 text-right text-sm">{seller.conversion_rate.toFixed(1)}%</div>
-                      <div className="w-24 text-right text-sm">{seller.leads_with_quote}</div>
-                      <div className="w-28 text-right text-sm">
-                        {seller.objections_rate.toFixed(1)}%
-                        <span className="text-muted-foreground text-xs ml-1">({seller.objections_overcome}/{seller.total_with_objection})</span>
-                      </div>
-                      <div className="w-24 text-right text-sm">{seller.walking_leads}</div>
-                      <div className="w-40 pl-4">
-                        {sellerGoals.length > 0 ? <GoalsSummary goals={sellerGoals} /> : <span className="text-xs text-muted-foreground">—</span>}
-                      </div>
+      {/* Gallery Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map((seller, index) => {
+          const sellerGoals = sellerGoalsMap.get(seller.seller_id) || [];
+          const objectionRate = seller.objections_rate;
+
+          return (
+            <Card
+              key={seller.seller_id}
+              className={cn(
+                "cursor-pointer transition-all hover:shadow-md hover:border-primary/30 group relative overflow-hidden",
+                selectedSeller === seller.seller_id && "ring-2 ring-primary"
+              )}
+              onClick={() => setSelectedSeller(seller.seller_id)}
+            >
+              {/* Rank badge */}
+              <div className="absolute top-3 right-3">
+                <Badge variant="outline" className="text-xs font-mono">
+                  #{index + 1}
+                </Badge>
+              </div>
+
+              <CardContent className="p-5 space-y-4">
+                {/* Header: Avatar + Name */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
+                    {seller.seller_id.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{seller.seller_id}</p>
+                    <p className="text-xs text-muted-foreground">{seller.total_audited} leads</p>
+                  </div>
+                </div>
+
+                {/* KPI Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <TrendingUp className="h-3 w-3" />
+                      <span className="text-[11px]">Conversão</span>
                     </div>
-                    {isExpanded && (
-                      <div className="border-t bg-muted/10 p-6">
-                        <SellerDetailView seller={seller} goals={sellerGoals} periodDays={periodDays} />
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  Nenhum vendedor encontrado
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                    <p className="text-sm font-semibold">{seller.conversion_rate.toFixed(1)}%</p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Target className="h-3 w-3" />
+                      <span className="text-[11px]">Cotações</span>
+                    </div>
+                    <p className="text-sm font-semibold">{seller.leads_with_quote}</p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      <span className="text-[11px]">Objeções Sup.</span>
+                    </div>
+                    <p className="text-sm font-semibold">
+                      {objectionRate.toFixed(0)}%
+                      <span className="text-muted-foreground text-[10px] ml-1">({seller.objections_overcome}/{seller.total_with_objection})</span>
+                    </p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Footprints className="h-3 w-3" />
+                      <span className="text-[11px]">Presenciais</span>
+                    </div>
+                    <p className="text-sm font-semibold">{seller.walking_leads}</p>
+                  </div>
+                </div>
+
+                {/* Goals Summary */}
+                {sellerGoals.length > 0 && (
+                  <div className="pt-2 border-t border-border">
+                    <GoalsSummary goals={sellerGoals} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          Nenhum vendedor encontrado
+        </div>
+      )}
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedSeller} onOpenChange={open => !open && setSelectedSeller(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                {selectedSeller?.substring(0, 2).toUpperCase()}
+              </div>
+              {selectedSeller}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSellerData && (
+            <SellerDetailView
+              seller={selectedSellerData}
+              goals={sellerGoalsMap.get(selectedSeller!) || []}
+              periodDays={periodDays}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
