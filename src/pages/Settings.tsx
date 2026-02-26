@@ -108,19 +108,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Simulador de Score</CardTitle>
-              <CardDescription>
-                Em breve: teste diferentes cenários de pontuação
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Funcionalidade em desenvolvimento
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Tab 2: Alerts */}
