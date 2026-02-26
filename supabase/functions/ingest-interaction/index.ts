@@ -164,6 +164,46 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Update is_walking if provided in payload
+    let isWalkingUpdated = false;
+    if (body.is_walking !== undefined) {
+      const { data: currentLeadWalking } = await supabase
+        .from('lead_db')
+        .select('is_walking')
+        .eq('session_id', sessionId)
+        .single();
+
+      const oldIsWalking = currentLeadWalking?.is_walking;
+      const newIsWalking = Boolean(body.is_walking);
+
+      if (oldIsWalking !== newIsWalking) {
+        console.log(`[ingest-interaction] Updating is_walking: "${oldIsWalking}" -> "${newIsWalking}"`);
+
+        const { error: walkingUpdateError } = await supabase
+          .from('lead_db')
+          .update({ is_walking: newIsWalking })
+          .eq('session_id', sessionId);
+
+        if (walkingUpdateError) {
+          console.error('[ingest-interaction] Error updating is_walking:', walkingUpdateError);
+        } else {
+          await supabase
+            .from('lead_history')
+            .insert({
+              session_id: sessionId,
+              field_name: 'is_walking',
+              old_value: String(oldIsWalking),
+              new_value: String(newIsWalking),
+              changed_by: 'n8n',
+              change_source: 'api'
+            });
+
+          isWalkingUpdated = true;
+          console.log(`[ingest-interaction] is_walking updated and recorded in history`);
+        }
+      }
+    }
+
     // Count total interactions for this lead
     const { count: interactionCount, error: countError } = await supabase
       .from('interaction_db')
@@ -245,6 +285,7 @@ Deno.serve(async (req) => {
         interaction_id: data.interaction_id,
         lead_created: leadCreated,
         status_updated: statusUpdated,
+        is_walking_updated: isWalkingUpdated,
         total_interactions: totalInteractions,
         analysis_triggered: analysisTriggered,
         milestone_reached: ANALYSIS_MILESTONES.includes(totalInteractions) ? totalInteractions : null,
@@ -252,9 +293,11 @@ Deno.serve(async (req) => {
           ? 'Lead and interaction created successfully' 
           : statusUpdated
             ? `Interaction created, sales_status updated`
-            : analysisTriggered 
-              ? `Interaction created, auto-analysis triggered at milestone ${totalInteractions}`
-              : 'Interaction created successfully'
+            : isWalkingUpdated
+              ? `Interaction created, is_walking updated`
+              : analysisTriggered 
+                ? `Interaction created, auto-analysis triggered at milestone ${totalInteractions}`
+                : 'Interaction created successfully'
       }),
       { 
         status: 201, 
