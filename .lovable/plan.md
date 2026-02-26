@@ -1,60 +1,23 @@
 
 
-# Ajustes na Tela de Configuracoes e PlaybookManager
+# Ajustes: Remover importacao em massa e filtros colapsaveis
 
-## Resumo
-Tres alteracoes: (1) remover o card "Simulador de Score" da aba "Configuracoes de IA", (2) transformar o dialog de visualizacao de playbook em um dialog de edicao (com textarea editavel + botao salvar), e (3) mover o upload de substituicao para dentro da tabela de playbooks cadastrados (uma coluna extra com input de arquivo + botao substituir), eliminando a secao separada "Importar Playbooks" por tipo.
+## 1. Remover "Importar Produtos em Massa" do ProductManager
 
----
+No arquivo `src/components/settings/ProductManager.tsx`, remover o card "Importar Produtos em Massa" (linhas 456-522) e os estados associados (`excelFile`, `productsPreview`, `uploadingProducts`) e as funcoes `handleExcelFileChange` e `handleUploadExcel`. Tambem remover o import do `xlsx`.
 
-## 1. Settings.tsx - Remover Simulador de Score
+## 2. Filtros colapsaveis na Visao Geral (Dashboard)
 
-Remover o terceiro Card da tab "ai-settings" (linhas ~113-125 do Settings.tsx) que mostra "Simulador de Score - Funcionalidade em desenvolvimento".
+No arquivo `src/pages/Dashboard.tsx`, substituir o card de filtros sempre visivel por um botao "Filtros" que, ao ser clicado, expande/colapsa a barra de filtros.
 
-## 2. PlaybookManager.tsx - Editar conteudo do playbook
+### Implementacao:
+- Adicionar estado `filtersOpen` (boolean, default `false`)
+- Trocar o card fixo por um botao com icone `Filter` + texto "Filtros" + badge com contagem de filtros ativos
+- Ao clicar, exibe o conteudo dos filtros (canal, status, lingua, datas, limpar) usando `Collapsible` do radix ou simplesmente um condicional com animacao
+- Quando ha filtros ativos, o botao mostra um indicador visual (badge com numero)
 
-### Dialog de visualizacao vira dialog de edicao
-- Trocar o `div` de texto read-only por um `Textarea` editavel com o conteudo do playbook
-- Adicionar estado `editContent` para controlar o texto editado
-- Adicionar botao "Salvar" no dialog que faz `supabase.from('playbooks').update({ content }).eq('id', ...)`
-- Manter o botao de fechar e o titulo/badge como estao
-- Icone do botao na tabela muda de `Eye` para `Pencil` (ou manter Eye + adicionar Pencil)
+### Detalhes tecnicos:
+- O botao fica na area do header, ao lado dos botoes existentes (Notificacoes, Exportar)
+- Conteudo dos filtros aparece abaixo do header em um card com animacao de slide
+- Contagem de filtros ativos: somar quantos filtros estao diferentes de "all" ou tem valor definido (dateFrom, dateTo)
 
-### Upload de substituicao na tabela de cadastrados
-- Adicionar uma coluna "Substituir" na tabela de playbooks cadastrados
-- Cada linha tera um input file + botao de upload inline (compacto)
-- Reutilizar a logica `handlePlaybookFileChange` e `handleUploadPlaybook` ja existente
-- Remover o card "Importar Playbooks" separado (a secao de grid com cards por tipo)
-- Manter apenas um card simples no final para importar playbook de tipo **novo** (sem playbook cadastrado ainda), usando um select de tipo + input file
-
-## 3. Arquivos modificados
-
-- `src/pages/Settings.tsx` - remover Card do Simulador de Score
-- `src/components/settings/PlaybookManager.tsx` - edicao no dialog, substituicao inline na tabela, remover secao de import separada
-
----
-
-## Detalhes Tecnicos
-
-### PlaybookManager - Mudancas principais
-
-**Estado novo:**
-```text
-editContent: string  -- conteudo editavel no dialog
-editingPlaybook: any  -- playbook sendo editado (substitui viewingPlaybook)
-savingPlaybook: boolean  -- loading do salvar
-replaceFiles: { [playbookId: string]: File }  -- arquivos para substituicao por linha
-```
-
-**Dialog de edicao:**
-- Ao abrir, `editContent` recebe `playbook.content`
-- Textarea com `min-h-[50vh]` dentro do ScrollArea
-- Botao "Salvar Alteracoes" que faz update no Supabase e invalida query
-
-**Tabela com coluna "Substituir":**
-- Nova coluna com input file compacto + botao Upload
-- Ao selecionar arquivo e clicar upload, substitui o conteudo do playbook existente
-- Acoes ficam: Editar (Pencil) | Substituir (Upload file) | Excluir (Trash2)
-
-**Importar novo playbook:**
-- Card simples com Select de product_type (filtrando os que ja tem playbook) + input file + botao importar
