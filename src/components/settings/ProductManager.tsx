@@ -10,9 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
 
 const PRODUCT_TYPES = [
   "WINDOW TINT",
@@ -37,10 +36,6 @@ export function ProductManager() {
   const [newProductType, setNewProductType] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   
-  const [excelFile, setExcelFile] = useState<File | null>(null);
-  const [productsPreview, setProductsPreview] = useState<any[]>([]);
-  const [uploadingProducts, setUploadingProducts] = useState(false);
-  
   const [deletingProduct, setDeletingProduct] = useState<string | null>(null);
 
   const { data: products, isLoading } = useQuery({
@@ -62,111 +57,6 @@ export function ProductManager() {
       return data;
     }
   });
-
-  const handleExcelFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setExcelFile(file);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = new Uint8Array(event.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-          const products = jsonData.map((row: any) => {
-            const productName = row['PRODUTO'] || row['produto'] || row['Product'] || row['PRODUCT'] || 
-                               row['Nome'] || row['nome'] || row['Name'] || row['name'];
-            const productType = row['TIPO'] || row['tipo'] || row['Type'] || row['TYPE'] ||
-                               row['Tipo'] || row['Category'] || row['category'];
-            
-            return {
-              product_name: productName,
-              product_type: productType
-            };
-          }).filter(p => p.product_name && p.product_type);
-
-          const uniqueProducts = products.reduce((acc: any[], product) => {
-            const exists = acc.find(p => p.product_name === product.product_name);
-            if (!exists) {
-              acc.push(product);
-            }
-            return acc;
-          }, []);
-
-          if (uniqueProducts.length === 0) {
-            toast({
-              title: "Erro",
-              description: "Nenhum produto encontrado. Verifique se as colunas têm nomes como 'PRODUTO' e 'TIPO'",
-              variant: "destructive"
-            });
-            setExcelFile(null);
-            return;
-          }
-
-          setProductsPreview(uniqueProducts);
-          
-          toast({
-            title: "Arquivo lido!",
-            description: `${uniqueProducts.length} produtos encontrados`
-          });
-        } catch (parseError) {
-          console.error('Error parsing Excel:', parseError);
-          toast({
-            title: "Erro ao ler arquivo",
-            description: parseError instanceof Error ? parseError.message : "Erro desconhecido",
-            variant: "destructive"
-          });
-          setExcelFile(null);
-        }
-      };
-      
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error('Error handling file:', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao processar arquivo",
-        variant: "destructive"
-      });
-      setExcelFile(null);
-    }
-  };
-
-  const handleUploadExcel = async () => {
-    if (productsPreview.length === 0) return;
-
-    setUploadingProducts(true);
-    try {
-      const { error } = await supabase
-        .from('products')
-        .insert(productsPreview);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso!",
-        description: `${productsPreview.length} produtos importados`
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      setExcelFile(null);
-      setProductsPreview([]);
-    } catch (error) {
-      console.error('Error uploading products:', error);
-      toast({
-        title: "Erro",
-        description: `Erro ao importar produtos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        variant: "destructive"
-      });
-    } finally {
-      setUploadingProducts(false);
-    }
-  };
 
   const handleAddProduct = async () => {
     if (!newProductName || !newProductType) {
@@ -453,70 +343,6 @@ export function ProductManager() {
         </CardContent>
       </Card>
 
-      {/* Excel Import */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Importar Produtos em Massa</CardTitle>
-          <CardDescription>
-            Faça upload de uma planilha Excel (.xlsx) com as colunas PRODUTO e TIPO
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="products-file">Planilha de Produtos (.xlsx)</Label>
-            <Input
-              id="products-file"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelFileChange}
-            />
-          </div>
-
-          {productsPreview.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">
-                  {productsPreview.length} produtos encontrados
-                </p>
-                <Button
-                  onClick={handleUploadExcel}
-                  disabled={uploadingProducts}
-                  size="sm"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {uploadingProducts ? 'Importando...' : 'Importar'}
-                </Button>
-              </div>
-
-              <div className="max-h-48 overflow-y-auto border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Produto</TableHead>
-                      <TableHead>Tipo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {productsPreview.slice(0, 10).map((product, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{product.product_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{product.product_type}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {productsPreview.length > 10 && (
-                  <p className="text-xs text-muted-foreground p-2 text-center">
-                    ... e mais {productsPreview.length - 10} produtos
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
