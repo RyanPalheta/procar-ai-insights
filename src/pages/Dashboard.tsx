@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ export default function Dashboard() {
   const [languageFilter, setLanguageFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   
   // Period Controls
   const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("7");
@@ -210,6 +212,16 @@ export default function Dashboard() {
   }, [leads, channelFilter, statusFilter, languageFilter, dateFrom, dateTo]);
 
   const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all" || !!dateFrom || !!dateTo;
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (channelFilter !== "all") count++;
+    if (statusFilter !== "all") count++;
+    if (languageFilter !== "all") count++;
+    if (dateFrom) count++;
+    if (dateTo) count++;
+    return count;
+  }, [channelFilter, statusFilter, languageFilter, dateFrom, dateTo]);
 
   const clearGlobalFilters = () => {
     setChannelFilter("all");
@@ -653,85 +665,95 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Global Filters Bar */}
-      <Card className="border-dashed">
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      {/* Collapsible Filters */}
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <div className="flex items-center gap-2">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
-              <span className="font-medium">Filtrar por:</span>
-            </div>
-            
-            {/* Channel Filter */}
-            <Select value={channelFilter} onValueChange={setChannelFilter}>
-              <SelectTrigger className="w-[180px] bg-background">
-                <SelectValue placeholder="Canal" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos os Canais ({leads?.length || 0})</SelectItem>
-                {uniqueChannelsWithCount.map(({ value, count }) => (
-                  <SelectItem key={value} value={value}>
-                    {value} ({count})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[260px] bg-background">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos os Status ({leads?.length || 0})</SelectItem>
-                {uniqueStatusesWithCount.map(({ value, count }) => (
-                  <SelectItem key={value} value={value}>
-                    {value} ({count})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Language Filter */}
-            <Select value={languageFilter} onValueChange={setLanguageFilter}>
-              <SelectTrigger className="w-[180px] bg-background">
-                <SelectValue placeholder="Língua" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todas as Línguas ({leads?.length || 0})</SelectItem>
-                {uniqueLanguagesWithCount.map(({ value, count }) => (
-                  <SelectItem key={value} value={value}>
-                    {value} ({count})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Filtros
+              {activeFilterCount > 0 && (
+                <Badge variant="default" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          {hasActiveGlobalFilters && (
+            <span className="text-sm text-muted-foreground">
+              Exibindo <span className="font-semibold text-foreground">{globalFilteredLeads.length}</span> de {leads?.length || 0} leads
+            </span>
+          )}
+        </div>
+        <CollapsibleContent className="mt-3">
+          <Card className="border-dashed">
+            <CardContent className="py-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Channel Filter */}
+                <Select value={channelFilter} onValueChange={setChannelFilter}>
+                  <SelectTrigger className="w-[180px] bg-background">
+                    <SelectValue placeholder="Canal" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">Todos os Canais ({leads?.length || 0})</SelectItem>
+                    {uniqueChannelsWithCount.map(({ value, count }) => (
+                      <SelectItem key={value} value={value}>
+                        {value} ({count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Status Filter */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[260px] bg-background">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">Todos os Status ({leads?.length || 0})</SelectItem>
+                    {uniqueStatusesWithCount.map(({ value, count }) => (
+                      <SelectItem key={value} value={value}>
+                        {value} ({count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Language Filter */}
+                <Select value={languageFilter} onValueChange={setLanguageFilter}>
+                  <SelectTrigger className="w-[180px] bg-background">
+                    <SelectValue placeholder="Língua" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">Todas as Línguas ({leads?.length || 0})</SelectItem>
+                    {uniqueLanguagesWithCount.map(({ value, count }) => (
+                      <SelectItem key={value} value={value}>
+                        {value} ({count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            {/* Date Range Filter */}
-            <DateRangeFilter
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
-            />
-            
-            {/* Clear Button */}
-            {hasActiveGlobalFilters && (
-              <Button variant="ghost" size="sm" onClick={clearGlobalFilters} className="h-9">
-                <X className="h-4 w-4 mr-1" />
-                Limpar
-              </Button>
-            )}
-
-            {/* Active filters indicator */}
-            {hasActiveGlobalFilters && (
-              <div className="ml-auto text-sm text-muted-foreground">
-                Exibindo <span className="font-semibold text-foreground">{globalFilteredLeads.length}</span> de {leads?.length || 0} leads
+                {/* Date Range Filter */}
+                <DateRangeFilter
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                  onDateFromChange={setDateFrom}
+                  onDateToChange={setDateTo}
+                />
+                
+                {/* Clear Button */}
+                {hasActiveGlobalFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearGlobalFilters} className="h-9">
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* KPI Cards Section */}
       <LeadsKPICards 
