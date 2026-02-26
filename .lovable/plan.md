@@ -1,160 +1,60 @@
 
 
-# Aba "Vendedores" - Desempenho por Vendedor com Metas
+# Ajustes na Tela de Configuracoes e PlaybookManager
 
 ## Resumo
-Criar uma nova aba "Vendedores" no sidebar com ranking, KPIs por vendedor, metas configuraveis e graficos de desempenho. Inclui nova RPC backend, tabela de metas, e tela de configuracao.
+Tres alteracoes: (1) remover o card "Simulador de Score" da aba "Configuracoes de IA", (2) transformar o dialog de visualizacao de playbook em um dialog de edicao (com textarea editavel + botao salvar), e (3) mover o upload de substituicao para dentro da tabela de playbooks cadastrados (uma coluna extra com input de arquivo + botao substituir), eliminando a secao separada "Importar Playbooks" por tipo.
 
 ---
 
-## 1. Backend (Banco de Dados)
+## 1. Settings.tsx - Remover Simulador de Score
 
-### 1.1 Tabela `seller_goals`
-Nova tabela para persistir metas por vendedor e/ou globais:
+Remover o terceiro Card da tab "ai-settings" (linhas ~113-125 do Settings.tsx) que mostra "Simulador de Score - Funcionalidade em desenvolvimento".
 
-```text
-seller_goals
-  id              uuid PK default gen_random_uuid()
-  seller_id       text NULL          -- NULL = meta global (fallback)
-  metric          text NOT NULL      -- ex: 'conversion_rate', 'leads_with_quote', etc.
-  target          numeric NOT NULL   -- valor alvo
-  direction       text NOT NULL      -- '>=' ou '<='
-  active          boolean default true
-  created_at      timestamptz default now()
-  updated_at      timestamptz default now()
-  UNIQUE(seller_id, metric)
-```
+## 2. PlaybookManager.tsx - Editar conteudo do playbook
 
-Metricas suportadas: `conversion_rate`, `leads_with_quote`, `avg_quoted_price`, `objections_overcome_rate`, `median_first_response_time`, `walking_leads`, `avg_score`.
+### Dialog de visualizacao vira dialog de edicao
+- Trocar o `div` de texto read-only por um `Textarea` editavel com o conteudo do playbook
+- Adicionar estado `editContent` para controlar o texto editado
+- Adicionar botao "Salvar" no dialog que faz `supabase.from('playbooks').update({ content }).eq('id', ...)`
+- Manter o botao de fechar e o titulo/badge como estao
+- Icone do botao na tabela muda de `Eye` para `Pencil` (ou manter Eye + adicionar Pencil)
 
-RLS: leitura para autenticados, escrita apenas admin (via `has_role`).
+### Upload de substituicao na tabela de cadastrados
+- Adicionar uma coluna "Substituir" na tabela de playbooks cadastrados
+- Cada linha tera um input file + botao de upload inline (compacto)
+- Reutilizar a logica `handlePlaybookFileChange` e `handleUploadPlaybook` ja existente
+- Remover o card "Importar Playbooks" separado (a secao de grid com cards por tipo)
+- Manter apenas um card simples no final para importar playbook de tipo **novo** (sem playbook cadastrado ainda), usando um select de tipo + input file
 
-### 1.2 RPC `get_sellers_kpis`
-Nova funcao que retorna um JSON array com KPIs agrupados por `sales_person_id`:
+## 3. Arquivos modificados
 
-Para cada vendedor retorna:
-- `seller_id`, `total_audited`, `won_leads`, `avg_score`, `new_audited_24h`, `leads_with_quote`, `avg_quoted_price`, `median_first_response_time_minutes`, `walking_leads`
-- `total_with_objection`, `objections_overcome` (para calcular %)
-- Versoes `_previous` de cada metrica para variacao de periodo
-
-Parametro: `period_days integer DEFAULT NULL` (mesmo padrao da `get_leads_kpis`).
-
-Filtra apenas leads com `last_ai_update IS NOT NULL` e `sales_person_id IS NOT NULL`.
-
----
-
-## 2. Frontend - Estrutura de Arquivos
-
-### Novos arquivos:
-- `src/pages/Sellers.tsx` -- pagina principal da aba
-- `src/components/sellers/SellersRankingTable.tsx` -- tabela de ranking
-- `src/components/sellers/SellerDetailView.tsx` -- detalhe do vendedor (KPIs + graficos + metas)
-- `src/components/sellers/SellerGoalStatus.tsx` -- componente de status de meta (badge + progress bar)
-- `src/components/settings/SellerGoalsManager.tsx` -- configuracao de metas
-
-### Arquivos modificados:
-- `src/App.tsx` -- nova rota `/sellers`
-- `src/components/layout/AppSidebar.tsx` -- adicionar item "Vendedores" no menu
-- `src/pages/Settings.tsx` -- nova tab "Metas de Vendedores"
-
----
-
-## 3. Pagina Vendedores (`/sellers`)
-
-### 3.1 Visao Geral (Ranking)
-- Filtros globais no topo: canal, status, idioma, range de datas, **vendedor** (multi-selecao)
-- Toggle de periodo (7d / 30d / 90d / Todos) -- mesmo padrao do Dashboard
-- Tabela ordenavel com colunas:
-  - Vendedor (sales_person_id)
-  - Taxa de Conversao (%)
-  - Leads com Cotacao
-  - Objecoes Superadas (%)
-  - Tempo 1a Resposta (mediana)
-  - Leads Presenciais
-  - Status Metas (resumo: X em dia / Y atencao / Z abaixo)
-- Quick search por nome de vendedor
-- Clique em linha abre detalhe inline (expandivel) ou painel lateral
-
-### 3.2 Detalhe do Vendedor
-- 8 KPI Cards (mesmos do dashboard + "Objecoes Superadas") com variacao vs periodo anterior
-- Secao "Metas": lista de metricas com meta configurada, mostrando:
-  - Barra de progresso
-  - Badge de status: "Em dia" (verde), "Atencao" (amarelo), "Abaixo" (vermelho)
-  - Resumo no topo: "3 em dia / 1 atencao / 0 abaixo"
-- Graficos (minimo 3):
-  1. Timeline de leads do vendedor (created_at)
-  2. Distribuicao por status de venda
-  3. Objecoes: top categorias + % superadas
-  4. (Opcionais) Canal, sentimento, temperatura
-
-### 3.3 KPI "Objecoes Superadas"
-- Definicao: `(COUNT(objection_overcome=true) / COUNT(has_objection=true)) * 100`
-- Exibir: "X% (Y/Z)" onde Y = superadas, Z = total com objecao
-- Calculado server-side na RPC
-
----
-
-## 4. Configuracoes de Metas
-
-### Nova tab em Settings: "Metas de Vendedores"
-- Formulario para definir metas:
-  - Selecionar vendedor (dropdown com lista de sellers + opcao "Global/Padrao")
-  - Selecionar metrica (dropdown)
-  - Valor alvo (input numerico)
-  - Direcao: >= ou <= (auto-preenchido conforme metrica)
-  - Ativo (switch)
-- Tabela listando metas existentes com edicao inline e exclusao
-- Meta global serve como fallback quando vendedor nao tem meta especifica
-
-### Logica de status das metas:
-- **Em dia**: valor atende a regra (>= ou <=)
-- **Atencao**: esta a menos de 10% de distancia do alvo
-- **Abaixo**: nao atende e esta fora do limiar de 10%
-
----
-
-## 5. Navegacao
-
-### Sidebar
-Adicionar "Vendedores" na secao "PRINCIPAL", entre "Leads" e "Painel 360", com icone `UserCheck` ou `Users2`.
-
-### Rota
-`/sellers` -- protegida com `requiredRole="admin"`.
-
----
-
-## 6. Sequencia de Implementacao
-
-1. **Migracao SQL**: criar tabela `seller_goals` + RPC `get_sellers_kpis`
-2. **Settings**: adicionar tab "Metas de Vendedores" com `SellerGoalsManager`
-3. **Pagina Sellers**: ranking table + detalhe do vendedor + graficos
-4. **Sidebar + Rota**: integrar na navegacao
-5. **Status de metas**: componente de calculo e exibicao
+- `src/pages/Settings.tsx` - remover Card do Simulador de Score
+- `src/components/settings/PlaybookManager.tsx` - edicao no dialog, substituicao inline na tabela, remover secao de import separada
 
 ---
 
 ## Detalhes Tecnicos
 
-### RPC `get_sellers_kpis` (esqueleto SQL)
-```sql
-CREATE OR REPLACE FUNCTION get_sellers_kpis(period_days integer DEFAULT NULL)
-RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
--- Agrupa por sales_person_id
--- Retorna array JSON com KPIs por vendedor
--- Inclui versoes _previous para variacao
--- Inclui total_with_objection e objections_overcome
-$$;
+### PlaybookManager - Mudancas principais
+
+**Estado novo:**
+```text
+editContent: string  -- conteudo editavel no dialog
+editingPlaybook: any  -- playbook sendo editado (substitui viewingPlaybook)
+savingPlaybook: boolean  -- loading do salvar
+replaceFiles: { [playbookId: string]: File }  -- arquivos para substituicao por linha
 ```
 
-### Tabela seller_goals (RLS)
-- SELECT: autenticados
-- INSERT/UPDATE/DELETE: apenas admin via `has_role(auth.uid(), 'admin')`
+**Dialog de edicao:**
+- Ao abrir, `editContent` recebe `playbook.content`
+- Textarea com `min-h-[50vh]` dentro do ScrollArea
+- Botao "Salvar Alteracoes" que faz update no Supabase e invalida query
 
-### Componentes reutilizam:
-- `KPICard` existente para cards de KPI
-- `MagicBentoGrid` para layout visual
-- Graficos Recharts (mesmo padrao dos charts existentes)
-- `Table` do shadcn para ranking
-- `Progress` para barras de meta
-- `Badge` para status (em dia/atencao/abaixo)
+**Tabela com coluna "Substituir":**
+- Nova coluna com input file compacto + botao Upload
+- Ao selecionar arquivo e clicar upload, substitui o conteudo do playbook existente
+- Acoes ficam: Editar (Pencil) | Substituir (Upload file) | Excluir (Trash2)
 
+**Importar novo playbook:**
+- Card simples com Select de product_type (filtrando os que ja tem playbook) + input file + botao importar
