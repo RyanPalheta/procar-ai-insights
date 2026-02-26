@@ -203,9 +203,8 @@ export default function TVDashboard() {
       : 0;
 
     const stepsAnalysis = auditedLeads.reduce((acc, lead) => {
-      const completed = lead.playbook_steps_completed || [];
-      if (completed.includes("saudacao")) acc.saudacao++;
-      if (completed.includes("qualificacao")) acc.qualificacao++;
+      if ((lead as any).has_greeting) acc.saudacao++;
+      if ((lead as any).has_qualification) acc.qualificacao++;
       acc.total++;
       return acc;
     }, { saudacao: 0, qualificacao: 0, total: 0 });
@@ -301,9 +300,8 @@ export default function TVDashboard() {
       : 0;
 
     const stepsAnalysis = auditedLeads.reduce((acc, lead) => {
-      const completed = lead.playbook_steps_completed || [];
-      if (completed.includes("saudacao")) acc.saudacao++;
-      if (completed.includes("qualificacao")) acc.qualificacao++;
+      if ((lead as any).has_greeting) acc.saudacao++;
+      if ((lead as any).has_qualification) acc.qualificacao++;
       acc.total++;
       return acc;
     }, { saudacao: 0, qualificacao: 0, total: 0 });

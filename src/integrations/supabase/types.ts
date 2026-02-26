@@ -163,7 +163,9 @@ export type Database = {
           anchoring_detail: string | null
           channel: string | null
           created_at: string
+          has_greeting: boolean | null
           has_objection: boolean | null
+          has_qualification: boolean | null
           improvement_point: string | null
           is_walking: boolean | null
           last_ai_update: string | null
@@ -199,7 +201,9 @@ export type Database = {
           anchoring_detail?: string | null
           channel?: string | null
           created_at?: string
+          has_greeting?: boolean | null
           has_objection?: boolean | null
+          has_qualification?: boolean | null
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null
@@ -235,7 +239,9 @@ export type Database = {
           anchoring_detail?: string | null
           channel?: string | null
           created_at?: string
+          has_greeting?: boolean | null
           has_objection?: boolean | null
+          has_qualification?: boolean | null
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null

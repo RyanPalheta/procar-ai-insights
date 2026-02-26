@@ -163,6 +163,12 @@ Deno.serve(async (req) => {
     if (body.anchoring_detail !== undefined) {
       updateData.anchoring_detail = body.anchoring_detail
     }
+    if (body.has_greeting !== undefined) {
+      updateData.has_greeting = body.has_greeting
+    }
+    if (body.has_qualification !== undefined) {
+      updateData.has_qualification = body.has_qualification
+    }
 
     console.log('Update data prepared:', JSON.stringify(updateData, null, 2))
 

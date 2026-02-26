@@ -177,7 +177,9 @@ IMPORTANTE:
 - TAMBÉM avalie o desempenho do VENDEDOR em seguir o playbook de vendas
 - Verifique se o vendedor seguiu todos os passos obrigatórios
 - Identifique violações ou passos pulados
-- Verifique se o vendedor utilizou estratégias de venda (ofertas, promoções, ancoragem de preço)`;
+- Verifique se o vendedor utilizou estratégias de venda (ofertas, promoções, ancoragem de preço)
+- Verifique se o vendedor fez SAUDAÇÃO INICIAL (se apresentou, cumprimentou o cliente, disse nome/empresa)
+- Verifique se o vendedor fez QUALIFICAÇÃO do cliente (perguntas sobre necessidade, veículo, ano, modelo, orçamento)`;
     }
 
     systemPrompt += `
@@ -387,6 +389,14 @@ Analise e responda:
           nullable: true,
           description: 'Se a objeção apresentada foi contornada pelo vendedor (true/false, null se não houver objeção)'
         },
+        has_greeting: {
+          type: 'boolean',
+          description: 'Se o vendedor fez saudação inicial e se apresentou ao cliente (nome, empresa, cargo)'
+        },
+        has_qualification: {
+          type: 'boolean',
+          description: 'Se o vendedor realizou qualificação do cliente (perguntas sobre necessidade, veículo, ano, modelo, orçamento, etc.)'
+        },
         used_offer: {
           type: 'boolean',
           description: 'Se o vendedor ofereceu promoção, desconto ou condição especial'
@@ -415,7 +425,7 @@ Analise e responda:
           description: 'Se uma cotação ou preço formal foi apresentado ao cliente'
         }
       },
-      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'used_offer', 'used_anchoring', 'has_quote']
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote']
     };
 
     // Add compliance fields if we have agent messages and a playbook
@@ -574,6 +584,9 @@ Analise e responda:
       playbook_steps_missing: hasAgentMessages && playbook ? (analysisResult.playbook_steps_missing || null) : null,
       playbook_violations: hasAgentMessages && playbook ? (analysisResult.playbook_violations || null) : null,
       service_rating: hasAgentMessages && playbook ? (analysisResult.service_rating || null) : null,
+      // Greeting & qualification fields
+      has_greeting: hasAgentMessages ? (analysisResult.has_greeting || false) : null,
+      has_qualification: hasAgentMessages ? (analysisResult.has_qualification || false) : null,
       // Sales strategy fields
       used_offer: hasAgentMessages ? (analysisResult.used_offer || false) : null,
       offer_detail: hasAgentMessages ? (analysisResult.offer_detail || null) : null,
