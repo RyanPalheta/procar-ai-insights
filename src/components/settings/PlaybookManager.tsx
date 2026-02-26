@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Trash2, Eye } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import mammoth from "mammoth";
 
@@ -27,10 +28,17 @@ const PRODUCT_TYPES = [
 export function PlaybookManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [playbookFiles, setPlaybookFiles] = useState<{ [key: string]: File }>({});
-  const [uploadingPlaybook, setUploadingPlaybook] = useState<string | null>(null);
+  const [editingPlaybook, setEditingPlaybook] = useState<any>(null);
+  const [editContent, setEditContent] = useState("");
+  const [savingPlaybook, setSavingPlaybook] = useState(false);
+  const [replaceFiles, setReplaceFiles] = useState<{ [playbookId: string]: File }>({});
+  const [replacingId, setReplacingId] = useState<string | null>(null);
   const [deletingPlaybook, setDeletingPlaybook] = useState<string | null>(null);
-  const [viewingPlaybook, setViewingPlaybook] = useState<any>(null);
+
+  // New playbook import state
+  const [newProductType, setNewProductType] = useState("");
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [importingNew, setImportingNew] = useState(false);
 
   const { data: playbooks, isLoading } = useQuery({
     queryKey: ['playbooks'],
@@ -39,148 +47,142 @@ export function PlaybookManager() {
         .from('playbooks')
         .select('*')
         .order('product_type');
-      
       if (error) throw error;
       return data;
     }
   });
 
-  const handlePlaybookFileChange = (productType: string, file: File | null) => {
-    if (!file) return;
-    
-    setPlaybookFiles(prev => ({
-      ...prev,
-      [productType]: file
-    }));
+  const extractFileText = async (file: File): Promise<string> => {
+    if (file.name.endsWith('.docx')) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value;
+    }
+    return file.text();
   };
 
-  const handleUploadPlaybook = async (productType: string) => {
-    const file = playbookFiles[productType];
-    if (!file) return;
+  const openEditDialog = (playbook: any) => {
+    setEditingPlaybook(playbook);
+    setEditContent(playbook.content || "");
+  };
 
-    setUploadingPlaybook(productType);
+  const handleSaveContent = async () => {
+    if (!editingPlaybook) return;
+    setSavingPlaybook(true);
     try {
-      let text: string;
-      
-      if (file.name.endsWith('.docx')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        text = result.value;
-      } else {
-        text = await file.text();
-      }
-      
-      if (!text || text.trim().length === 0) {
-        throw new Error('O arquivo está vazio ou não pôde ser lido');
-      }
-
-      // Check if playbook exists
-      const existing = playbooks?.find(p => p.product_type === productType);
-
-      if (existing) {
-        // Update existing
-        const { error } = await supabase
-          .from('playbooks')
-          .update({
-            title: file.name.replace('.docx', '').replace('.txt', ''),
-            content: text
-          })
-          .eq('id', existing.id);
-
-        if (error) throw error;
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from('playbooks')
-          .insert({
-            product_type: productType,
-            title: file.name.replace('.docx', '').replace('.txt', ''),
-            content: text
-          });
-
-        if (error) throw error;
-      }
-
-      toast({
-        title: "Sucesso!",
-        description: `Playbook ${productType} importado com sucesso`
-      });
-
+      const { error } = await supabase
+        .from('playbooks')
+        .update({ content: editContent })
+        .eq('id', editingPlaybook.id);
+      if (error) throw error;
+      toast({ title: "Sucesso!", description: "Playbook atualizado" });
       queryClient.invalidateQueries({ queryKey: ['playbooks'] });
-      setPlaybookFiles(prev => {
-        const newFiles = { ...prev };
-        delete newFiles[productType];
-        return newFiles;
-      });
+      setEditingPlaybook(null);
     } catch (error) {
-      console.error('Error uploading playbook:', error);
-      toast({
-        title: "Erro",
-        description: `Erro ao importar playbook: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Erro ao salvar playbook", variant: "destructive" });
     } finally {
-      setUploadingPlaybook(null);
+      setSavingPlaybook(false);
+    }
+  };
+
+  const handleReplaceFile = async (playbook: any) => {
+    const file = replaceFiles[playbook.id];
+    if (!file) return;
+    setReplacingId(playbook.id);
+    try {
+      const text = await extractFileText(file);
+      if (!text?.trim()) throw new Error('Arquivo vazio');
+      const { error } = await supabase
+        .from('playbooks')
+        .update({
+          title: file.name.replace('.docx', '').replace('.txt', ''),
+          content: text
+        })
+        .eq('id', playbook.id);
+      if (error) throw error;
+      toast({ title: "Sucesso!", description: `Playbook ${playbook.product_type} substituído` });
+      queryClient.invalidateQueries({ queryKey: ['playbooks'] });
+      setReplaceFiles(prev => { const n = { ...prev }; delete n[playbook.id]; return n; });
+    } catch (error) {
+      toast({ title: "Erro", description: `Erro ao substituir: ${error instanceof Error ? error.message : 'Erro'}`, variant: "destructive" });
+    } finally {
+      setReplacingId(null);
     }
   };
 
   const handleDeletePlaybook = async (id: string, productType: string) => {
     setDeletingPlaybook(id);
     try {
-      const { error } = await supabase
-        .from('playbooks')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('playbooks').delete().eq('id', id);
       if (error) throw error;
-
-      toast({
-        title: "Sucesso!",
-        description: `Playbook ${productType} removido`
-      });
-
+      toast({ title: "Sucesso!", description: `Playbook ${productType} removido` });
       queryClient.invalidateQueries({ queryKey: ['playbooks'] });
     } catch (error) {
-      console.error('Error deleting playbook:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover playbook",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Erro ao remover playbook", variant: "destructive" });
     } finally {
       setDeletingPlaybook(null);
     }
   };
 
+  const handleImportNew = async () => {
+    if (!newProductType || !newFile) return;
+    setImportingNew(true);
+    try {
+      const text = await extractFileText(newFile);
+      if (!text?.trim()) throw new Error('Arquivo vazio');
+      const { error } = await supabase.from('playbooks').insert({
+        product_type: newProductType,
+        title: newFile.name.replace('.docx', '').replace('.txt', ''),
+        content: text
+      });
+      if (error) throw error;
+      toast({ title: "Sucesso!", description: `Playbook ${newProductType} importado` });
+      queryClient.invalidateQueries({ queryKey: ['playbooks'] });
+      setNewProductType("");
+      setNewFile(null);
+    } catch (error) {
+      toast({ title: "Erro", description: `Erro ao importar: ${error instanceof Error ? error.message : 'Erro'}`, variant: "destructive" });
+    } finally {
+      setImportingNew(false);
+    }
+  };
+
+  const existingTypes = playbooks?.map(p => p.product_type) || [];
+  const availableTypes = PRODUCT_TYPES.filter(t => !existingTypes.includes(t));
+
   return (
     <div className="space-y-6">
-      {/* Playbook Viewing Dialog */}
-      <Dialog open={!!viewingPlaybook} onOpenChange={(open) => !open && setViewingPlaybook(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPlaybook} onOpenChange={(open) => !open && setEditingPlaybook(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Badge variant="secondary">{viewingPlaybook?.product_type}</Badge>
-              {viewingPlaybook?.title}
+              <Badge variant="secondary">{editingPlaybook?.product_type}</Badge>
+              {editingPlaybook?.title}
             </DialogTitle>
             <DialogDescription>
-              Criado em {viewingPlaybook?.created_at ? new Date(viewingPlaybook.created_at).toLocaleDateString('pt-BR') : '-'}
+              Edite o conteúdo do playbook diretamente
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
-            <div className="whitespace-pre-wrap text-sm">
-              {viewingPlaybook?.content || 'Nenhum conteúdo disponível'}
-            </div>
-          </ScrollArea>
+          <Textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="flex-1 min-h-[50vh] font-mono text-sm"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPlaybook(null)}>Cancelar</Button>
+            <Button onClick={handleSaveContent} disabled={savingPlaybook}>
+              {savingPlaybook ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Existing Playbooks Table */}
+      {/* Playbooks Table */}
       <Card>
         <CardHeader>
           <CardTitle>Playbooks Cadastrados</CardTitle>
-          <CardDescription>
-            Lista de playbooks atualmente no sistema
-          </CardDescription>
+          <CardDescription>Gerencie, edite e substitua playbooks</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -189,42 +191,51 @@ export function PlaybookManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tipo de Produto</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead>Data</TableHead>
-                  <TableHead className="w-[120px]">Ações</TableHead>
+                  <TableHead>Substituir Arquivo</TableHead>
+                  <TableHead className="w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {playbooks.map((playbook) => (
-                  <TableRow 
-                    key={playbook.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setViewingPlaybook(playbook)}
-                  >
-                    <TableCell>
-                      <Badge variant="secondary">{playbook.product_type}</Badge>
-                    </TableCell>
+                  <TableRow key={playbook.id}>
+                    <TableCell><Badge variant="secondary">{playbook.product_type}</Badge></TableCell>
                     <TableCell className="font-medium">{playbook.title}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(playbook.created_at || '').toLocaleDateString('pt-BR')}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept=".docx,.txt"
+                          className="h-8 text-xs max-w-[180px]"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) setReplaceFiles(prev => ({ ...prev, [playbook.id]: f }));
+                          }}
+                        />
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onClick={() => setViewingPlaybook(playbook)}
+                          variant="outline"
+                          disabled={!replaceFiles[playbook.id] || replacingId === playbook.id}
+                          onClick={() => handleReplaceFile(playbook)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Upload className="h-3 w-3 mr-1" />
+                          {replacingId === playbook.id ? '...' : 'Enviar'}
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(playbook)}>
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={deletingPlaybook === playbook.id}
-                            >
+                            <Button variant="ghost" size="sm" disabled={deletingPlaybook === playbook.id}>
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </AlertDialogTrigger>
@@ -232,7 +243,7 @@ export function PlaybookManager() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Tem certeza que deseja remover o playbook <strong>{playbook.product_type}</strong>? Esta ação não pode ser desfeita.
+                                Tem certeza que deseja remover o playbook <strong>{playbook.product_type}</strong>?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -253,61 +264,50 @@ export function PlaybookManager() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhum playbook cadastrado ainda
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhum playbook cadastrado ainda</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Upload New Playbooks */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Importar Playbooks</CardTitle>
-          <CardDescription>
-            Faça upload dos playbooks (um para cada tipo de produto). Arquivos .docx ou .txt
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {PRODUCT_TYPES.map(type => {
-              const existing = playbooks?.find(p => p.product_type === type);
-              return (
-                <Card key={type}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{type}</CardTitle>
-                      {existing && (
-                        <Badge variant="default">Cadastrado</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Label htmlFor={`playbook-${type}`}>
-                      {existing ? 'Substituir playbook' : 'Novo playbook'}
-                    </Label>
-                    <Input
-                      id={`playbook-${type}`}
-                      type="file"
-                      accept=".docx,.txt"
-                      onChange={(e) => handlePlaybookFileChange(type, e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      onClick={() => handleUploadPlaybook(type)}
-                      disabled={!playbookFiles[type] || uploadingPlaybook === type}
-                      className="w-full"
-                      size="sm"
-                    >
-                      <Upload className="mr-2 h-3 w-3" />
-                      {uploadingPlaybook === type ? 'Importando...' : existing ? 'Substituir' : 'Importar'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Import New Playbook */}
+      {availableTypes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Importar Novo Playbook</CardTitle>
+            <CardDescription>Adicione um playbook para um tipo de produto sem playbook cadastrado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3 flex-wrap">
+              <div className="space-y-1.5">
+                <Label>Tipo de Produto</Label>
+                <Select value={newProductType} onValueChange={setNewProductType}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTypes.map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Arquivo (.docx ou .txt)</Label>
+                <Input
+                  type="file"
+                  accept=".docx,.txt"
+                  className="h-10"
+                  onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+                />
+              </div>
+              <Button onClick={handleImportNew} disabled={!newProductType || !newFile || importingNew}>
+                <Plus className="h-4 w-4 mr-1" />
+                {importingNew ? 'Importando...' : 'Importar'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
