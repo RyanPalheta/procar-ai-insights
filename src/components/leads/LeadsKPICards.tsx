@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -30,6 +30,8 @@ interface LeadsKPICardsProps {
   avgQuotedPriceVariation: number | null;
   medianFirstResponseTime: number;
   medianFirstResponseTimeVariation: number | null;
+  walkingLeads: number;
+  walkingLeadsVariation: number | null;
   scorePeriod: ScorePeriod;
   onScorePeriodChange: (period: ScorePeriod) => void;
 }
@@ -95,6 +97,13 @@ const kpiTooltips = {
     comparison: (period: ScorePeriod) => period === "all"
       ? "Mostrando dados de todo o período"
       : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  walkingLeads: {
+    title: "Leads Presenciais",
+    description: "Quantidade de leads marcados como presenciais (walking), ou seja, clientes que visitaram a loja fisicamente.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
   }
 };
 
@@ -111,6 +120,8 @@ export function LeadsKPICards({
   avgQuotedPriceVariation,
   medianFirstResponseTime,
   medianFirstResponseTimeVariation,
+  walkingLeads,
+  walkingLeadsVariation,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
@@ -371,6 +382,28 @@ export function LeadsKPICards({
                   <p className="text-xs mt-1 pt-1 border-t border-border">
                     <span className="font-medium">Limite configurado:</span> {formatResponseTime(threshold)}
                   </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Leads Presenciais"
+                    value={walkingLeads}
+                    icon={Footprints}
+                    variant={walkingLeads > 0 ? "success" : "default"}
+                    description={scorePeriod === "all" ? "Walking leads" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(walkingLeadsVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.walkingLeads.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.walkingLeads.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.walkingLeads.comparison(scorePeriod)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>

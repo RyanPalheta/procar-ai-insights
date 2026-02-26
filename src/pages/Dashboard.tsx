@@ -109,6 +109,8 @@ export default function Dashboard() {
         avg_quoted_price_previous: number | null;
         median_first_response_time_minutes: number;
         median_first_response_time_minutes_previous: number | null;
+        walking_leads: number;
+        walking_leads_previous: number | null;
       };
     }
   });
@@ -242,6 +244,8 @@ export default function Dashboard() {
         ? quotedLeads.reduce((sum, l) => sum + (l.lead_price || 0), 0) / quotedLeads.length
         : 0;
 
+      const walkingLeads = globalFilteredLeads.filter(l => l.is_walking === true).length;
+
       return {
         conversionRate,
         conversionRateVariation: null,
@@ -254,7 +258,9 @@ export default function Dashboard() {
         avgQuotedPrice,
         avgQuotedPriceVariation: null,
         medianFirstResponseTime: 0,
-        medianFirstResponseTimeVariation: null
+        medianFirstResponseTimeVariation: null,
+        walkingLeads,
+        walkingLeadsVariation: null
       };
     }
 
@@ -270,7 +276,9 @@ export default function Dashboard() {
       avgQuotedPrice: 0,
       avgQuotedPriceVariation: null,
       medianFirstResponseTime: 0,
-      medianFirstResponseTimeVariation: null
+      medianFirstResponseTimeVariation: null,
+      walkingLeads: 0,
+      walkingLeadsVariation: null
     };
 
     const conversionRate = kpisData.total_audited > 0 
@@ -310,6 +318,11 @@ export default function Dashboard() {
       medianFirstResponseTimeVariation = ((kpisData.median_first_response_time_minutes - kpisData.median_first_response_time_minutes_previous) / kpisData.median_first_response_time_minutes_previous) * 100;
     }
 
+    let walkingLeadsVariation: number | null = null;
+    if (kpisData.walking_leads_previous && kpisData.walking_leads_previous > 0) {
+      walkingLeadsVariation = ((kpisData.walking_leads - kpisData.walking_leads_previous) / kpisData.walking_leads_previous) * 100;
+    }
+
     return {
       conversionRate,
       conversionRateVariation,
@@ -322,7 +335,9 @@ export default function Dashboard() {
       avgQuotedPrice: kpisData.avg_quoted_price,
       avgQuotedPriceVariation,
       medianFirstResponseTime: kpisData.median_first_response_time_minutes,
-      medianFirstResponseTimeVariation
+      medianFirstResponseTimeVariation,
+      walkingLeads: kpisData.walking_leads,
+      walkingLeadsVariation
     };
   }, [kpisData, globalFilteredLeads, hasActiveGlobalFilters]);
 
