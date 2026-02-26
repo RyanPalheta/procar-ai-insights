@@ -1,39 +1,37 @@
 
 
-# Adicionar Filtro por Vendedor no Painel 360 e na aba de Leads
+# Adicionar suporte ao campo `is_walking` no ingest-interaction
 
 ## Resumo
-Adicionar um seletor de vendedor em ambas as telas (Painel 360 e Leads) para permitir visualizar metricas individuais por vendedor. Os vendedores serao extraidos dinamicamente do campo `sales_person_id` da tabela `lead_db`.
+Adicionar logica no Edge Function `ingest-interaction` para aceitar o campo `is_walking` no payload e atualizar o lead correspondente, seguindo o mesmo padrao ja usado para `sales_status`.
 
-## Alteracoes
+## Como enviar via API
+Basta incluir `is_walking` no corpo da requisicao:
 
-### 1. Painel 360 (`src/pages/TVDashboard.tsx`)
-- Adicionar estado `selectedSeller` (default: `"all"`)
-- Extrair lista unica de vendedores a partir dos leads carregados (excluindo nulos/vazios)
-- Adicionar um seletor (Select/dropdown) ao lado do filtro de periodo no header
-- Aplicar o filtro de vendedor nos `useMemo` de `filteredLeads` e `previousPeriodLeads`, filtrando por `sales_person_id`
-- Passar o `selectedSeller` como parametro na query de KPIs via RPC (ou filtrar client-side, ja que os leads ja sao carregados)
-- Como os KPIs de conversao e tempo de resposta vem da RPC `get_leads_kpis` (que nao suporta filtro por vendedor), esses KPIs continuarao globais. Os KPIs calculados client-side (compliance, saudacao, qualificacao, objecoes, nota media) serao filtrados por vendedor
+```json
+POST /functions/v1/ingest-interaction
+{
+  "session_id": 123,
+  "channel": "whatsapp",
+  "message_text": "Cliente entrou na loja",
+  "sender_type": "agent",
+  "is_walking": true
+}
+```
 
-### 2. Pagina de Leads (`src/pages/Leads.tsx`)
-- Adicionar estado `sellerFilter` (default: `"all"`)
-- Extrair lista unica de vendedores (`sales_person_id`) dos leads, similar aos outros filtros existentes
-- Adicionar um Select no painel de filtros expandido, seguindo o mesmo padrao visual dos filtros existentes (canal, status, etc.)
-- Aplicar filtro na logica de `filteredLeads`
-- Incluir no contador de filtros ativos e na funcao `clearFilters`
+## Alteracao tecnica
 
-## Detalhes tecnicos
+### Arquivo: `supabase/functions/ingest-interaction/index.ts`
 
-### TVDashboard - Dropdown de vendedor
-Sera um componente `Select` do Radix UI posicionado no header, ao lado do toggle de periodo. Mostrara "Todos" como opcao padrao e listara os vendedores encontrados nos dados.
+Adicionar um bloco apos o trecho existente de `sales_status` que:
+1. Verifica se `body.is_walking` foi enviado (nao undefined)
+2. Busca o valor atual do lead
+3. Compara com o novo valor
+4. Se diferente, faz UPDATE no `lead_db` e registra no `lead_history`
+5. Retorna `is_walking_updated: true` na resposta
 
-### Leads - Filtro de vendedor
-Sera adicionado ao painel de filtros expandido (dentro do bloco `showFilters`), como um `Select` com label "Vendedor", seguindo o padrao dos filtros de Canal e Status de Venda ja existentes.
-
-### Filtragem
-Em ambas as telas, a filtragem e feita client-side comparando `lead.sales_person_id === selectedSeller`. Como todos os leads ja sao carregados em memoria, nao ha necessidade de alterar queries no banco.
+O padrao e identico ao ja implementado para `sales_status`, apenas aplicado ao campo booleano `is_walking`.
 
 ### Arquivos modificados
-1. `src/pages/TVDashboard.tsx` - estado, extrator de vendedores, Select no header, filtro nos useMemo
-2. `src/pages/Leads.tsx` - estado, extrator de vendedores, Select nos filtros, filtro no useMemo, clearFilters
+1. `supabase/functions/ingest-interaction/index.ts` - adicionar handler para `is_walking`
 
