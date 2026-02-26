@@ -357,6 +357,39 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_goals: {
+        Row: {
+          active: boolean
+          created_at: string
+          direction: string
+          id: string
+          metric: string
+          seller_id: string | null
+          target: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          direction?: string
+          id?: string
+          metric: string
+          seller_id?: string | null
+          target: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          direction?: string
+          id?: string
+          metric?: string
+          seller_id?: string | null
+          target?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -424,6 +457,7 @@ export type Database = {
         }[]
       }
       get_leads_kpis: { Args: { period_days?: number }; Returns: Json }
+      get_sellers_kpis: { Args: { period_days?: number }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlaybookManager } from "@/components/settings/PlaybookManager";
 import { ProductManager } from "@/components/settings/ProductManager";
 import { AlertsManager } from "@/components/settings/AlertsManager";
+import { SellerGoalsManager } from "@/components/settings/SellerGoalsManager";
 
 export default function Settings() {
   return (
@@ -17,9 +18,10 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="ai-settings" className="w-full">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="ai-settings">Configurações de IA</TabsTrigger>
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
+          <TabsTrigger value="seller-goals">Metas Vendedores</TabsTrigger>
           <TabsTrigger value="audit">Auditoria IA</TabsTrigger>
         </TabsList>
 
@@ -126,7 +128,12 @@ export default function Settings() {
           <AlertsManager />
         </TabsContent>
 
-        {/* Tab 3: AI Audit */}
+        {/* Tab 3: Seller Goals */}
+        <TabsContent value="seller-goals" className="space-y-6">
+          <SellerGoalsManager />
+        </TabsContent>
+
+        {/* Tab 4: AI Audit */}
         <TabsContent value="audit" className="space-y-6">
           <div>
             <h3 className="text-xl font-semibold mb-2">Gerenciamento de Playbooks</h3>
