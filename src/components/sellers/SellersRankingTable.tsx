@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, TrendingUp, Users, Target, Shield, Footprints, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
+import { Search, TrendingUp, Target, Shield, Footprints, ArrowUpDown, Trophy, Medal, Award, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GoalsSummary, GoalData } from "./SellerGoalStatus";
@@ -103,31 +103,98 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, periodDays }: Sel
           const sellerGoals = sellerGoalsMap.get(seller.seller_id) || [];
           const objectionRate = seller.objections_rate;
 
+          // Performance tier based on rank
+          const isGold = index === 0;
+          const isSilver = index === 1;
+          const isBronze = index === 2;
+          const isTop3 = index < 3;
+
+          // Conversion rate color coding
+          const convRate = seller.conversion_rate;
+          const convColor = convRate >= 30
+            ? "text-emerald-600 dark:text-emerald-400"
+            : convRate >= 15
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-red-500 dark:text-red-400";
+
+          // Performance gradient bar (based on conversion)
+          const perfWidth = Math.min(100, convRate * 2.5); // Scale: 40% conv = 100% bar
+
           return (
             <Card
               key={seller.seller_id}
               className={cn(
-                "cursor-pointer transition-all hover:shadow-md hover:border-primary/30 group relative overflow-hidden",
-                selectedSeller === seller.seller_id && "ring-2 ring-primary"
+                "cursor-pointer transition-all group relative overflow-hidden",
+                "hover:shadow-lg hover:-translate-y-0.5",
+                selectedSeller === seller.seller_id && "ring-2 ring-primary",
+                isGold && "border-amber-400/60 dark:border-amber-500/40 shadow-md shadow-amber-500/10",
+                isSilver && "border-slate-400/50 dark:border-slate-400/30 shadow-md shadow-slate-400/10",
+                isBronze && "border-orange-400/40 dark:border-orange-500/30 shadow-sm shadow-orange-400/10",
+                !isTop3 && "hover:border-primary/30"
               )}
               onClick={() => setSelectedSeller(seller.seller_id)}
             >
+              {/* Top gradient accent for podium */}
+              {isGold && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />}
+              {isSilver && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300 dark:from-slate-500 dark:via-slate-400 dark:to-slate-500" />}
+              {isBronze && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-amber-300 to-orange-400" />}
+
               {/* Rank badge */}
               <div className="absolute top-3 right-3">
-                <Badge variant="outline" className="text-xs font-mono">
-                  #{index + 1}
-                </Badge>
+                {isGold ? (
+                  <div className="flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+                    <Trophy className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">1º</span>
+                  </div>
+                ) : isSilver ? (
+                  <div className="flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 px-2 py-0.5">
+                    <Medal className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">2º</span>
+                  </div>
+                ) : isBronze ? (
+                  <div className="flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5">
+                    <Award className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">3º</span>
+                  </div>
+                ) : (
+                  <Badge variant="outline" className="text-xs font-mono">
+                    #{index + 1}
+                  </Badge>
+                )}
               </div>
 
               <CardContent className="p-5 space-y-4">
                 {/* Header: Avatar + Name */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
-                    {seller.seller_id.substring(0, 2).toUpperCase()}
+                  <div className={cn(
+                    "flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm flex-shrink-0",
+                    isGold ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                    isSilver ? "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300" :
+                    isBronze ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" :
+                    "bg-primary/10 text-primary"
+                  )}>
+                    {isTop3 ? <Star className="h-5 w-5" /> : seller.seller_id.substring(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{seller.seller_id}</p>
                     <p className="text-xs text-muted-foreground">{seller.total_audited} leads</p>
+                  </div>
+                </div>
+
+                {/* Performance bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Performance</span>
+                    <span className={cn("font-semibold", convColor)}>{convRate.toFixed(1)}% conv.</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        convRate >= 30 ? "bg-emerald-500" : convRate >= 15 ? "bg-amber-500" : "bg-red-400"
+                      )}
+                      style={{ width: `${perfWidth}%` }}
+                    />
                   </div>
                 </div>
 
@@ -138,7 +205,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, periodDays }: Sel
                       <TrendingUp className="h-3 w-3" />
                       <span className="text-[11px]">Conversão</span>
                     </div>
-                    <p className="text-sm font-semibold">{seller.conversion_rate.toFixed(1)}%</p>
+                    <p className={cn("text-sm font-semibold", convColor)}>{seller.conversion_rate.toFixed(1)}%</p>
                   </div>
 
                   <div className="space-y-0.5">
