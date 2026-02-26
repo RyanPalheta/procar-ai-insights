@@ -15,6 +15,13 @@ import { TVQualitySection } from "@/components/tv/TVQualitySection";
 import { TVEfficiencySection } from "@/components/tv/TVEfficiencySection";
 import { TVObjectionRanking } from "@/components/tv/TVObjectionRanking";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Objection category labels
 const objectionLabels: Record<string, string> = {
@@ -89,6 +96,7 @@ const sectionVariants = {
 
 export default function TVDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("7");
+  const [selectedSeller, setSelectedSeller] = useState("all");
   const periodDays = parseInt(selectedPeriod);
   const { role, signOut } = useAuth();
   const navigate = useNavigate();
@@ -168,12 +176,26 @@ export default function TVDashboard() {
     refetchInterval: 30000,
   });
 
-  // Filter leads by selected period
+  // Extract unique sellers
+  const uniqueSellers = useMemo(() => {
+    if (!leads) return [];
+    const sellers = new Set<string>();
+    leads.forEach(l => {
+      if (l.sales_person_id) sellers.add(l.sales_person_id);
+    });
+    return Array.from(sellers).sort();
+  }, [leads]);
+
+  // Filter leads by selected period and seller
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
     const startDate = startOfDay(subDays(new Date(), periodDays));
-    return leads.filter(l => new Date(l.created_at) >= startDate);
-  }, [leads, periodDays]);
+    return leads.filter(l => {
+      if (new Date(l.created_at) < startDate) return false;
+      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      return true;
+    });
+  }, [leads, periodDays, selectedSeller]);
 
   // Previous period leads for comparison
   const previousPeriodLeads = useMemo(() => {
@@ -182,9 +204,12 @@ export default function TVDashboard() {
     const previousStart = startOfDay(subDays(new Date(), periodDays * 2));
     return leads.filter(l => {
       const date = new Date(l.created_at);
-      return date >= previousStart && date < currentStart;
+      if (!(date >= previousStart && date < currentStart)) return false;
+      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      return true;
     });
-  }, [leads, periodDays]);
+  }, [leads, periodDays, selectedSeller]);
+
 
   // Calculate metrics for current period
   const metrics = useMemo(() => {
@@ -481,6 +506,22 @@ export default function TVDashboard() {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
+          </div>
+
+          {/* Seller Filter */}
+          <div className="flex items-center gap-3">
+            <span className="text-slate-500 text-sm font-medium">Vendedor:</span>
+            <Select value={selectedSeller} onValueChange={setSelectedSeller}>
+              <SelectTrigger className="w-[200px] bg-white border-slate-200 shadow-sm rounded-xl">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todos</SelectItem>
+                {uniqueSellers.map(seller => (
+                  <SelectItem key={seller} value={seller}>{seller}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Auto-refresh indicator */}

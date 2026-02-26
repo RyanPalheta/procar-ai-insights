@@ -56,6 +56,7 @@ export default function Leads() {
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all");
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [salesStatusFilter, setSalesStatusFilter] = useState<string>("all");
+  const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [scoreRange, setScoreRange] = useState<[number, number]>([0, 100]);
   const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
   const [dateFrom, setDateFrom] = useState<string>("");
@@ -164,6 +165,16 @@ export default function Leads() {
     return Array.from(statuses.entries()).sort((a, b) => b[1] - a[1]);
   }, [leads]);
 
+  const uniqueSellers = useMemo(() => {
+    const sellers = new Map<string, number>();
+    leads?.forEach(lead => {
+      if (lead.sales_person_id) {
+        sellers.set(lead.sales_person_id, (sellers.get(lead.sales_person_id) || 0) + 1);
+      }
+    });
+    return Array.from(sellers.entries()).sort((a, b) => b[1] - a[1]);
+  }, [leads]);
+
   // Filter logic
   const filteredLeads = useMemo(() => {
     let result = leads?.filter((lead) => {
@@ -186,6 +197,9 @@ export default function Leads() {
 
       // Sales status filter
       if (salesStatusFilter !== "all" && lead.sales_status !== salesStatusFilter) return false;
+
+      // Seller filter
+      if (sellerFilter !== "all" && lead.sales_person_id !== sellerFilter) return false;
 
       // Score range filter
       if (lead.lead_score !== null && lead.lead_score !== undefined) {
@@ -252,7 +266,7 @@ export default function Leads() {
     });
 
     return result;
-  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection]);
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
@@ -271,6 +285,7 @@ export default function Leads() {
     setTemperatureFilter("all");
     setChannelFilter("all");
     setSalesStatusFilter("all");
+    setSellerFilter("all");
     setScoreRange([0, 100]);
     setComplianceRange([0, 100]);
     setDateFrom("");
@@ -286,6 +301,7 @@ export default function Leads() {
     temperatureFilter !== "all",
     channelFilter !== "all",
     salesStatusFilter !== "all",
+    sellerFilter !== "all",
     scoreRange[0] !== 0 || scoreRange[1] !== 100,
     complianceRange[0] !== 0 || complianceRange[1] !== 100,
     dateFrom !== "",
@@ -619,6 +635,24 @@ export default function Leads() {
                           <Snowflake className="h-3 w-3 text-blue-500" /> Frio
                         </span>
                       </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Vendedor */}
+                <div className="space-y-2">
+                  <Label>Vendedor</Label>
+                  <Select value={sellerFilter} onValueChange={(v) => { setSellerFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos os vendedores" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos os vendedores</SelectItem>
+                      {uniqueSellers.map(([seller, count]) => (
+                        <SelectItem key={seller} value={seller}>
+                          {seller} ({count})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
