@@ -319,6 +319,22 @@ Analise e responda:
 
     console.log(`[analyze-lead] Calling Google Gemini API...`);
 
+    // Helper: fetch with retry + exponential backoff for 429s
+    async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const response = await fetch(url, options);
+        if (response.status === 429 && attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 2000 + Math.random() * 1000; // 2s, 4s, 8s + jitter
+          console.warn(`[analyze-lead] Rate limited (429), retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        return response;
+      }
+      // Should not reach here, but just in case
+      return fetch(url, options);
+    }
+
     // Build tool parameters - base parameters for all analyses
     const toolParameters: any = {
       type: 'object',
@@ -462,7 +478,7 @@ Analise e responda:
       toolParameters.required.push('playbook_compliance_score', 'service_rating');
     }
 
-    const aiResponse = await fetch(AI_GATEWAY, {
+    const aiResponse = await fetchWithRetry(AI_GATEWAY, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${geminiApiKey}`,
