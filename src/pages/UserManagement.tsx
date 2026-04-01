@@ -150,7 +150,7 @@ export default function UserManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-semibold flex items-center gap-2 tracking-tight">
             <Users className="h-6 w-6" />
             Gerenciamento de Usuários
           </h1>
@@ -238,7 +238,7 @@ export default function UserManagement() {
         </Dialog>
       </div>
 
-      <div className="rounded-xl border bg-card">
+      <div className="rounded-xl border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

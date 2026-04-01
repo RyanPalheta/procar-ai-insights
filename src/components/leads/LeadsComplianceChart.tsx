@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { DonutChart } from "@tremor/react";
 import { ClipboardCheck } from "lucide-react";
 
 interface LeadsComplianceChartProps {
@@ -13,7 +13,14 @@ interface LeadsComplianceChartProps {
   totalAudited: number;
 }
 
-const COMPLIANCE_COLORS: Record<string, string> = {
+const COMPLIANCE_COLORS_MAP: Record<string, string> = {
+  "Excelente": "emerald",
+  "Bom": "yellow",
+  "Regular": "orange",
+  "Baixo": "red",
+};
+
+const COMPLIANCE_DOT_COLORS: Record<string, string> = {
   "Excelente": "#22c55e",
   "Bom": "#eab308",
   "Regular": "#f97316",
@@ -22,8 +29,7 @@ const COMPLIANCE_COLORS: Record<string, string> = {
 
 export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComplianceChartProps) {
   const hasData = totalAudited > 0;
-  
-  // Get color based on average score
+
   const getAvgScoreColor = (score: number) => {
     if (score >= 80) return "#22c55e";
     if (score >= 60) return "#eab308";
@@ -31,11 +37,13 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
     return "#ef4444";
   };
 
+  const colors = data.map(d => COMPLIANCE_COLORS_MAP[d.name] || "gray");
+
   return (
     <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-primary" />
             Distribuição de Compliance
           </CardTitle>
@@ -43,41 +51,30 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
         <CardContent>
           {hasData ? (
             <>
-              {/* Gauge Chart with center value */}
+              {/* Donut with center value */}
               <div className="relative">
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie
-                      data={data}
-                      cx="50%"
-                      cy="100%"
-                      startAngle={180}
-                      endAngle={0}
-                      innerRadius={80}
-                      outerRadius={120}
-                      paddingAngle={2}
-                      dataKey="value"
+                <DonutChart
+                  data={data}
+                  category="value"
+                  index="name"
+                  colors={colors}
+                  showAnimation={true}
+                  showTooltip={true}
+                  className="h-[180px]"
+                  showLabel={false}
+                />
+                {/* Center label overlay */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <div
+                      className="text-3xl font-bold"
+                      style={{ color: getAvgScoreColor(avgScore) }}
                     >
-                      {data.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COMPLIANCE_COLORS[entry.name] || "hsl(var(--muted))"} 
-                        />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                
-                {/* Center value overlay */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center pb-2">
-                  <div 
-                    className="text-3xl font-bold"
-                    style={{ color: getAvgScoreColor(avgScore) }}
-                  >
-                    {avgScore.toFixed(0)}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Média de Compliance
+                      {avgScore.toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Média
+                    </div>
                   </div>
                 </div>
               </div>
@@ -85,14 +82,11 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
               {/* Legend */}
               <div className="mt-4 space-y-2">
                 {data.map((entry, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between text-sm"
-                  >
+                  <div key={index} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: COMPLIANCE_COLORS[entry.name] }}
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COMPLIANCE_DOT_COLORS[entry.name] }}
                       />
                       <span className="text-muted-foreground">{entry.name}</span>
                     </div>
@@ -105,7 +99,7 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
                   </div>
                 ))}
               </div>
-              
+
               <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground text-center">
                 {totalAudited} leads auditados
               </div>

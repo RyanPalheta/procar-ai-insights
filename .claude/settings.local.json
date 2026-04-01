@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(git --version)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(mv \"C:\\\\Users\\\\venan\\\\OneDrive\\\\Desktop\\\\Ai-Insights/temp_clone/\"* \"C:\\\\Users\\\\venan\\\\OneDrive\\\\Desktop\\\\Ai-Insights/\")",
+      "Bash(mv \"C:\\\\Users\\\\venan\\\\OneDrive\\\\Desktop\\\\Ai-Insights/temp_clone/\".* \"C:\\\\Users\\\\venan\\\\OneDrive\\\\Desktop\\\\Ai-Insights/\")",
+      "Bash(npm run:*)",
+      "Bash(curl -s \"https://graph.facebook.com/v21.0/act_158571600643979/insights?fields=impressions,clicks,reach,spend,cpm,cpc,ctr,actions,cost_per_action_type,frequency&date_preset=last_30d&access_token=EAAKxJOTgwJYBRIHtSnt9FmNFKNdA9iIfUZC5wZADpgZArXFFJ8XUA3VfYimV6OQ4jUPFYdTwTZBO0DtqJJ3bWFmqUB4OaFQuovxAsr21ZADx6R71g9eQdPtVwvX790gGwyjgcuSSXMouwPquovjZBwr9oulDopaLZBtbpk5SsSjZBN3IQsMLGmwJpHpJleLchCkE5AZDZD\")",
+      "Bash(npx tsc:*)",
+      "Bash(sshpass -p '@Procarsound321' ssh -o StrictHostKeyChecking=no root@5.181.218.168 \"top -bn1 | head -20\")",
+      "Bash(choco list:*)",
+      "Bash(choco install:*)",
+      "Bash(pip install:*)",
+      "Bash(python3 -c \"import paramiko; print\\(''paramiko available''\\)\")",
+      "Bash(python -c \"import paramiko; print\\(''paramiko available''\\)\")",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(uipro init:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"automotive dashboard analytics SaaS clean minimal professional\" --design-system -p \"PROCAR Dashboard\")",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"dashboard card sidebar table responsive\" --stack shadcn)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"dashboard analytics professional\" --domain style -n 5)",
+      "WebFetch(domain:lobehub.com)",
+      "Bash(npx supabase:*)"
+    ]
+  }
+}

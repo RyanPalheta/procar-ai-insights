@@ -17,6 +17,8 @@ import TVDashboard from "./pages/TVDashboard";
 import Login from "./pages/Login";
 import UserManagement from "./pages/UserManagement";
 import Sellers from "./pages/Sellers";
+import MetaAds from "./pages/MetaAds";
+import GoogleAds from "./pages/GoogleAds";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -116,6 +118,26 @@ const App = () => (
                 <ProtectedRoute requiredRole="admin">
                   <AppLayout>
                     <Sellers />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meta-ads"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AppLayout>
+                    <MetaAds />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/google-ads"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AppLayout>
+                    <GoogleAds />
                   </AppLayout>
                 </ProtectedRoute>
               }

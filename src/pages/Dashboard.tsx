@@ -6,7 +6,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, X, AlertTriangle, Lightbulb, Search, Bell, Download, Gift, Anchor, TrendingUp } from "lucide-react";
+import { Filter, X, AlertTriangle, Lightbulb, Gift, Anchor, TrendingUp } from "lucide-react";
 import { differenceInHours, parseISO, format, subDays, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
@@ -74,16 +73,42 @@ export default function Dashboard() {
   
   // Period Controls
   const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("7");
-  const [timelinePeriod, setTimelinePeriod] = useState<"7" | "30" | "90">("30");
   const [channelMode, setChannelMode] = useState<"all" | "closed">("all");
 
-  // Fetch leads
+  // Fetch ALL leads using pagination to bypass 1000-row limit
   const { data: leads } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", scorePeriod, dateFrom?.toISOString(), dateTo?.toISOString()],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lead_db").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const batchSize = 1000;
+      let allLeads: any[] = [];
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from("lead_db")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        // Apply period filter server-side
+        if (dateFrom) {
+          query = query.gte("created_at", startOfDay(dateFrom).toISOString());
+        } else if (scorePeriod !== "all") {
+          const periodStart = subDays(new Date(), parseInt(scorePeriod));
+          query = query.gte("created_at", startOfDay(periodStart).toISOString());
+        }
+        if (dateTo) {
+          query = query.lte("created_at", endOfDay(dateTo).toISOString());
+        }
+
+        const { data, error } = await query.range(from, from + batchSize - 1);
+        if (error) throw error;
+        allLeads.push(...(data || []));
+        hasMore = (data?.length || 0) === batchSize;
+        from += batchSize;
+      }
+
+      return allLeads;
     },
   });
 
@@ -472,10 +497,10 @@ export default function Dashboard() {
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
 
-    // Timeline data
-    const periodDays = parseInt(timelinePeriod);
+    // Timeline data — uses the main scorePeriod filter
+    const timelinePeriodDays = scorePeriod === "all" ? 90 : parseInt(scorePeriod);
     const timelineCounts = new Map<string, number>();
-    const periodStart = subDays(new Date(), periodDays);
+    const periodStart = subDays(new Date(), timelinePeriodDays);
     globalFilteredLeads.forEach(l => {
       const leadDate = parseISO(l.created_at);
       if (leadDate >= periodStart) {
@@ -483,9 +508,9 @@ export default function Dashboard() {
         timelineCounts.set(dateKey, (timelineCounts.get(dateKey) || 0) + 1);
       }
     });
-    
+
     const timelineData: Array<{ date: string; count: number }> = [];
-    for (let i = periodDays - 1; i >= 0; i--) {
+    for (let i = timelinePeriodDays - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateKey = format(date, "dd/MM");
       timelineData.push({
@@ -594,7 +619,7 @@ export default function Dashboard() {
       notUsedAnchoring,
       anchoringRate
     };
-  }, [globalFilteredLeads, timelinePeriod]);
+  }, [globalFilteredLeads, scorePeriod]);
 
   // Recent objections
   const recentObjections = useMemo(() => {
@@ -631,38 +656,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Enhanced Header with Search, Notifications, Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">Visão Geral</h2>
-          <p className="text-muted-foreground">
-            Panorama completo das suas operações comerciais
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Search Bar (decorative for now) */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar..." 
-              className="pl-9 w-[200px] bg-background"
-              disabled
-            />
-          </div>
-          {/* Notifications */}
-          <Button variant="outline" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
-              3
-            </span>
-          </Button>
-          {/* Export Button */}
-          <Button className="gap-2">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-        </div>
+    <div className="space-y-5 pb-6">
+      {/* Header */}
+      <div className="space-y-1">
+        <h2 className="text-2xl font-semibold tracking-tight">Visão Geral</h2>
+        <p className="text-muted-foreground">
+          Panorama completo das suas operações comerciais
+        </p>
       </div>
 
       {/* Collapsible Filters */}
@@ -763,14 +763,12 @@ export default function Dashboard() {
       />
 
       {/* Timeline Chart - Full Width */}
-      <LeadsTimelineChart 
-        data={chartData.timelineData} 
-        period={timelinePeriod}
-        onPeriodChange={setTimelinePeriod}
+      <LeadsTimelineChart
+        data={chartData.timelineData}
       />
 
       {/* Primary Charts - 3 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <LeadsChannelChart 
           data={chartData.channelData} 
           closedData={chartData.closedChannelData}
@@ -782,14 +780,14 @@ export default function Dashboard() {
       </div>
 
       {/* Secondary Charts - 3 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <LeadsLanguageChart data={chartData.languageData} />
         <LeadsSentimentChart data={chartData.sentimentData} />
         <LeadsTopProductsChart data={chartData.topProductsData} />
       </div>
 
       {/* Operational Charts - 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LeadsObjectionsChart data={chartData.objectionsData} />
         <LeadsComplianceChart 
           data={chartData.complianceData} 
@@ -799,7 +797,7 @@ export default function Dashboard() {
       </div>
 
       {/* Conversion by Response Time & Quote Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LeadsConversionByResponseTimeChart 
           periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
         />
@@ -809,7 +807,7 @@ export default function Dashboard() {
       </div>
 
       {/* Objection & Sales Strategy Stats - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Objection Overcome Stats */}
         {chartData.totalObjections > 0 && (
           <Card className="h-full">
@@ -924,7 +922,7 @@ export default function Dashboard() {
       </div>
 
       {/* Colorful Feeds Section - 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Objections Feed with Colors */}
         {recentObjections.length > 0 && (
           <Card>

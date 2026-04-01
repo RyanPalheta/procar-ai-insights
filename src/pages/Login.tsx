@@ -31,19 +31,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary p-4">
-      <Card className="w-full max-w-md border-0 shadow-2xl">
-        <CardHeader className="flex flex-col items-center gap-4 pb-2 pt-8">
-          <img src={logo} alt="PROCAR Logo" className="h-16 w-16 object-contain" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">PROCAR</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-4">
+      <Card className="w-full max-w-sm border-0 shadow-2xl">
+        <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-10">
+          <div className="p-3 rounded-2xl bg-primary/5 shadow-sm">
+            <img src={logo} alt="PROCAR Logo" className="h-12 w-12 object-contain" />
+          </div>
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">PROCAR</h1>
             <p className="text-sm text-muted-foreground">Faça login para acessar o painel</p>
           </div>
         </CardHeader>
-        <CardContent className="pt-4 pb-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="pt-6 pb-10 px-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[13px] font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -52,10 +54,11 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-[13px] font-medium">Senha</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -65,7 +68,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="pr-10"
+                  className="pr-10 h-10"
                 />
                 <button
                   type="button"
@@ -77,7 +80,7 @@ export default function Login() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full h-10 font-medium" disabled={isLoading}>
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
               ) : (

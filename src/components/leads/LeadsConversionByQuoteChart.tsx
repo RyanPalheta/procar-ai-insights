@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LabelList } from "recharts";
+import { BarChart } from "@tremor/react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,13 +18,6 @@ interface LeadsConversionByQuoteChartProps {
   periodDays: number | null;
 }
 
-// Colors based on performance relative to average
-const getBarColor = (rate: number, avgRate: number) => {
-  if (rate > avgRate * 1.1) return "hsl(142, 76%, 36%)"; // green - above average
-  if (rate > avgRate * 0.9) return "hsl(48, 96%, 53%)"; // yellow - near average
-  return "hsl(0, 72%, 51%)"; // red - below average
-};
-
 export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuoteChartProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["conversion-by-quote-bracket", periodDays],
@@ -37,33 +30,65 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
     }
   });
 
-  // Calculate average conversion rate
   const avgRate = data && data.length > 0
     ? data.reduce((sum, d) => sum + (d.conversion_rate || 0), 0) / data.length
     : 0;
 
-  // Find best bracket (excluding "Sem Cotação" for best performance comparison)
   const dataWithQuote = data?.filter(d => d.quote_bracket !== "Sem Cotação") || [];
   const dataWithoutQuote = data?.find(d => d.quote_bracket === "Sem Cotação");
 
   const bestBracket = dataWithQuote.length > 0
-    ? dataWithQuote.reduce((best, current) => 
+    ? dataWithQuote.reduce((best, current) =>
         (current.conversion_rate || 0) > (best?.conversion_rate || 0) ? current : best
       , dataWithQuote[0])
     : null;
 
-  // Calculate comparison between with quote vs without quote
   const withQuoteAvg = dataWithQuote.length > 0
-    ? dataWithQuote.reduce((sum, d) => sum + (d.converted_leads || 0), 0) / 
+    ? dataWithQuote.reduce((sum, d) => sum + (d.converted_leads || 0), 0) /
       dataWithQuote.reduce((sum, d) => sum + (d.total_leads || 0), 0) * 100
     : 0;
-
   const withoutQuoteRate = dataWithoutQuote?.conversion_rate || 0;
-  
-  // Multiplier: how much better is "with quote" vs "without quote"
-  const quoteMultiplier = withoutQuoteRate > 0 
-    ? (withQuoteAvg / withoutQuoteRate).toFixed(1) 
+  const quoteMultiplier = withoutQuoteRate > 0
+    ? (withQuoteAvg / withoutQuoteRate).toFixed(1)
     : null;
+
+  // Transform data for multi-category coloring
+  const chartData = data?.map(d => {
+    const rate = d.conversion_rate || 0;
+    const isAbove = rate > avgRate * 1.1;
+    const isNear = !isAbove && rate > avgRate * 0.9;
+    return {
+      quote_bracket: d.quote_bracket,
+      "Acima da média": isAbove ? rate : null,
+      "Na média": isNear ? rate : null,
+      "Abaixo da média": (!isAbove && !isNear) ? rate : null,
+      // Keep original data for tooltip
+      _total: d.total_leads,
+      _converted: d.converted_leads,
+      _rate: rate,
+      _avgQuote: d.avg_quote_value,
+    };
+  }) || [];
+
+  const customTooltip = ({ payload, active }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0]?.payload;
+    if (!d) return null;
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
+        <p className="font-medium">{d.quote_bracket}</p>
+        <p className="text-muted-foreground text-xs mt-1">
+          {d._converted} convertidos de {d._total} leads
+        </p>
+        {d._avgQuote > 0 && (
+          <p className="text-xs mt-1">
+            Valor médio: R$ {d._avgQuote.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+        )}
+        <p className="font-semibold mt-1">Taxa: {d._rate?.toFixed(1)}%</p>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -108,74 +133,24 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
     <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Conversão por Cotação
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Bar Chart */}
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart 
-              data={data} 
-              margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
-              barCategoryGap="15%"
-            >
-              <XAxis 
-                dataKey="quote_bracket" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                interval={0}
-                angle={-15}
-                textAnchor="end"
-                height={50}
-              />
-              <YAxis 
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => `${value}%`}
-                domain={[0, 'auto']}
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const d = payload[0].payload as ConversionByQuoteData;
-                  return (
-                    <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                      <p className="font-medium text-sm">{d.quote_bracket}</p>
-                      <p className="text-muted-foreground text-xs mt-1">
-                        {d.converted_leads} convertidos de {d.total_leads} leads
-                      </p>
-                      {d.avg_quote_value && d.avg_quote_value > 0 && (
-                        <p className="text-xs mt-1">
-                          Valor médio: R$ {d.avg_quote_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      )}
-                      <p className="font-semibold text-sm mt-1">
-                        Taxa: {d.conversion_rate?.toFixed(1)}%
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-              <Bar dataKey="conversion_rate" radius={[4, 4, 0, 0]}>
-                {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={getBarColor(entry.conversion_rate || 0, avgRate)} 
-                  />
-                ))}
-                <LabelList 
-                  dataKey="conversion_rate" 
-                  position="top" 
-                  formatter={(value: number) => `${value?.toFixed(0)}%`}
-                  style={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart
+            data={chartData}
+            index="quote_bracket"
+            categories={["Acima da média", "Na média", "Abaixo da média"]}
+            colors={["emerald", "yellow", "red"]}
+            showLegend={false}
+            showGridLines={false}
+            yAxisWidth={40}
+            valueFormatter={(v: number) => v != null ? `${v.toFixed(0)}%` : ""}
+            customTooltip={customTooltip}
+            className="h-[200px]"
+          />
 
           {/* Insight Card */}
           {quoteMultiplier && parseFloat(quoteMultiplier) > 1 && (
@@ -184,12 +159,11 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
                 <Lightbulb className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <p className="text-sm">
                   <span className="font-medium">Insight:</span>{" "}
-                  Leads com cotação apresentada convertem{" "}
+                  Leads com cotação convertem{" "}
                   <span className="font-semibold text-green-600 dark:text-green-400">{quoteMultiplier}x mais</span>{" "}
                   que leads sem cotação
                   {bestBracket && (
-                    <>
-                      . Melhor faixa:{" "}
+                    <>. Melhor faixa:{" "}
                       <span className="font-semibold text-green-600 dark:text-green-400">
                         {bestBracket.quote_bracket}
                       </span>{" "}
@@ -208,7 +182,6 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
                 <p className="text-sm">
                   <span className="font-medium">Observação:</span>{" "}
                   Leads sem cotação têm conversão similar ou superior aos com cotação.
-                  Verifique se as cotações estão sendo apresentadas corretamente.
                 </p>
               </div>
             </div>
@@ -217,15 +190,15 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
           {/* Legend */}
           <div className="flex flex-wrap gap-4 justify-center text-xs">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "hsl(142, 76%, 36%)" }} />
+              <div className="w-3 h-3 rounded bg-emerald-500" />
               <span className="text-muted-foreground">Acima da média</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "hsl(48, 96%, 53%)" }} />
+              <div className="w-3 h-3 rounded bg-yellow-400" />
               <span className="text-muted-foreground">Na média</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "hsl(0, 72%, 51%)" }} />
+              <div className="w-3 h-3 rounded bg-red-500" />
               <span className="text-muted-foreground">Abaixo da média</span>
             </div>
           </div>

@@ -177,7 +177,7 @@ export function LeadsKPICards({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Alert Banner */}
       {showAlert && (
         <Alert className="border-2 border-red-500 bg-red-50 dark:bg-red-950/50">
@@ -242,7 +242,7 @@ export function LeadsKPICards({
           spotlightRadius={300}
           glowColor="59, 130, 246"
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">

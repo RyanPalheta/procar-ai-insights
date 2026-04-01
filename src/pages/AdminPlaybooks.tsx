@@ -254,7 +254,7 @@ export default function AdminPlaybooks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Gerenciamento de Playbooks</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Gerenciamento de Playbooks</h1>
         <p className="text-muted-foreground">Importe produtos e playbooks de vendas para análise de IA</p>
       </div>
 

@@ -1,31 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
+import { BarList } from "@tremor/react";
 import { AlertTriangle } from "lucide-react";
 
 interface LeadsObjectionsChartProps {
   data: { name: string; value: number }[];
 }
 
-// Cores para diferentes categorias de objeção
-const OBJECTION_COLORS = [
-  "#ef4444", // Red
-  "#f97316", // Orange  
-  "#f59e0b", // Amber
-  "#eab308", // Yellow
-  "#84cc16", // Lime
-  "#22c55e", // Green
-  "#14b8a6", // Teal
-  "#06b6d4", // Cyan
-  "#0ea5e9", // Sky
-  "#3b82f6", // Blue
+const OBJECTION_TREMOR_COLORS = [
+  "red", "orange", "amber", "yellow", "lime",
+  "emerald", "teal", "cyan", "sky", "blue",
 ];
 
 export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
-  // Safe handling for undefined or empty data
   const safeData = data || [];
   const total = safeData.reduce((sum, item) => sum + item.value, 0);
-  
+
   if (safeData.length === 0) {
     return (
       <MagicBentoCard className="rounded-lg" glowColor="239, 68, 68">
@@ -43,7 +33,13 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
       </MagicBentoCard>
     );
   }
-  
+
+  const barListData = safeData.map((item, index) => ({
+    name: item.name,
+    value: item.value,
+    color: OBJECTION_TREMOR_COLORS[index % OBJECTION_TREMOR_COLORS.length],
+  }));
+
   return (
     <MagicBentoCard className="rounded-lg" glowColor="239, 68, 68">
       <Card className="bg-card border-border h-full">
@@ -54,44 +50,14 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={safeData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                stroke="hsl(var(--muted-foreground))" 
-                width={140}
-                tick={{ fontSize: 12 }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px"
-                }}
-                formatter={(value: number) => {
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return [`${value} leads (${percentage}%)`, "Ocorrências"];
-                }}
-              />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {safeData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={OBJECTION_COLORS[index % OBJECTION_COLORS.length]} />
-                ))}
-                <LabelList 
-                  dataKey="value" 
-                  position="right" 
-                  fill="hsl(var(--muted-foreground))"
-                  formatter={(value: number) => {
-                    const percentage = ((value / total) * 100).toFixed(0);
-                    return `${value} (${percentage}%)`;
-                  }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <BarList
+            data={barListData}
+            valueFormatter={(v: number) => {
+              const pct = total > 0 ? ((v / total) * 100).toFixed(0) : "0";
+              return `${v} (${pct}%)`;
+            }}
+            className="mt-1"
+          />
         </CardContent>
       </Card>
     </MagicBentoCard>

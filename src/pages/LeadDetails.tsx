@@ -358,7 +358,7 @@ export default function LeadDetails() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Lead #{lead.session_id}
           </h2>
           <p className="text-muted-foreground">

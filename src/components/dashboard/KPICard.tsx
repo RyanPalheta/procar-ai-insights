@@ -48,46 +48,40 @@ export function KPICard({
       glowColor="59, 130, 246"
       className="rounded-lg"
     >
-      <Card className="bg-card border-border h-full">
-        <CardContent className="p-4">
+      <Card className="bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full">
+        <CardContent className="p-2.5 sm:p-3">
           {/* Top row: Icon + Badge */}
-          <div className="flex items-start justify-between mb-3">
-            {/* Large Icon with colored background */}
+          <div className="flex items-start justify-between mb-1.5">
             <div className={cn(
-              "flex items-center justify-center w-11 h-11 rounded-xl",
+              "flex items-center justify-center w-7 h-7 rounded-md",
               iconBgStyles[variant]
             )}>
-              <Icon className="h-5 w-5" />
+              <Icon className="h-3.5 w-3.5" />
             </div>
-            
-            {/* Trend Badge in top right */}
+
             {trend && (
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={cn(
-                  "text-xs font-semibold px-2 py-0.5 flex items-center gap-1",
+                  "text-[10px] font-semibold px-1 py-0 h-5 flex items-center gap-0.5",
                   trendBadgeStyles
                 )}
               >
                 {trend.isNegativeChange ? (
-                  <TrendingDown className="h-3 w-3" />
+                  <TrendingDown className="h-2.5 w-2.5" />
                 ) : (
-                  <TrendingUp className="h-3 w-3" />
+                  <TrendingUp className="h-2.5 w-2.5" />
                 )}
                 {trend.isNegativeChange ? "-" : "+"}{trend.value}%
               </Badge>
             )}
           </div>
-          
-          {/* Title */}
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          
-          {/* Value */}
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
-          
-          {/* Description */}
+
+          <p className="text-[11px] text-muted-foreground mb-0.5 leading-tight truncate">{title}</p>
+          <p className="text-lg font-bold tracking-tight leading-tight">{value}</p>
+
           {description && (
-            <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{description}</p>
           )}
         </CardContent>
       </Card>

@@ -430,7 +430,7 @@ export default function Leads() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Leads</h2>
           <p className="text-muted-foreground">
             Gerencie e acompanhe todos os seus leads
             {leads && <span className="ml-1">({leads.length} total)</span>}

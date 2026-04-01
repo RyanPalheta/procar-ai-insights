@@ -7,18 +7,19 @@ import { ProductManager } from "@/components/settings/ProductManager";
 import { AlertsManager } from "@/components/settings/AlertsManager";
 import { SellerGoalsManager } from "@/components/settings/SellerGoalsManager";
 
+
 export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Configurações</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Configurações</h2>
         <p className="text-muted-foreground">
           Gerencie regras de IA e configurações do sistema
         </p>
       </div>
 
       <Tabs defaultValue="ai-settings" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="flex flex-wrap w-full max-w-3xl gap-1">
           <TabsTrigger value="ai-settings">Configurações de IA</TabsTrigger>
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
           <TabsTrigger value="seller-goals">Metas Vendedores</TabsTrigger>
@@ -140,6 +141,7 @@ export default function Settings() {
             <ProductManager />
           </div>
         </TabsContent>
+
       </Tabs>
     </div>
   );

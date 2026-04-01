@@ -86,13 +86,13 @@ export default function Logs() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Logs do Sistema</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Logs do Sistema</h2>
         <p className="text-muted-foreground">
           Histórico de integrações e processamento de IA
         </p>
       </div>
 
-      <MagicBentoGrid className="grid gap-4 md:grid-cols-4" glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-4" glowColor="59, 130, 246">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">

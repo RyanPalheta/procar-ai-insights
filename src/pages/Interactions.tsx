@@ -34,7 +34,7 @@ export default function Interactions() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Interações</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Interações</h2>
         <p className="text-muted-foreground">
           Análise de mensagens e interações com clientes
         </p>
