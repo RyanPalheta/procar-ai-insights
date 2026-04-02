@@ -467,6 +467,52 @@ export default function Leads() {
         </div>
       </div>
 
+      {/* Cold Audit KPIs */}
+      {coldKpis && coldKpis.total_cold > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Auditoria de Leads Frios
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); resetPage(); }}>
+              <KPICard
+                title="Leads Frios Auditados"
+                value={coldKpis.total_cold}
+                icon={Snowflake}
+                variant="warning"
+                description="Total com auditoria fria"
+              />
+            </div>
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setFollowupFilter("nok"); resetPage(); }}>
+              <KPICard
+                title="Sem Follow-up Adequado"
+                value={coldKpis.without_followup}
+                icon={UserX}
+                variant="destructive"
+                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios`}
+              />
+            </div>
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setReactivationFilter("alta"); resetPage(); }}>
+              <KPICard
+                title="Reativáveis"
+                value={coldKpis.reactivatable}
+                icon={RotateCcw}
+                variant="success"
+                description="Chance alta ou média"
+              />
+            </div>
+            <KPICard
+              title="Taxa Follow-up OK"
+              value={`${coldKpis.followup_ok_rate}%`}
+              icon={CheckCircle2}
+              variant="default"
+              description="Vendedores com follow-up adequado"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Leads Table Section */}
       <Card>
         <CardHeader>
