@@ -118,6 +118,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Update last_interaction_at on lead_db
+    const { error: lastInteractionError } = await supabase
+      .from('lead_db')
+      .update({ last_interaction_at: new Date().toISOString() })
+      .eq('session_id', sessionId);
+
+    if (lastInteractionError) {
+      console.error('[ingest-interaction] Error updating last_interaction_at:', lastInteractionError);
+    }
+
     console.log('Interaction created successfully:', data.interaction_id, leadCreated ? '(lead was auto-created)' : '');
 
     // Update sales_status if provided in payload
