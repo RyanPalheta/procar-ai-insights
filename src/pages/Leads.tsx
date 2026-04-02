@@ -245,6 +245,15 @@ export default function Leads() {
         }
       }
 
+      // Cold audit filters
+      if (coldAuditFilter === "cold" && !lead.cold_audit_at) return false;
+      if (coldAuditFilter === "normal" && lead.cold_audit_at) return false;
+
+      if (reactivationFilter !== "all" && lead.cold_audit_reactivation_chance !== reactivationFilter) return false;
+
+      if (followupFilter === "ok" && lead.cold_audit_followup_ok !== true) return false;
+      if (followupFilter === "nok" && lead.cold_audit_followup_ok !== false) return false;
+
       return true;
     }) || [];
 
