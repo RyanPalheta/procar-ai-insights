@@ -332,6 +332,9 @@ export default function Leads() {
     complianceRange[0] !== 0 || complianceRange[1] !== 100,
     dateFrom !== "",
     dateTo !== "",
+    coldAuditFilter !== "all",
+    reactivationFilter !== "all",
+    followupFilter !== "all",
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFilterCount > 0;
