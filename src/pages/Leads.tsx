@@ -731,6 +731,53 @@ export default function Leads() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Auditoria Fria */}
+                <div className="space-y-2">
+                  <Label>Auditoria</Label>
+                  <Select value={coldAuditFilter} onValueChange={(v) => { setColdAuditFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="cold">Fria (auditada)</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Chance de Reativação */}
+                <div className="space-y-2">
+                  <Label>Chance Reativação</Label>
+                  <Select value={reactivationFilter} onValueChange={(v) => { setReactivationFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="baixa">Baixa</SelectItem>
+                      <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Follow-up */}
+                <div className="space-y-2">
+                  <Label>Follow-up</Label>
+                  <Select value={followupFilter} onValueChange={(v) => { setFollowupFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="ok">Adequado</SelectItem>
+                      <SelectItem value="nok">Inadequado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Score & Compliance Range Sliders */}
