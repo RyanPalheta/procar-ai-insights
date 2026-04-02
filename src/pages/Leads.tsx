@@ -289,7 +289,7 @@ export default function Leads() {
     });
 
     return result;
-  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection]);
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter]);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
