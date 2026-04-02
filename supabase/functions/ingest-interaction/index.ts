@@ -69,19 +69,19 @@ Deno.serve(async (req) => {
       
       const { error: createError } = await supabase
         .from('lead_db')
-        .insert({
+        .upsert({
           session_id: sessionId,
           channel: body.channel,
           processed: false,
-        });
-      
+        }, { onConflict: 'session_id', ignoreDuplicates: true });
+
       if (createError) {
         console.error('Error creating lead:', createError);
         return new Response(
           JSON.stringify({ error: 'Failed to create lead: ' + createError.message }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
