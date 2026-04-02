@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
