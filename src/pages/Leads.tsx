@@ -314,6 +314,9 @@ export default function Leads() {
     setDateFrom("");
     setDateTo("");
     setActiveDatePreset(null);
+    setColdAuditFilter("all");
+    setReactivationFilter("all");
+    setFollowupFilter("all");
     resetPage();
   };
 
