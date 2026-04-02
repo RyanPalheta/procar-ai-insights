@@ -67,6 +67,9 @@ export default function Leads() {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [coldAuditFilter, setColdAuditFilter] = useState<string>("all");
+  const [reactivationFilter, setReactivationFilter] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const pageSize = 30;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
