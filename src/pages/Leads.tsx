@@ -27,6 +27,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import { KPICard } from "@/components/dashboard/KPICard";
 
 // Normalize channel names for consistent display and filtering
 const normalizeChannel = (channel: string | null): string => {
