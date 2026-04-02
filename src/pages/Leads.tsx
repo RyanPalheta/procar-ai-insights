@@ -131,6 +131,16 @@ export default function Leads() {
     },
   });
 
+  // Fetch cold audit KPIs
+  const { data: coldKpis } = useQuery({
+    queryKey: ["cold-audit-kpis"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_cold_audit_kpis' as never);
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   // Extract unique values for filter dropdowns
   const uniqueProducts = useMemo(() => {
     const products = new Set<string>();
