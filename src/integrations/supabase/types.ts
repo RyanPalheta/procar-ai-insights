@@ -14,30 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      app_settings: {
-        Row: {
-          id: string
-          key: string
-          value: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          key: string
-          value: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          key?: string
-          value?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           created_at: string
@@ -186,6 +162,11 @@ export type Database = {
           ai_version: string | null
           anchoring_detail: string | null
           channel: string | null
+          cold_audit_at: string | null
+          cold_audit_followup_ok: boolean | null
+          cold_audit_reactivation_chance: string | null
+          cold_audit_reason: string | null
+          cold_audit_suggestion: string | null
           created_at: string
           has_greeting: boolean | null
           has_objection: boolean | null
@@ -193,6 +174,7 @@ export type Database = {
           improvement_point: string | null
           is_walking: boolean | null
           last_ai_update: string | null
+          last_interaction_at: string | null
           last_updated: string | null
           lead_intent: string | null
           lead_language: string | null
@@ -224,6 +206,11 @@ export type Database = {
           ai_version?: string | null
           anchoring_detail?: string | null
           channel?: string | null
+          cold_audit_at?: string | null
+          cold_audit_followup_ok?: boolean | null
+          cold_audit_reactivation_chance?: string | null
+          cold_audit_reason?: string | null
+          cold_audit_suggestion?: string | null
           created_at?: string
           has_greeting?: boolean | null
           has_objection?: boolean | null
@@ -231,6 +218,7 @@ export type Database = {
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null
+          last_interaction_at?: string | null
           last_updated?: string | null
           lead_intent?: string | null
           lead_language?: string | null
@@ -262,6 +250,11 @@ export type Database = {
           ai_version?: string | null
           anchoring_detail?: string | null
           channel?: string | null
+          cold_audit_at?: string | null
+          cold_audit_followup_ok?: boolean | null
+          cold_audit_reactivation_chance?: string | null
+          cold_audit_reason?: string | null
+          cold_audit_suggestion?: string | null
           created_at?: string
           has_greeting?: boolean | null
           has_objection?: boolean | null
@@ -269,6 +262,7 @@ export type Database = {
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null
+          last_interaction_at?: string | null
           last_updated?: string | null
           lead_intent?: string | null
           lead_language?: string | null
@@ -454,6 +448,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_cold_audit_kpis: { Args: { period_days?: number }; Returns: Json }
       get_conversion_by_quote_bracket: {
         Args: { period_days?: number }
         Returns: {

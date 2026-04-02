@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import { KPICard } from "@/components/dashboard/KPICard";
 
 // Normalize channel names for consistent display and filtering
 const normalizeChannel = (channel: string | null): string => {
@@ -66,6 +67,9 @@ export default function Leads() {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [coldAuditFilter, setColdAuditFilter] = useState<string>("all");
+  const [reactivationFilter, setReactivationFilter] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const pageSize = 30;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -124,6 +128,16 @@ export default function Leads() {
         }
       });
       return counts;
+    },
+  });
+
+  // Fetch cold audit KPIs
+  const { data: coldKpis } = useQuery({
+    queryKey: ["cold-audit-kpis"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_cold_audit_kpis' as never);
+      if (error) throw error;
+      return data as any;
     },
   });
 
@@ -231,6 +245,15 @@ export default function Leads() {
         }
       }
 
+      // Cold audit filters
+      if (coldAuditFilter === "cold" && !lead.cold_audit_at) return false;
+      if (coldAuditFilter === "normal" && lead.cold_audit_at) return false;
+
+      if (reactivationFilter !== "all" && lead.cold_audit_reactivation_chance !== reactivationFilter) return false;
+
+      if (followupFilter === "ok" && lead.cold_audit_followup_ok !== true) return false;
+      if (followupFilter === "nok" && lead.cold_audit_followup_ok !== false) return false;
+
       return true;
     }) || [];
 
@@ -266,7 +289,7 @@ export default function Leads() {
     });
 
     return result;
-  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection]);
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter]);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
@@ -291,6 +314,9 @@ export default function Leads() {
     setDateFrom("");
     setDateTo("");
     setActiveDatePreset(null);
+    setColdAuditFilter("all");
+    setReactivationFilter("all");
+    setFollowupFilter("all");
     resetPage();
   };
 
@@ -306,6 +332,9 @@ export default function Leads() {
     complianceRange[0] !== 0 || complianceRange[1] !== 100,
     dateFrom !== "",
     dateTo !== "",
+    coldAuditFilter !== "all",
+    reactivationFilter !== "all",
+    followupFilter !== "all",
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFilterCount > 0;
@@ -437,6 +466,52 @@ export default function Leads() {
           </p>
         </div>
       </div>
+
+      {/* Cold Audit KPIs */}
+      {coldKpis && coldKpis.total_cold > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Auditoria de Leads Frios
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); resetPage(); }}>
+              <KPICard
+                title="Leads Frios Auditados"
+                value={coldKpis.total_cold}
+                icon={Snowflake}
+                variant="warning"
+                description="Total com auditoria fria"
+              />
+            </div>
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setFollowupFilter("nok"); resetPage(); }}>
+              <KPICard
+                title="Sem Follow-up Adequado"
+                value={coldKpis.without_followup}
+                icon={UserX}
+                variant="destructive"
+                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios`}
+              />
+            </div>
+            <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setReactivationFilter("alta"); resetPage(); }}>
+              <KPICard
+                title="Reativáveis"
+                value={coldKpis.reactivatable}
+                icon={RotateCcw}
+                variant="success"
+                description="Chance alta ou média"
+              />
+            </div>
+            <KPICard
+              title="Taxa Follow-up OK"
+              value={`${coldKpis.followup_ok_rate}%`}
+              icon={CheckCircle2}
+              variant="default"
+              description="Vendedores com follow-up adequado"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Leads Table Section */}
       <Card>
@@ -653,6 +728,53 @@ export default function Leads() {
                           {seller} ({count})
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Auditoria Fria */}
+                <div className="space-y-2">
+                  <Label>Auditoria</Label>
+                  <Select value={coldAuditFilter} onValueChange={(v) => { setColdAuditFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="cold">Fria (auditada)</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Chance de Reativação */}
+                <div className="space-y-2">
+                  <Label>Chance Reativação</Label>
+                  <Select value={reactivationFilter} onValueChange={(v) => { setReactivationFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="baixa">Baixa</SelectItem>
+                      <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Follow-up */}
+                <div className="space-y-2">
+                  <Label>Follow-up</Label>
+                  <Select value={followupFilter} onValueChange={(v) => { setFollowupFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="ok">Adequado</SelectItem>
+                      <SelectItem value="nok">Inadequado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
