@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.audit-cold-leads]
 verify_jwt = false
+
+[functions.sync-to-kommo]
+verify_jwt = false

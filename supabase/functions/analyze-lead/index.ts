@@ -624,6 +624,11 @@ Analise e responda:
       throw new Error(`Failed to update lead: ${updateError.message}`);
     }
 
+    // Sync to Kommo CRM (fire-and-forget)
+    supabase.functions.invoke('sync-to-kommo', {
+      body: { session_id }
+    }).catch(err => console.error('[analyze-lead] Kommo sync error:', err));
+
     const duration = Date.now() - startTime;
     console.log(`[analyze-lead] Analysis completed in ${duration}ms`);
 
