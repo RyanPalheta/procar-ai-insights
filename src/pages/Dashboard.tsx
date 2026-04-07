@@ -138,6 +138,10 @@ export default function Dashboard() {
         median_first_response_time_minutes_previous: number | null;
         walking_leads: number;
         walking_leads_previous: number | null;
+        upsell_leads: number;
+        upsell_leads_previous: number | null;
+        upsell_total_value: number;
+        upsell_total_value_previous: number | null;
       };
     }
   });
