@@ -70,6 +70,7 @@ export default function Leads() {
   const [coldAuditFilter, setColdAuditFilter] = useState<string>("all");
   const [reactivationFilter, setReactivationFilter] = useState<string>("all");
   const [followupFilter, setFollowupFilter] = useState<string>("all");
+  const [upsellFilter, setUpsellFilter] = useState<string>("all");
   const pageSize = 30;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
