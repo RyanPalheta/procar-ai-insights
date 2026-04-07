@@ -286,6 +286,10 @@ export default function Dashboard() {
         : 0;
 
       const walkingLeads = globalFilteredLeads.filter(l => l.is_walking === true).length;
+      const upsellLeads = globalFilteredLeads.filter(l => (l as any).has_upsell === true).length;
+      const upsellTotalValue = globalFilteredLeads
+        .filter(l => (l as any).has_upsell === true && (l as any).upsell_value_estimate)
+        .reduce((sum, l) => sum + ((l as any).upsell_value_estimate || 0), 0);
 
       return {
         conversionRate,
@@ -301,7 +305,11 @@ export default function Dashboard() {
         medianFirstResponseTime: 0,
         medianFirstResponseTimeVariation: null,
         walkingLeads,
-        walkingLeadsVariation: null
+        walkingLeadsVariation: null,
+        upsellLeads,
+        upsellLeadsVariation: null,
+        upsellTotalValue,
+        upsellTotalValueVariation: null
       };
     }
 
