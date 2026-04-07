@@ -281,10 +281,13 @@ Analise e responda:
 3. Qual o sentimento geral do cliente? (Positivo, Neutro, Negativo)
 4. Qual o potencial de conversão (0-100)?
 5. Tags relevantes para categorização (3-5 tags)
-6. Oportunidades de upsell identificadas
-7. Resumo das principais necessidades do cliente (2-3 frases)
-8. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
-9. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
+6. Há oportunidade de upsell? (sim/não) - Identifique se o cliente poderia se beneficiar de produtos/serviços adicionais
+7. Se há upsell, quais produtos/serviços adicionais o cliente poderia contratar? (lista)
+8. Se há upsell, qual o valor estimado em R$ dessa oportunidade? (número ou null se impossível estimar)
+9. Descrição textual da oportunidade de upsell
+10. Resumo das principais necessidades do cliente (2-3 frases)
+11. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
+12. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
 10. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
 11. Se houve objeção, qual foi ela em uma frase?
 12. Se houve objeção, classifique em UMA ou MAIS categorias:
