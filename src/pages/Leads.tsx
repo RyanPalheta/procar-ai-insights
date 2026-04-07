@@ -255,6 +255,10 @@ export default function Leads() {
       if (followupFilter === "ok" && lead.cold_audit_followup_ok !== true) return false;
       if (followupFilter === "nok" && lead.cold_audit_followup_ok !== false) return false;
 
+      // Upsell filter
+      if (upsellFilter === "with" && !lead.has_upsell) return false;
+      if (upsellFilter === "without" && lead.has_upsell) return false;
+
       return true;
     }) || [];
 
