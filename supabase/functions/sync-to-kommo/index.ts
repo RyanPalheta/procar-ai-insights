@@ -12,7 +12,10 @@ const PRODUCT_ENUM: Record<string, number> = {
   'remote start': 1269485, 'remote starter': 1269485,
   'carplay': 1269487,
   'sound system': 1269489, 'sound': 1269489,
-  'tint': 1269491, 'window tint': 1269491,
+  'tint': 1269491, 'window tint': 1269491, 'insulfilm': 1269491,
+  'suntek': 1269491, 'suntek carbon': 1269491, 'llumar': 1269491,
+  '3m': 1269491, 'ceramic pro': 1269491, 'formula one': 1269491,
+  'xpel': 1269491, 'carbon': 1269491,
   'backup cam': 1269493, 'backup camera': 1269493,
   'dashcam': 1269495, 'dash cam': 1269495,
   'ambient light': 1269497, 'ambient lights': 1269497,
@@ -53,7 +56,9 @@ const OBJECTION_ENUM: Record<string, number> = {
 // Cliente Necessita (1820775) - enum_id map
 const CLIENT_NEEDS_ENUM: Record<string, number> = {
   'remote start': 1269723, 'remote starter': 1269723,
-  'window tint': 1269725, 'tint': 1269725,
+  'window tint': 1269725, 'tint': 1269725, 'insulfilm': 1269725,
+  'suntek': 1269725, 'suntek carbon': 1269725, 'llumar': 1269725,
+  '3m': 1269725, 'ceramic pro': 1269725, 'carbon': 1269725,
   'carplay': 1269891,
   'sound system': 1269893, 'sound': 1269893,
   'dashcam': 1269895, 'dash cam': 1269895,
