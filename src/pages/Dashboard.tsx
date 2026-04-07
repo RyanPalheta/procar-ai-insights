@@ -138,6 +138,10 @@ export default function Dashboard() {
         median_first_response_time_minutes_previous: number | null;
         walking_leads: number;
         walking_leads_previous: number | null;
+        upsell_leads: number;
+        upsell_leads_previous: number | null;
+        upsell_total_value: number;
+        upsell_total_value_previous: number | null;
       };
     }
   });
@@ -282,6 +286,10 @@ export default function Dashboard() {
         : 0;
 
       const walkingLeads = globalFilteredLeads.filter(l => l.is_walking === true).length;
+      const upsellLeads = globalFilteredLeads.filter(l => (l as any).has_upsell === true).length;
+      const upsellTotalValue = globalFilteredLeads
+        .filter(l => (l as any).has_upsell === true && (l as any).upsell_value_estimate)
+        .reduce((sum, l) => sum + ((l as any).upsell_value_estimate || 0), 0);
 
       return {
         conversionRate,
@@ -297,7 +305,11 @@ export default function Dashboard() {
         medianFirstResponseTime: 0,
         medianFirstResponseTimeVariation: null,
         walkingLeads,
-        walkingLeadsVariation: null
+        walkingLeadsVariation: null,
+        upsellLeads,
+        upsellLeadsVariation: null,
+        upsellTotalValue,
+        upsellTotalValueVariation: null
       };
     }
 
@@ -315,7 +327,11 @@ export default function Dashboard() {
       medianFirstResponseTime: 0,
       medianFirstResponseTimeVariation: null,
       walkingLeads: 0,
-      walkingLeadsVariation: null
+      walkingLeadsVariation: null,
+      upsellLeads: 0,
+      upsellLeadsVariation: null,
+      upsellTotalValue: 0,
+      upsellTotalValueVariation: null
     };
 
     const conversionRate = kpisData.total_audited > 0 
@@ -360,6 +376,16 @@ export default function Dashboard() {
       walkingLeadsVariation = ((kpisData.walking_leads - kpisData.walking_leads_previous) / kpisData.walking_leads_previous) * 100;
     }
 
+    let upsellLeadsVariation: number | null = null;
+    if (kpisData.upsell_leads_previous && kpisData.upsell_leads_previous > 0) {
+      upsellLeadsVariation = ((kpisData.upsell_leads - kpisData.upsell_leads_previous) / kpisData.upsell_leads_previous) * 100;
+    }
+
+    let upsellTotalValueVariation: number | null = null;
+    if (kpisData.upsell_total_value_previous && kpisData.upsell_total_value_previous > 0) {
+      upsellTotalValueVariation = ((kpisData.upsell_total_value - kpisData.upsell_total_value_previous) / kpisData.upsell_total_value_previous) * 100;
+    }
+
     return {
       conversionRate,
       conversionRateVariation,
@@ -374,7 +400,11 @@ export default function Dashboard() {
       medianFirstResponseTime: kpisData.median_first_response_time_minutes,
       medianFirstResponseTimeVariation,
       walkingLeads: kpisData.walking_leads,
-      walkingLeadsVariation
+      walkingLeadsVariation,
+      upsellLeads: kpisData.upsell_leads,
+      upsellLeadsVariation,
+      upsellTotalValue: kpisData.upsell_total_value,
+      upsellTotalValueVariation
     };
   }, [kpisData, globalFilteredLeads, hasActiveGlobalFilters]);
 

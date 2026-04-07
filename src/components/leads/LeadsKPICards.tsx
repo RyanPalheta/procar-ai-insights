@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -32,6 +32,10 @@ interface LeadsKPICardsProps {
   medianFirstResponseTimeVariation: number | null;
   walkingLeads: number;
   walkingLeadsVariation: number | null;
+  upsellLeads: number;
+  upsellLeadsVariation: number | null;
+  upsellTotalValue: number;
+  upsellTotalValueVariation: number | null;
   scorePeriod: ScorePeriod;
   onScorePeriodChange: (period: ScorePeriod) => void;
 }
@@ -104,6 +108,20 @@ const kpiTooltips = {
     comparison: (period: ScorePeriod) => period === "all"
       ? "Mostrando dados de todo o período"
       : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  upsellLeads: {
+    title: "Oportunidades de Upsell",
+    description: "Quantidade de leads onde a IA identificou oportunidade de vender produtos/serviços adicionais.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  upsellTotalValue: {
+    title: "Valor Potencial Upsell",
+    description: "Soma dos valores estimados de upsell identificados pela IA nos leads do período.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
   }
 };
 
@@ -122,6 +140,10 @@ export function LeadsKPICards({
   medianFirstResponseTimeVariation,
   walkingLeads,
   walkingLeadsVariation,
+  upsellLeads,
+  upsellLeadsVariation,
+  upsellTotalValue,
+  upsellTotalValueVariation,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
@@ -242,7 +264,7 @@ export function LeadsKPICards({
           spotlightRadius={300}
           glowColor="59, 130, 246"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-9 gap-2.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">
@@ -404,6 +426,50 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.walkingLeads.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.walkingLeads.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.walkingLeads.comparison(scorePeriod)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Oport. Upsell"
+                    value={upsellLeads}
+                    icon={PackagePlus}
+                    variant={upsellLeads > 0 ? "success" : "default"}
+                    description={scorePeriod === "all" ? "Leads com upsell" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(upsellLeadsVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(scorePeriod)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Valor Upsell"
+                    value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toFixed(0)}` : "N/A"}
+                    icon={BadgeDollarSign}
+                    variant={upsellTotalValue > 0 ? "success" : "default"}
+                    description={scorePeriod === "all" ? "Potencial estimado" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(upsellTotalValueVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(scorePeriod)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
