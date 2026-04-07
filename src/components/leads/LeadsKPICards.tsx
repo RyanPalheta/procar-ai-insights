@@ -429,6 +429,50 @@ export function LeadsKPICards({
                 </div>
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Oport. Upsell"
+                    value={upsellLeads}
+                    icon={PackagePlus}
+                    variant={upsellLeads > 0 ? "success" : "default"}
+                    description={scorePeriod === "all" ? "Leads com upsell" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(upsellLeadsVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(scorePeriod)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Valor Upsell"
+                    value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toFixed(0)}` : "N/A"}
+                    icon={BadgeDollarSign}
+                    variant={upsellTotalValue > 0 ? "success" : "default"}
+                    description={scorePeriod === "all" ? "Potencial estimado" : `Últimos ${periodLabels[scorePeriod]}`}
+                    trend={getTrend(upsellTotalValueVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(scorePeriod)}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </MagicBentoGrid>
       </TooltipProvider>
