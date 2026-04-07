@@ -580,6 +580,53 @@ export default function LeadDetails() {
               </label>
               <p className="text-base mt-1 text-muted-foreground">{lead.improvement_point || "N/A"}</p>
             </div>
+            </div>
+
+          {/* Upsell Section */}
+          <Separator />
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Oportunidade de Upsell
+                <Sparkles className="h-3 w-3 text-primary" />
+              </label>
+              <Badge 
+                variant={(lead as any).has_upsell ? "default" : "outline"}
+                className={(lead as any).has_upsell ? "bg-emerald-500 text-white" : ""}
+              >
+                {(lead as any).has_upsell ? "Identificado" : "Não identificado"}
+              </Badge>
+            </div>
+            {(lead as any).has_upsell && (
+              <>
+                {(lead as any).upsell_opportunity && (
+                  <p className="text-sm text-muted-foreground italic">
+                    "{(lead as any).upsell_opportunity}"
+                  </p>
+                )}
+                {(lead as any).upsell_products && (lead as any).upsell_products.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Produtos Sugeridos</label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(lead as any).upsell_products.map((product: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">
+                          {product}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(lead as any).upsell_value_estimate && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Valor Estimado</label>
+                    <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                      R$ {(lead as any).upsell_value_estimate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {lead.sentiment && (
