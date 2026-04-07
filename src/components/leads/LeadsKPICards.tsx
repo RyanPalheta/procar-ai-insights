@@ -32,6 +32,10 @@ interface LeadsKPICardsProps {
   medianFirstResponseTimeVariation: number | null;
   walkingLeads: number;
   walkingLeadsVariation: number | null;
+  upsellLeads: number;
+  upsellLeadsVariation: number | null;
+  upsellTotalValue: number;
+  upsellTotalValueVariation: number | null;
   scorePeriod: ScorePeriod;
   onScorePeriodChange: (period: ScorePeriod) => void;
 }
