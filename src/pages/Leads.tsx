@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +70,7 @@ export default function Leads() {
   const [coldAuditFilter, setColdAuditFilter] = useState<string>("all");
   const [reactivationFilter, setReactivationFilter] = useState<string>("all");
   const [followupFilter, setFollowupFilter] = useState<string>("all");
+  const [upsellFilter, setUpsellFilter] = useState<string>("all");
   const pageSize = 30;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -254,6 +255,10 @@ export default function Leads() {
       if (followupFilter === "ok" && lead.cold_audit_followup_ok !== true) return false;
       if (followupFilter === "nok" && lead.cold_audit_followup_ok !== false) return false;
 
+      // Upsell filter
+      if (upsellFilter === "with" && !lead.has_upsell) return false;
+      if (upsellFilter === "without" && lead.has_upsell) return false;
+
       return true;
     }) || [];
 
@@ -289,7 +294,7 @@ export default function Leads() {
     });
 
     return result;
-  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter]);
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter, upsellFilter]);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
@@ -317,6 +322,7 @@ export default function Leads() {
     setColdAuditFilter("all");
     setReactivationFilter("all");
     setFollowupFilter("all");
+    setUpsellFilter("all");
     resetPage();
   };
 
@@ -335,6 +341,7 @@ export default function Leads() {
     coldAuditFilter !== "all",
     reactivationFilter !== "all",
     followupFilter !== "all",
+    upsellFilter !== "all",
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFilterCount > 0;
@@ -513,7 +520,40 @@ export default function Leads() {
         </div>
       )}
 
-      {/* Leads Table Section */}
+      {/* Upsell KPIs */}
+      {leads && (() => {
+        const upsellLeads = leads.filter(l => l.has_upsell && l.last_ai_update);
+        const upsellCount = upsellLeads.length;
+        const upsellTotalValue = upsellLeads.reduce((sum: number, l: any) => sum + (l.upsell_value_estimate || 0), 0);
+        if (upsellCount === 0) return null;
+        return (
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Oportunidades de Upsell
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 max-w-lg">
+              <div className="cursor-pointer" onClick={() => { setUpsellFilter("with"); resetPage(); }}>
+                <KPICard
+                  title="Leads com Upsell"
+                  value={upsellCount}
+                  icon={TrendingUp}
+                  variant="success"
+                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos leads auditados`}
+                />
+              </div>
+              <KPICard
+                title="Valor Potencial Upsell"
+                value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "N/A"}
+                icon={DollarSign}
+                variant="success"
+                description="Estimativa total"
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
@@ -775,6 +815,21 @@ export default function Leads() {
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="ok">Adequado</SelectItem>
                       <SelectItem value="nok">Inadequado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Upsell */}
+                <div className="space-y-2">
+                  <Label>Upsell</Label>
+                  <Select value={upsellFilter} onValueChange={(v) => { setUpsellFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="with">Com Upsell</SelectItem>
+                      <SelectItem value="without">Sem Upsell</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

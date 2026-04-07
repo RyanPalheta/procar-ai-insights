@@ -281,10 +281,13 @@ Analise e responda:
 3. Qual o sentimento geral do cliente? (Positivo, Neutro, Negativo)
 4. Qual o potencial de conversão (0-100)?
 5. Tags relevantes para categorização (3-5 tags)
-6. Oportunidades de upsell identificadas
-7. Resumo das principais necessidades do cliente (2-3 frases)
-8. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
-9. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
+6. Há oportunidade de upsell? (sim/não) - Identifique se o cliente poderia se beneficiar de produtos/serviços adicionais
+7. Se há upsell, quais produtos/serviços adicionais o cliente poderia contratar? (lista)
+8. Se há upsell, qual o valor estimado em R$ dessa oportunidade? (número ou null se impossível estimar)
+9. Descrição textual da oportunidade de upsell
+10. Resumo das principais necessidades do cliente (2-3 frases)
+11. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
+12. Qual a intenção principal do lead? (escolha UMA: Orçamento, Dúvida, Negociar, Comparar, Agendamento)
 10. O cliente apresentou alguma objeção durante o atendimento? (sim/não)
 11. Se houve objeção, qual foi ela em uma frase?
 12. Se houve objeção, classifique em UMA ou MAIS categorias:
@@ -368,7 +371,21 @@ Analise e responda:
         upsell_opportunity: {
           type: 'string',
           nullable: true,
-          description: 'Oportunidades de upsell identificadas'
+          description: 'Oportunidades de upsell identificadas (texto descritivo)'
+        },
+        has_upsell: {
+          type: 'boolean',
+          description: 'Se há oportunidade de upsell identificada (true/false)'
+        },
+        upsell_products: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Lista de produtos/serviços adicionais que o cliente poderia contratar como upsell'
+        },
+        upsell_value_estimate: {
+          type: 'number',
+          nullable: true,
+          description: 'Valor estimado em reais da oportunidade de upsell (null se não for possível estimar)'
         },
         customer_needs_summary: {
           type: 'string',
@@ -441,7 +458,7 @@ Analise e responda:
           description: 'Se uma cotação ou preço formal foi apresentado ao cliente'
         }
       },
-      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote']
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote', 'has_upsell']
     };
 
     // Add compliance fields if we have agent messages and a playbook
@@ -584,6 +601,9 @@ Analise e responda:
       service_desired: finalServiceDesired,
       ai_tags: analysisResult.ai_tags || [],
       upsell_opportunity: analysisResult.upsell_opportunity || null,
+      has_upsell: analysisResult.has_upsell || false,
+      upsell_products: analysisResult.upsell_products || null,
+      upsell_value_estimate: analysisResult.upsell_value_estimate || null,
       improvement_point: analysisResult.customer_needs_summary || null, // Full needs summary
       need_summary: analysisResult.need_summary || null, // One-line summary
       lead_intent: analysisResult.lead_intent || null,
@@ -627,7 +647,7 @@ Analise e responda:
     // Sync to Kommo CRM (fire-and-forget)
     supabase.functions.invoke('sync-to-kommo', {
       body: { session_id }
-    }).catch(err => console.error('[analyze-lead] Kommo sync error:', err));
+    }).catch((err: Error) => console.error('[analyze-lead] Kommo sync error:', err));
 
     const duration = Date.now() - startTime;
     console.log(`[analyze-lead] Analysis completed in ${duration}ms`);

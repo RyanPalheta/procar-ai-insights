@@ -171,6 +171,7 @@ export type Database = {
           has_greeting: boolean | null
           has_objection: boolean | null
           has_qualification: boolean | null
+          has_upsell: boolean | null
           improvement_point: string | null
           is_walking: boolean | null
           last_ai_update: string | null
@@ -198,6 +199,8 @@ export type Database = {
           service_rating: number | null
           session_id: number
           upsell_opportunity: string | null
+          upsell_products: string[] | null
+          upsell_value_estimate: number | null
           used_anchoring: boolean | null
           used_offer: boolean | null
         }
@@ -215,6 +218,7 @@ export type Database = {
           has_greeting?: boolean | null
           has_objection?: boolean | null
           has_qualification?: boolean | null
+          has_upsell?: boolean | null
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null
@@ -242,6 +246,8 @@ export type Database = {
           service_rating?: number | null
           session_id: number
           upsell_opportunity?: string | null
+          upsell_products?: string[] | null
+          upsell_value_estimate?: number | null
           used_anchoring?: boolean | null
           used_offer?: boolean | null
         }
@@ -259,6 +265,7 @@ export type Database = {
           has_greeting?: boolean | null
           has_objection?: boolean | null
           has_qualification?: boolean | null
+          has_upsell?: boolean | null
           improvement_point?: string | null
           is_walking?: boolean | null
           last_ai_update?: string | null
@@ -286,6 +293,8 @@ export type Database = {
           service_rating?: number | null
           session_id?: number
           upsell_opportunity?: string | null
+          upsell_products?: string[] | null
+          upsell_value_estimate?: number | null
           used_anchoring?: boolean | null
           used_offer?: boolean | null
         }
