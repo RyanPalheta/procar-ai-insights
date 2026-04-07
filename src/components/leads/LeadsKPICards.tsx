@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
