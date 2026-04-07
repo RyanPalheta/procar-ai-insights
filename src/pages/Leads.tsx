@@ -818,6 +818,21 @@ export default function Leads() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Upsell */}
+                <div className="space-y-2">
+                  <Label>Upsell</Label>
+                  <Select value={upsellFilter} onValueChange={(v) => { setUpsellFilter(v); resetPage(); }}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="with">Com Upsell</SelectItem>
+                      <SelectItem value="without">Sem Upsell</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Score & Compliance Range Sliders */}
