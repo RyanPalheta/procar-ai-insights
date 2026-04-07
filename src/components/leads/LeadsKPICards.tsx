@@ -140,6 +140,10 @@ export function LeadsKPICards({
   medianFirstResponseTimeVariation,
   walkingLeads,
   walkingLeadsVariation,
+  upsellLeads,
+  upsellLeadsVariation,
+  upsellTotalValue,
+  upsellTotalValueVariation,
   scorePeriod,
   onScorePeriodChange
 }: LeadsKPICardsProps) {
