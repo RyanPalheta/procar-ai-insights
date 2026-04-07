@@ -1,89 +1,79 @@
 
 
-# Plano: Auditoria Fria com KPIs + Execução no Final do Dia
+# Plano: Upsell como KPI Estruturado no Dashboard
 
-## Resumo
+## Situação Atual
 
-Criar um sistema de auditoria fria que roda 1x por dia (23h), analisa leads sem interação há 24h (apenas 1 vez por lead), e armazena resultados estruturados que alimentam novos KPIs no dashboard.
+O campo `upsell_opportunity` já existe na `lead_db` e a IA já o preenche — mas é um **texto livre**, sem estrutura. Isso impede agregação e KPIs confiáveis.
 
-## 1. Migração: Novos campos na `lead_db`
+## Mudanças Propostas
 
-Adicionar campos para armazenar os resultados da auditoria fria:
-
-```sql
-ALTER TABLE lead_db ADD COLUMN cold_audit_reason TEXT;        -- Por que esfriou
-ALTER TABLE lead_db ADD COLUMN cold_audit_followup_ok BOOLEAN; -- Follow-up adequado?
-ALTER TABLE lead_db ADD COLUMN cold_audit_reactivation_chance TEXT; -- alta/media/baixa/nenhuma
-ALTER TABLE lead_db ADD COLUMN cold_audit_suggestion TEXT;      -- Sugestão de ação
-ALTER TABLE lead_db ADD COLUMN cold_audit_at TIMESTAMPTZ;       -- Quando foi auditado
-ALTER TABLE lead_db ADD COLUMN last_interaction_at TIMESTAMPTZ; -- Última interação
-```
-
-## 2. Atualizar `ingest-interaction` 
-
-Ao inserir nova interação, atualizar `last_interaction_at` no `lead_db` correspondente.
-
-## 3. Edge Function: `audit-cold-leads`
-
-- Busca leads onde:
-  - `last_interaction_at < NOW() - INTERVAL '24 hours'`
-  - `NOT ('auditoria_fria' = ANY(ai_tags))`  
-  - `last_interaction_at IS NOT NULL`
-- Para cada lead, chama a IA com prompt focado em:
-  1. Por que o lead esfriou?
-  2. O vendedor fez follow-up adequado? (boolean)
-  3. Chance de reativação (alta/media/baixa/nenhuma)
-  4. Sugestão de ação para recuperar
-- Salva nos campos `cold_audit_*` e adiciona tag `auditoria_fria` ao `ai_tags`
-- Processa em lotes com delay para evitar rate limiting
-
-## 4. Agendar com `pg_cron` (23h diário)
+### 1. Novos campos estruturados na `lead_db`
 
 ```sql
-SELECT cron.schedule('audit-cold-leads-daily', '0 23 * * *', $$
-  SELECT net.http_post(url:='...', ...)
-$$);
+ALTER TABLE lead_db ADD COLUMN has_upsell BOOLEAN DEFAULT false;
+ALTER TABLE lead_db ADD COLUMN upsell_products TEXT[];  -- produtos sugeridos para upsell
+ALTER TABLE lead_db ADD COLUMN upsell_value_estimate NUMERIC; -- valor estimado do upsell
 ```
 
-## 5. KPIs de Auditoria Fria no Dashboard de Leads
+- `has_upsell`: booleano simples para contagem rápida
+- `upsell_products`: lista de produtos/serviços identificados como oportunidade
+- `upsell_value_estimate`: valor estimado (opcional, preenchido quando possível)
+- `upsell_opportunity` (existente): mantido como texto descritivo
 
-Adicionar uma seção de KPIs na página de Leads (abaixo dos KPIs existentes ou em nova aba):
+### 2. Atualizar o prompt e tool schema do `analyze-lead`
 
-| KPI | Fonte | Cálculo |
-|-----|-------|---------|
-| **Leads Frios** | `cold_audit_at IS NOT NULL` | Contagem total |
-| **Sem Follow-up** | `cold_audit_followup_ok = false` | Contagem + % do total frio |
-| **Reativáveis** | `cold_audit_reactivation_chance IN ('alta','media')` | Contagem |
-| **Taxa Follow-up Adequado** | `cold_audit_followup_ok = true` | % dos leads frios |
+Adicionar ao prompt:
+- "Há oportunidade de upsell? (sim/não)"
+- "Quais produtos/serviços adicionais o cliente poderia contratar?"
+- "Qual o valor estimado desse upsell?"
 
-Cada KPI será um card clicável que filtra a tabela de leads.
+Adicionar ao tool schema:
+```json
+has_upsell: { type: "boolean" },
+upsell_products: { type: "array", items: { type: "string" } },
+upsell_value_estimate: { type: "number", nullable: true }
+```
 
-## 6. Filtros na página de Leads
+### 3. Atualizar `get_leads_kpis` com métricas de upsell
 
-Adicionar filtros:
-- **Auditoria**: Todas / Normal / Fria
-- **Chance de Reativação**: Todas / Alta / Média / Baixa / Nenhuma
-- **Follow-up**: Todos / Adequado / Inadequado
+Adicionar ao retorno da função SQL:
 
-## 7. Nova função DB `get_cold_audit_kpis`
+| KPI | Cálculo |
+|-----|---------|
+| **Leads com Upsell** | `COUNT(*) WHERE has_upsell = true` |
+| **Taxa de Upsell** | `% de leads com upsell vs total auditado` |
+| **Valor Total Upsell** | `SUM(upsell_value_estimate)` |
 
-Função SQL que retorna os KPIs agregados da auditoria fria com suporte a período, seguindo o padrão de `get_leads_kpis`.
+Com comparação de período anterior, seguindo o padrão existente.
+
+### 4. Novo KPI card no dashboard de Leads
+
+Adicionar 2 novos cards na seção de KPIs (`LeadsKPICards`):
+
+- **Oportunidades de Upsell**: contagem de leads com `has_upsell = true` + variação
+- **Valor Potencial Upsell**: soma de `upsell_value_estimate` formatada em R$
+
+### 5. Filtro de upsell na página de Leads
+
+Adicionar filtro: **Upsell**: Todos / Com Upsell / Sem Upsell
+
+### 6. Corrigir build error
+
+- `analyze-lead/index.ts` linha 630: adicionar type annotation `(err: Error)` no catch
 
 ## Detalhes Técnicos
 
 ```text
-Fluxo diário:
-pg_cron (23h) → audit-cold-leads
-  → Query: leads sem interação 24h+ E sem tag 'auditoria_fria'
-  → Para cada lead:
-     → Busca interações + dados do lead
-     → Prompt IA focado em diagnóstico frio
-     → Salva cold_audit_* fields
-     → Adiciona 'auditoria_fria' ao ai_tags
-  → Log em audit_logs
+Fluxo:
+ingest-lead → analyze-lead (prompt atualizado com upsell estruturado)
+  → Extrai: has_upsell, upsell_products[], upsell_value_estimate
+  → Salva via update-lead
+  → get_leads_kpis agrega para KPIs
+  → LeadsKPICards exibe no dashboard
 ```
 
-- A tag `auditoria_fria` garante que cada lead só recebe 1 auditoria fria
-- `last_interaction_at` é mantido automaticamente pelo `ingest-interaction`
-- Os KPIs usam os campos `cold_audit_*` diretamente, sem necessidade de reprocessar
+- Os campos estruturados permitem agregação SQL direta
+- O texto livre `upsell_opportunity` é mantido para detalhes na página do lead
+- A grid de KPIs passa de 7 para 9 colunas (responsivo via grid classes)
 
