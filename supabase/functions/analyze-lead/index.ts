@@ -458,7 +458,7 @@ Analise e responda:
           description: 'Se uma cotação ou preço formal foi apresentado ao cliente'
         }
       },
-      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote']
+      required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote', 'has_upsell']
     };
 
     // Add compliance fields if we have agent messages and a playbook
