@@ -108,6 +108,20 @@ const kpiTooltips = {
     comparison: (period: ScorePeriod) => period === "all"
       ? "Mostrando dados de todo o período"
       : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  upsellLeads: {
+    title: "Oportunidades de Upsell",
+    description: "Quantidade de leads onde a IA identificou oportunidade de vender produtos/serviços adicionais.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+  },
+  upsellTotalValue: {
+    title: "Valor Potencial Upsell",
+    description: "Soma dos valores estimados de upsell identificados pela IA nos leads do período.",
+    comparison: (period: ScorePeriod) => period === "all"
+      ? "Mostrando dados de todo o período"
+      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
   }
 };
 
