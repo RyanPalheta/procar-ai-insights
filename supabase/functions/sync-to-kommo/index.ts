@@ -243,7 +243,7 @@ function buildKommoPayload(lead: any): { custom_fields_values: any[]; price?: nu
 
   // Native price field
   if (lead.lead_price !== null && lead.lead_price !== undefined && lead.lead_price > 0) {
-    payload.price = Number(lead.lead_price);
+    payload.price = Math.round(Number(lead.lead_price));
   }
 
   return payload;
