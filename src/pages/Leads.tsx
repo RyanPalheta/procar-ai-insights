@@ -322,6 +322,7 @@ export default function Leads() {
     setColdAuditFilter("all");
     setReactivationFilter("all");
     setFollowupFilter("all");
+    setUpsellFilter("all");
     resetPage();
   };
 
