@@ -248,6 +248,53 @@ function buildKommoPayload(lead: any): { custom_fields_values: any[]; price?: nu
     fields.push({ field_id: 1823833, values: [{ value: lead.playbook_steps_missing.join('\n') }] });
   }
 
+  // --- Novos campos AI ---
+
+  // Temperatura (AI) - 1823979
+  if (lead.lead_temperature) {
+    fields.push({ field_id: 1823979, values: [{ value: capitalize(lead.lead_temperature) }] });
+  }
+
+  // Sentimento (AI) - 1823981
+  if (lead.sentiment) {
+    fields.push({ field_id: 1823981, values: [{ value: capitalize(lead.sentiment) }] });
+  }
+
+  // Intenção (AI) - 1823983
+  if (lead.lead_intent) {
+    fields.push({ field_id: 1823983, values: [{ value: capitalize(lead.lead_intent) }] });
+  }
+
+  // Serviço desejado (AI) - 1823985
+  if (lead.service_desired) {
+    fields.push({ field_id: 1823985, values: [{ value: lead.service_desired }] });
+  }
+
+  // Resumo (AI) - 1823987
+  if (lead.need_summary) {
+    fields.push({ field_id: 1823987, values: [{ value: lead.need_summary }] });
+  }
+
+  // Necessidades (AI) - 1823989
+  if (lead.improvement_point) {
+    fields.push({ field_id: 1823989, values: [{ value: lead.improvement_point }] });
+  }
+
+  // Conformidade com script (AI) - 1823991
+  if (lead.playbook_compliance_score !== null && lead.playbook_compliance_score !== undefined) {
+    fields.push({ field_id: 1823991, values: [{ value: `${lead.playbook_compliance_score}%` }] });
+  }
+
+  // Etapas faltantes (AI) - 1823993
+  if (lead.playbook_steps_missing?.length > 0) {
+    fields.push({ field_id: 1823993, values: [{ value: lead.playbook_steps_missing.join('\n') }] });
+  }
+
+  // Violações (AI) - 1823995
+  if (lead.playbook_violations) {
+    fields.push({ field_id: 1823995, values: [{ value: lead.playbook_violations }] });
+  }
+
   // Nota atendimento mensagem (1823119)
   if (lead.service_rating !== null && lead.service_rating !== undefined) {
     fields.push({ field_id: 1823119, values: [{ value: `${lead.service_rating}/10` }] });
