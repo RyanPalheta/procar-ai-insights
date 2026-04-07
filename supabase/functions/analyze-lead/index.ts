@@ -647,7 +647,7 @@ Analise e responda:
     // Sync to Kommo CRM (fire-and-forget)
     supabase.functions.invoke('sync-to-kommo', {
       body: { session_id }
-    }).catch(err => console.error('[analyze-lead] Kommo sync error:', err));
+    }).catch((err: Error) => console.error('[analyze-lead] Kommo sync error:', err));
 
     const duration = Date.now() - startTime;
     console.log(`[analyze-lead] Analysis completed in ${duration}ms`);
