@@ -92,6 +92,15 @@ Deno.serve(async (req) => {
     if (body.upsell_opportunity !== undefined) {
       updateData.upsell_opportunity = body.upsell_opportunity
     }
+    if (body.has_upsell !== undefined) {
+      updateData.has_upsell = body.has_upsell
+    }
+    if (body.upsell_products !== undefined) {
+      updateData.upsell_products = body.upsell_products
+    }
+    if (body.upsell_value_estimate !== undefined) {
+      updateData.upsell_value_estimate = body.upsell_value_estimate !== null ? parseFloat(body.upsell_value_estimate) : null
+    }
     if (body.service_desired !== undefined) {
       updateData.service_desired = body.service_desired
     }
