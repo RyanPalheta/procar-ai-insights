@@ -601,6 +601,9 @@ Analise e responda:
       service_desired: finalServiceDesired,
       ai_tags: analysisResult.ai_tags || [],
       upsell_opportunity: analysisResult.upsell_opportunity || null,
+      has_upsell: analysisResult.has_upsell || false,
+      upsell_products: analysisResult.upsell_products || null,
+      upsell_value_estimate: analysisResult.upsell_value_estimate || null,
       improvement_point: analysisResult.customer_needs_summary || null, // Full needs summary
       need_summary: analysisResult.need_summary || null, // One-line summary
       lead_intent: analysisResult.lead_intent || null,
