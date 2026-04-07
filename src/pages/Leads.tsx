@@ -341,6 +341,7 @@ export default function Leads() {
     coldAuditFilter !== "all",
     reactivationFilter !== "all",
     followupFilter !== "all",
+    upsellFilter !== "all",
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFilterCount > 0;
