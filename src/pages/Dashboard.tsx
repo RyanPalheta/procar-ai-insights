@@ -327,7 +327,11 @@ export default function Dashboard() {
       medianFirstResponseTime: 0,
       medianFirstResponseTimeVariation: null,
       walkingLeads: 0,
-      walkingLeadsVariation: null
+      walkingLeadsVariation: null,
+      upsellLeads: 0,
+      upsellLeadsVariation: null,
+      upsellTotalValue: 0,
+      upsellTotalValueVariation: null
     };
 
     const conversionRate = kpisData.total_audited > 0 
