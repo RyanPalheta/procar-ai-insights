@@ -520,7 +520,40 @@ export default function Leads() {
         </div>
       )}
 
-      {/* Leads Table Section */}
+      {/* Upsell KPIs */}
+      {leads && (() => {
+        const upsellLeads = leads.filter(l => l.has_upsell && l.last_ai_update);
+        const upsellCount = upsellLeads.length;
+        const upsellTotalValue = upsellLeads.reduce((sum: number, l: any) => sum + (l.upsell_value_estimate || 0), 0);
+        if (upsellCount === 0) return null;
+        return (
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Oportunidades de Upsell
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 max-w-lg">
+              <div className="cursor-pointer" onClick={() => { setUpsellFilter("with"); resetPage(); }}>
+                <KPICard
+                  title="Leads com Upsell"
+                  value={upsellCount}
+                  icon={TrendingUp}
+                  variant="success"
+                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos leads auditados`}
+                />
+              </div>
+              <KPICard
+                title="Valor Potencial Upsell"
+                value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "N/A"}
+                icon={DollarSign}
+                variant="success"
+                description="Estimativa total"
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
