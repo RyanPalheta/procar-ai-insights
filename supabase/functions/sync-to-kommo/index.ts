@@ -7,63 +7,114 @@ const corsHeaders = {
 
 // --- Field Mappings ---
 
-const PRODUCT_MAP: Record<string, string> = {
-  'remote start': 'REMOTE START',
-  'remote starter': 'REMOTE START',
-  'carplay': 'CARPLAY',
-  'sound system': 'SOUND SYSTEM',
-  'sound': 'SOUND SYSTEM',
-  'tint': 'TINT',
-  'window tint': 'TINT',
-  'backup cam': 'BACKUP CAM',
-  'backup camera': 'BACKUP CAM',
-  'dashcam': 'DASHCAM',
-  'dash cam': 'DASHCAM',
-  'ambient light': 'AMBIENT LIGHT',
-  'ambient lights': 'AMBIENT LIGHT',
-  'led': 'LED LIGHTS',
-  'led lights': 'LED LIGHTS',
-  'led light': 'LED LIGHTS',
-  'labor': 'LABOR',
-  'key copy': 'KEY COPY',
-  'key programming': 'KEY COPY',
-  'car key': 'KEY COPY',
-  'checagem': 'CHECAGEM',
-  'check': 'CHECAGEM',
-  'check service': 'CHECAGEM',
+// Produto de interesse (1820617) - enum_id map
+const PRODUCT_ENUM: Record<string, number> = {
+  'remote start': 1269485, 'remote starter': 1269485,
+  'carplay': 1269487,
+  'sound system': 1269489, 'sound': 1269489,
+  'tint': 1269491, 'window tint': 1269491,
+  'backup cam': 1269493, 'backup camera': 1269493,
+  'dashcam': 1269495, 'dash cam': 1269495,
+  'ambient light': 1269497, 'ambient lights': 1269497,
+  'led': 1269499, 'led lights': 1269499, 'led light': 1269499,
+  'labor': 1269693,
+  'key copy': 1269965, 'key programming': 1269965, 'car key': 1269965,
+  'checagem': 1270467, 'check': 1270467, 'check service': 1270467,
 };
 
-const OBJECTION_MAP: Record<string, string> = {
-  'preco': 'Orçamento insuficiente',
-  'tempo': 'Vai pensar e retornar',
-  'distancia': 'Muito distante',
-  'concorrencia': 'Fechou com concorrente',
-  'tecnica': 'Carro incompatível',
-  'confianca': 'Não satisfeito com as condições',
-  'financiamento': 'Aguardando aprovação do parceiro (esposa/marido)',
-  'indecisao': 'Cliente fazendo orçamento',
+// Idioma (1820619) - enum_id map
+const LANGUAGE_ENUM: Record<string, number> = {
+  'inglês': 1269501, 'ingles': 1269501, 'english': 1269501,
+  'português': 1269503, 'portugues': 1269503, 'portuguese': 1269503,
+  'espanhol': 1269505, 'spanish': 1269505,
+};
+const LANGUAGE_DEFAULT_ENUM = 1272947; // "Não categorizado"
+
+// Objeções (1820707) - enum_id map
+const OBJECTION_ENUM: Record<string, number> = {
+  'preco': 1269573,
+  'distancia': 1269575,
+  'concorrencia': 1269577,
+  'tecnica': 1269579,
+  'necessidade': 1269581,
+  'financiamento': 1269583,
+  'confianca': 1269585,
+  'indecisao': 1269655,
+  'semresposta': 1272747,
+  'endereco': 1272749,
+  'preco_sumiu': 1272751,
+  'tempo': 1272753,
+  'opcoes': 1272755,
+  'distante_estado': 1272781,
+  'fora_perto': 1269637,
+  'fora_longe': 1269639,
 };
 
-const LANGUAGE_MAP: Record<string, string> = {
-  'inglês': 'Inglês',
-  'ingles': 'Inglês',
-  'english': 'Inglês',
-  'português': 'Português',
-  'portugues': 'Português',
-  'portuguese': 'Português',
-  'espanhol': 'Espanhol',
-  'spanish': 'Espanhol',
+// Cliente Necessita (1820775) - enum_id map
+const CLIENT_NEEDS_ENUM: Record<string, number> = {
+  'remote start': 1269723, 'remote starter': 1269723,
+  'window tint': 1269725, 'tint': 1269725,
+  'carplay': 1269891,
+  'sound system': 1269893, 'sound': 1269893,
+  'dashcam': 1269895, 'dash cam': 1269895,
+  'backup cam': 1269897, 'backup camera': 1269897,
+  'led': 1269899, 'led lights': 1269899,
+  'ambient light': 1269901, 'ambient lights': 1269901,
+};
+
+// Lead Score select (1821573) - enum_id map
+const SCORE_ENUM: Record<number, number> = {
+  1: 1271135, 2: 1271137, 3: 1271139, 4: 1271141, 5: 1271143,
 };
 
 // --- Helper Functions ---
 
-function mapScoreToSelect(score: number | null): string | null {
+function mapScoreToEnumId(score: number | null): number | null {
   if (score === null || score === undefined) return null;
-  if (score <= 20) return '1';
-  if (score <= 40) return '2';
-  if (score <= 60) return '3';
-  if (score <= 80) return '4';
-  return '5';
+  if (score <= 20) return SCORE_ENUM[1];
+  if (score <= 40) return SCORE_ENUM[2];
+  if (score <= 60) return SCORE_ENUM[3];
+  if (score <= 80) return SCORE_ENUM[4];
+  return SCORE_ENUM[5];
+}
+
+function mapProductEnumIds(serviceDesired: string | null): Array<{ enum_id: number }> | null {
+  if (!serviceDesired) return null;
+  const lower = serviceDesired.toLowerCase().trim();
+  const found: number[] = [];
+  for (const [key, enumId] of Object.entries(PRODUCT_ENUM)) {
+    if (lower.includes(key) && !found.includes(enumId)) found.push(enumId);
+  }
+  return found.length > 0 ? found.map(id => ({ enum_id: id })) : null;
+}
+
+function mapClientNeedsEnumIds(upsellProducts: string[] | null, serviceDesired: string | null): Array<{ enum_id: number }> | null {
+  const sources = [...(upsellProducts || [])];
+  if (serviceDesired) sources.push(serviceDesired);
+  if (sources.length === 0) return null;
+  const found: number[] = [];
+  for (const item of sources) {
+    const lower = item.toLowerCase().trim();
+    for (const [key, enumId] of Object.entries(CLIENT_NEEDS_ENUM)) {
+      if (lower.includes(key) && !found.includes(enumId)) found.push(enumId);
+    }
+  }
+  return found.length > 0 ? found.map(id => ({ enum_id: id })) : null;
+}
+
+function mapObjectionEnumIds(categories: string[] | null): Array<{ enum_id: number }> | null {
+  if (!categories || categories.length === 0) return null;
+  const found: number[] = [];
+  for (const cat of categories) {
+    const enumId = OBJECTION_ENUM[cat.toLowerCase().trim()];
+    if (enumId && !found.includes(enumId)) found.push(enumId);
+  }
+  return found.length > 0 ? found.map(id => ({ enum_id: id })) : null;
+}
+
+function mapLanguageEnumId(lang: string | null): number {
+  if (!lang) return LANGUAGE_DEFAULT_ENUM;
+  return LANGUAGE_ENUM[lang.toLowerCase().trim()] ?? LANGUAGE_DEFAULT_ENUM;
 }
 
 function capitalize(s: string | null): string {
@@ -75,33 +126,6 @@ function boolIcon(val: boolean | null | undefined): string {
   if (val === true) return '✅';
   if (val === false) return '❌';
   return '—';
-}
-
-function mapProduct(serviceDesired: string | null): Array<{ value: string }> | null {
-  if (!serviceDesired) return null;
-  const lower = serviceDesired.toLowerCase().trim();
-  const mapped = PRODUCT_MAP[lower];
-  if (mapped) return [{ value: mapped }];
-  // Try partial matching
-  for (const [key, val] of Object.entries(PRODUCT_MAP)) {
-    if (lower.includes(key)) return [{ value: val }];
-  }
-  return null;
-}
-
-function mapObjections(categories: string[] | null): Array<{ value: string }> | null {
-  if (!categories || categories.length === 0) return null;
-  const values: Array<{ value: string }> = [];
-  for (const cat of categories) {
-    const mapped = OBJECTION_MAP[cat.toLowerCase().trim()];
-    if (mapped) values.push({ value: mapped });
-  }
-  return values.length > 0 ? values : null;
-}
-
-function mapLanguage(lang: string | null): string | null {
-  if (!lang) return null;
-  return LANGUAGE_MAP[lang.toLowerCase().trim()] || 'Não categorizado';
 }
 
 function buildAtlasSolutionsText(lead: any): string {
@@ -176,28 +200,32 @@ function buildKommoPayload(lead: any): { custom_fields_values: any[]; price?: nu
     });
   }
 
-  // Lead Score select 1-5 (1821573)
-  const selectScore = mapScoreToSelect(lead.lead_score);
-  if (selectScore) {
-    fields.push({ field_id: 1821573, values: [{ value: selectScore }] });
+  // Lead Score select 1-5 (1821573) - uses enum_id
+  const scoreEnumId = mapScoreToEnumId(lead.lead_score);
+  if (scoreEnumId) {
+    fields.push({ field_id: 1821573, values: [{ enum_id: scoreEnumId }] });
   }
 
-  // Produto de interesse (1820617)
-  const products = mapProduct(lead.service_desired);
+  // Produto de interesse (1820617) - uses enum_id
+  const products = mapProductEnumIds(lead.service_desired);
   if (products) {
     fields.push({ field_id: 1820617, values: products });
   }
 
-  // Idioma (1820619)
-  const lang = mapLanguage(lead.lead_language);
-  if (lang) {
-    fields.push({ field_id: 1820619, values: [{ value: lang }] });
-  }
+  // Idioma (1820619) - uses enum_id
+  const langEnumId = mapLanguageEnumId(lead.lead_language);
+  fields.push({ field_id: 1820619, values: [{ enum_id: langEnumId }] });
 
-  // Objeções multiselect (1820707)
-  const objections = mapObjections(lead.objection_categories);
+  // Objeções multiselect (1820707) - uses enum_id
+  const objections = mapObjectionEnumIds(lead.objection_categories);
   if (objections) {
     fields.push({ field_id: 1820707, values: objections });
+  }
+
+  // Cliente Necessita (1820775) - uses enum_id
+  const clientNeeds = mapClientNeedsEnumIds(lead.upsell_products, lead.service_desired);
+  if (clientNeeds) {
+    fields.push({ field_id: 1820775, values: clientNeeds });
   }
 
   // Objeções registradas mensagem (1823133)
@@ -225,11 +253,19 @@ function buildKommoPayload(lead: any): { custom_fields_values: any[]; price?: nu
     fields.push({ field_id: 1823123, values: [{ value: `${lead.lead_score}/100` }] });
   }
 
-  // Promoção/ancoragem checkbox (1823115)
+  // Promoção/ancoragem feita checkbox (1823115)
   fields.push({
     field_id: 1823115,
     values: [{ value: lead.used_offer === true || lead.used_anchoring === true }],
   });
+
+  // Financeira apresentada checkbox (1823113)
+  // True if seller used anchoring with financing detail
+  const financieiraApresentada = lead.used_anchoring === true &&
+    (lead.anchoring_detail?.toLowerCase().includes('financ') ||
+     lead.offer_detail?.toLowerCase().includes('financ') ||
+     lead.used_offer === true);
+  fields.push({ field_id: 1823113, values: [{ value: financieiraApresentada === true }] });
 
   // Walk-in checkbox (1823587)
   if (lead.is_walking !== null && lead.is_walking !== undefined) {
