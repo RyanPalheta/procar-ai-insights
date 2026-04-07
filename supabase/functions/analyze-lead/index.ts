@@ -368,7 +368,21 @@ Analise e responda:
         upsell_opportunity: {
           type: 'string',
           nullable: true,
-          description: 'Oportunidades de upsell identificadas'
+          description: 'Oportunidades de upsell identificadas (texto descritivo)'
+        },
+        has_upsell: {
+          type: 'boolean',
+          description: 'Se há oportunidade de upsell identificada (true/false)'
+        },
+        upsell_products: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Lista de produtos/serviços adicionais que o cliente poderia contratar como upsell'
+        },
+        upsell_value_estimate: {
+          type: 'number',
+          nullable: true,
+          description: 'Valor estimado em reais da oportunidade de upsell (null se não for possível estimar)'
         },
         customer_needs_summary: {
           type: 'string',
