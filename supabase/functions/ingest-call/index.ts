@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,54 +19,85 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log('Received call data:', JSON.stringify(body, null, 2));
 
-    // Validação básica
+    // Basic validation
     if (!body.session_id) {
-      console.error('Missing session_id');
       return new Response(
-        JSON.stringify({ 
-          error: 'session_id is required' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: 'session_id is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verificar se session_id existe na lead_db
+    // ── Dedup: skip if same recording_sid already stored ──────────────────────
+    if (body.recording_sid) {
+      const { data: existing } = await supabase
+        .from('call_db')
+        .select('call_id, transcription_status')
+        .eq('recording_sid', body.recording_sid)
+        .maybeSingle();
+
+      if (existing) {
+        console.log(`[ingest-call] Already processed recording_sid: ${body.recording_sid}`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            call_id: existing.call_id,
+            already_processed: true,
+            transcription_status: existing.transcription_status,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // ── Verify session_id exists in lead_db (auto-create if missing) ──────────
     const { data: leadExists, error: checkError } = await supabase
       .from('lead_db')
       .select('session_id')
       .eq('session_id', body.session_id)
-      .single();
+      .maybeSingle();
 
     if (checkError || !leadExists) {
-      console.error('Invalid session_id:', body.session_id);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid session_id. Lead not found.' 
-        }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      // Auto-create a minimal lead entry so call data is never lost
+      console.log(`[ingest-call] Lead ${body.session_id} not found — auto-creating minimal entry`);
+      const { error: createErr } = await supabase
+        .from('lead_db')
+        .insert({
+          session_id: body.session_id,
+          channel: 'phone',
+          processed: false,
+        });
+
+      if (createErr && !createErr.message?.includes('duplicate')) {
+        console.error('[ingest-call] Failed to auto-create lead:', createErr);
+        return new Response(
+          JSON.stringify({ error: 'session_id not found and auto-create failed: ' + createErr.message }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    // Preparar dados para inserção
-    const callData = {
-      session_id: body.session_id,
-      type: body.type || null,
-      call_tag: body.call_tag || null,
-      call_result: body.call_result || null,
-      call_duration: body.call_duration ? parseInt(body.call_duration) : null,
+    // ── Build call record ──────────────────────────────────────────────────────
+    const callData: Record<string, unknown> = {
+      session_id:     body.session_id,
+      type:           body.type           || 'phone',
+      call_tag:       body.call_tag       || null,
+      call_result:    body.call_result    || null,
+      call_duration:  body.call_duration  ? parseInt(String(body.call_duration), 10) : null,
       ai_analysis_status: body.ai_analysis_status || null,
-      lead_score: body.lead_score ? parseFloat(body.lead_score) : null,
+      lead_score:     body.lead_score     ? parseFloat(String(body.lead_score)) : null,
+      // InnovatSolution / recording fields
+      recording_sid:  body.recording_sid  || null,
+      recording_url:  body.recording_url  || null,
+      from_number:    body.from_number    || null,
+      to_number:      body.to_number      || null,
+      // Twilio-specific (kept for backward compat)
+      twilio_call_sid: body.twilio_call_sid || null,
+      // Metadata
+      call_status:    body.call_direction === 'inbound' ? 'inbound' : (body.call_status || null),
     };
 
-    console.log('Inserting call:', callData);
+    console.log('[ingest-call] Inserting call:', callData);
 
-    // Inserir no banco
     const { data, error } = await supabase
       .from('call_db')
       .insert(callData)
@@ -75,39 +105,30 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('[ingest-call] Database error:', error);
       return new Response(
         JSON.stringify({ error: error.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Call created successfully:', data.call_id);
+    console.log('[ingest-call] Call created successfully:', data.call_id);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         call_id: data.call_id,
-        message: 'Call created successfully'
+        already_processed: false,
+        message: 'Call created successfully',
       }),
-      { 
-        status: 201, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('[ingest-call] Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
