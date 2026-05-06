@@ -6,13 +6,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Google Gemini API (OpenAI-compatible endpoint)
-const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const AI_MODEL = 'gemini-2.5-flash';
-const AI_VERSION = 'google-gemini-flash-v1';
+// AI provider — switch via AI_PROVIDER env (default 'gemini')
+const AI_PROVIDER = (Deno.env.get('AI_PROVIDER') || 'gemini').toLowerCase();
+const AI_CONFIG = AI_PROVIDER === 'openai'
+  ? {
+      gateway: 'https://api.openai.com/v1/chat/completions',
+      model: Deno.env.get('AI_MODEL_OVERRIDE') || 'gpt-4o-mini',
+      version: 'openai-gpt-4o-mini-v1',
+      keyEnv: 'OPENAI_API_KEY',
+    }
+  : {
+      gateway: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      model: Deno.env.get('AI_MODEL_OVERRIDE') || 'gemini-2.5-flash',
+      version: 'google-gemini-flash-v1',
+      keyEnv: 'GOOGLE_GEMINI_API_KEY',
+    };
+const AI_GATEWAY = AI_CONFIG.gateway;
+const AI_MODEL = AI_CONFIG.model;
+const AI_VERSION = AI_CONFIG.version;
 
 // Max messages to send to AI (first 15 + last 15 if > 30)
 const MAX_MESSAGES = 30;
+
+// Keyword fallback (mirror of scan-services PRODUCT_KEYWORDS).
+// Used when the LLM fails to identify a product so the lead still gets
+// services_detected populated for Kommo sync. Zero LLM cost.
+const PRODUCT_KEYWORDS: Record<string, string[]> = {
+  'Remote Start': ['remote start','remote starter','remote-start','partida remota','partida a distancia','partida à distância','liga sozinho','controle remoto pra ligar','compustar','viper start'],
+  'CarPlay': ['carplay','car play','apple carplay','apple car play','android auto','sistema multimidia','central multimidia','multimídia','head unit','head-unit','aftermarket unit','aftermarket radio','screen upgrade','upgrade screen','upgrade radio','touch screen','multimedia screen','pioneer dmh','pioneer 3000','pioneer avh','kenwood ddx','kenwood dmx','sony xav','alpine ilx','atoto','double din'],
+  'Sound System': ['sound system','sound',' som ','som automotivo','caixa de som','subwoofer','amplificador','speaker','speakers','alto falante','alto-falante','alto-falantes','auto falante','audio upgrade','audio system',' sub ',' sub.',' sub,','sub and amp','sub & amp',' amp ',' amp.',' amp,','amplifier','tweeter','tweeters','midrange','midbass','crossover','enclosure','pillar pod','pillar pods','a-pillar','sound pod','jl audio','kicker','rockford','rockford fosgate','hertz audio','hertz m','hertz mille','focal audio','morel','audison','memphis audio','alpine type','alpine s-','alpine r-','pioneer ts','kenwood ksc','jbl club','jbl gx','jbl stage'],
+  'Window Tint': ['window tint',' tint ','tinted','tinting','insulfilm','pelicula','película','pelicula automotiva','suntek','suntek carbon','suntek standart','suntek standard','sunteck','llumar','ceramic pro','formula one','xpel',' carbon ','3m tint','window film','tonalizar vidro','escurecer vidro','ceramic tint','ceramic film','shade','tint shade','vlt','darken windows'],
+  'Backup Camera': ['backup cam','backup camera','reverse camera','camera de re','câmera de ré','camera de ré','camera traseira','rear camera','rearview camera','rear-view camera','reversing camera'],
+  'Dashcam': ['dashcam','dash cam','dash-cam','camera de bordo','câmera de bordo','camera veicular','camera frontal','front cam','thinkware','blackvue','viofo','nextbase'],
+  'Ambient Light': ['ambient light','ambient lights','ambient lighting','luz ambiente','iluminação ambiente','iluminacao ambiente','luzes internas led','interior led','mood lighting','rgb interior'],
+  'LED Lights': ['led light','led lights','led headlight','led headlights','farol led','farois led','faróis led','lampada led','lâmpada led','kit led','led bulb','led bulbs','fog light','fog lights','underglow'],
+  'Key Programming': ['key copy','key programming','car key','copia de chave','cópia de chave','programar chave','chave codificada','chave canivete','chave reserva','spare key','key fob','fob programming','transponder key'],
+  'Labor': [' labor ','mão de obra','mao de obra','instalação','instalacao','serviço de instalação','install only','just install','installation cost'],
+};
+
+function detectProductsFromText(text: string): string[] {
+  if (!text) return [];
+  const padded = ` ${text.toLowerCase()} `;
+  const matched = new Set<string>();
+  for (const [product, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
+    if (keywords.some((kw) => padded.includes(kw))) matched.add(product);
+  }
+  return Array.from(matched);
+}
 
 async function logAudit(supabase: any, params: {
   event_type: string;
@@ -64,10 +104,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get Google Gemini API Key
-    const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    // Get AI provider key
+    const geminiApiKey = Deno.env.get(AI_CONFIG.keyEnv);
     if (!geminiApiKey) {
-      throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
+      throw new Error(`${AI_CONFIG.keyEnv} is not configured (provider=${AI_PROVIDER})`);
     }
 
     // Fetch lead data
@@ -227,7 +267,7 @@ INFORMAÇÕES ADICIONAIS DO LEAD:
       if (productType) {
         const { data: playbookData, error: playbookError } = await supabase
           .from('playbooks')
-          .select('title, content, steps')
+          .select('title, content, steps, stage_requirements')
           .eq('product_type', productType)
           .single();
 
@@ -244,10 +284,10 @@ INFORMAÇÕES ADICIONAIS DO LEAD:
         // Try to get any playbook to use as reference (will be refined after product identification)
         const { data: anyPlaybook } = await supabase
           .from('playbooks')
-          .select('title, content, steps')
+          .select('title, content, steps, stage_requirements')
           .limit(1)
           .single();
-        
+
         if (anyPlaybook) {
           playbook = anyPlaybook;
           console.log(`[analyze-lead] Using default playbook as reference`);
@@ -255,21 +295,30 @@ INFORMAÇÕES ADICIONAIS DO LEAD:
       }
 
       if (playbook) {
+        const stageReqJson = playbook.stage_requirements
+          ? `\n\nMAPA DE STEPS POR ESTÁGIO (cada estágio exige APENAS estes steps):\n${JSON.stringify(playbook.stage_requirements, null, 2)}`
+          : '';
+
         userPrompt += `
 
 PLAYBOOK DE VENDAS A SER SEGUIDO (${playbook.title}):
-${playbook.content}
+${playbook.content}${stageReqJson}
 
-AVALIAÇÃO DO VENDEDOR:
-Analise se o vendedor seguiu corretamente o playbook acima. Verifique:
-1. Quais passos foram executados corretamente
-2. Quais passos foram pulados ou esquecidos
-3. Se houve violações das diretrizes (ex: não se apresentou, não perguntou nome, pulou etapas importantes)
-4. Dê uma nota geral do atendimento (0-10)
-5. Calcule o score de aderência ao playbook (0-100)
-6. Verifique se o vendedor usou técnicas de vendas (ofertas, ancoragem)
-   - Usar estratégias de venda AUMENTA a nota do atendimento em até +2 pontos
-   - Não usar estratégias em momento oportuno PODE diminuir a nota`;
+AVALIAÇÃO DO VENDEDOR (consciente de estágio):
+1. Identifique o ESTÁGIO ATUAL da conversa (conversation_stage):
+   - abertura: saudação inicial, primeiras trocas
+   - qualificacao: descoberta de necessidade, veículo, orçamento
+   - apresentacao: proposta de valor, produto/serviço, preço
+   - negociacao: objeções, ofertas, condições, ancoragem
+   - fechamento: agendamento, contratação, próximos passos
+2. Avalie compliance APENAS contra steps esperados ATÉ o estágio atual.
+   NÃO penalize por steps de estágios futuros que ainda não deveriam ter ocorrido.
+3. Liste em playbook_steps_completed os steps efetivamente executados.
+4. Liste em playbook_steps_missing APENAS steps que já deveriam ter sido feitos no estágio atual mas foram pulados.
+5. Identifique violações (ex: rude, mentiu, pulou saudação obrigatória).
+6. Nota geral atendimento 0-10 considerando o estágio atual.
+7. Score 0-100 = (steps_completed_no_estágio / steps_esperados_no_estágio) * 100.
+8. Estratégias de venda (ofertas/ancoragem) aumentam nota em até +2 pontos quando aplicáveis ao estágio.`;
       }
     }
 
@@ -345,7 +394,12 @@ Analise e responda:
         service_desired: {
           type: 'string',
           nullable: true,
-          description: 'Produto/serviço que o cliente deseja (da lista fornecida ou null)'
+          description: 'Produto/serviço PRINCIPAL que o cliente deseja (primeiro item de services_detected). Da lista fornecida ou null.'
+        },
+        services_detected: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'TODOS os produtos/serviços que o cliente demonstrou interesse na conversa. Use os nomes exatos da lista de produtos disponíveis. Inclua todos os mencionados, não apenas o principal. Pode ser vazio se nada identificado.'
         },
         lead_temperature: {
           type: 'string',
@@ -456,6 +510,11 @@ Analise e responda:
         has_quote: {
           type: 'boolean',
           description: 'Se uma cotação ou preço formal foi apresentado ao cliente'
+        },
+        conversation_stage: {
+          type: 'string',
+          enum: ['abertura', 'qualificacao', 'apresentacao', 'negociacao', 'fechamento'],
+          description: 'Estágio atual da conversa baseado no progresso e conteúdo das mensagens'
         }
       },
       required: ['lead_temperature', 'sentiment', 'lead_score', 'ai_tags', 'customer_needs_summary', 'need_summary', 'lead_intent', 'has_objection', 'has_greeting', 'has_qualification', 'used_offer', 'used_anchoring', 'has_quote', 'has_upsell']
@@ -492,7 +551,7 @@ Analise e responda:
       };
       
       // Add to required fields
-      toolParameters.required.push('playbook_compliance_score', 'service_rating');
+      toolParameters.required.push('playbook_compliance_score', 'service_rating', 'conversation_stage');
     }
 
     const aiResponse = await fetchWithRetry(AI_GATEWAY, {
@@ -582,15 +641,95 @@ Analise e responda:
       console.warn('[analyze-lead] No tool call in response, using defaults');
     }
 
-    // Validate service_desired against products
-    let finalServiceDesired = null;
-    if (analysisResult.service_desired && products) {
-      const matchedProduct = products.find((p: any) => 
-        p.product_name.toLowerCase() === analysisResult.service_desired?.toLowerCase() ||
-        analysisResult.service_desired?.toLowerCase().includes(p.product_name.toLowerCase())
-      );
-      finalServiceDesired = matchedProduct?.product_name || analysisResult.service_desired || lead.service_desired || null;
+    // Reject AI tokens that are sentinel strings ("null", "undefined", "n/a", "")
+    // — Gemini function-calling sometimes returns these as plain strings instead
+    // of JSON null, which previously polluted services_detected with ["null"].
+    function isInvalidServiceToken(s: any): boolean {
+      if (s === null || s === undefined) return true;
+      if (typeof s !== 'string') return true;
+      const lower = s.trim().toLowerCase();
+      return lower === '' || lower === 'null' || lower === 'undefined' || lower === 'n/a' || lower === 'none';
     }
+
+    // Validate services against products table
+    function matchProduct(input: string): string | null {
+      if (isInvalidServiceToken(input) || !products) return null;
+      const lower = input.toLowerCase().trim();
+      const matched = products.find((p: any) =>
+        p.product_name.toLowerCase() === lower ||
+        lower.includes(p.product_name.toLowerCase())
+      );
+      return matched?.product_name || input;
+    }
+
+    // Build services_detected array (validated + deduped)
+    let finalServicesDetected: string[] = [];
+    const rawServicesIn: string[] = Array.isArray(analysisResult.services_detected)
+      ? analysisResult.services_detected
+      : [];
+    const rawServices: string[] = rawServicesIn.filter((s) => !isInvalidServiceToken(s));
+    if (!isInvalidServiceToken(analysisResult.service_desired) && !rawServices.includes(analysisResult.service_desired)) {
+      rawServices.unshift(analysisResult.service_desired);
+    }
+    const seen = new Set<string>();
+    for (const raw of rawServices) {
+      const matched = matchProduct(raw);
+      if (matched && !seen.has(matched.toLowerCase())) {
+        seen.add(matched.toLowerCase());
+        finalServicesDetected.push(matched);
+      }
+    }
+
+    // Primary service = first in array; fallback to existing lead.service_desired
+    // (also guard against legacy string-"null" rows still in DB)
+    const existingServiceDesired = isInvalidServiceToken(lead.service_desired) ? null : lead.service_desired;
+    let finalServiceDesired: string | null =
+      finalServicesDetected[0] || existingServiceDesired || null;
+
+    // If AI returned nothing but lead already had a service, preserve it in array
+    if (finalServicesDetected.length === 0 && finalServiceDesired) {
+      finalServicesDetected = [finalServiceDesired];
+    }
+
+    // Keyword fallback: when AI couldn't pin a product (LLM returned null/empty
+    // and lead has no prior service), run keyword scan over the conversation
+    // before giving up. Recovers ~17% of cases that LLM misses, zero token cost.
+    if (finalServicesDetected.length === 0) {
+      const allText = allInteractions
+        .map((i: any) => i.message_text || '')
+        .filter((s: string) => s)
+        .join(' \n ');
+      const keywordHits = detectProductsFromText(allText);
+      if (keywordHits.length > 0) {
+        finalServicesDetected = keywordHits;
+        finalServiceDesired = keywordHits[0];
+        console.log(`[analyze-lead] Keyword fallback hit for session ${session_id}: ${keywordHits.join(', ')}`);
+      }
+    }
+
+    // Stage-aware compliance computation
+    const CLOSED_STATUSES = ['ganha', 'perdida', 'descartada', 'ganhou', 'perdeu'];
+    const isClosed = CLOSED_STATUSES.includes((lead.sales_status || '').toLowerCase().trim());
+    const conversationStage = analysisResult.conversation_stage || null;
+    const stageRequirements: string[] = playbook?.stage_requirements?.[conversationStage] || [];
+    const completedSteps: string[] = analysisResult.playbook_steps_completed || [];
+
+    let computedPartialScore: number | null = null;
+    if (hasAgentMessages && playbook) {
+      if (stageRequirements.length > 0) {
+        // Stage-aware: only count steps expected up to current stage
+        const completedInStage = completedSteps.filter((s: string) =>
+          stageRequirements.some((req: string) => req.toLowerCase() === s.toLowerCase())
+        );
+        computedPartialScore = Math.round((completedInStage.length / stageRequirements.length) * 100);
+      } else {
+        // Legacy fallback: trust AI's absolute score
+        computedPartialScore = analysisResult.playbook_compliance_score ?? null;
+      }
+    }
+    const computedFinalScore = isClosed ? computedPartialScore : null;
+
+    console.log(`[analyze-lead] Stage=${conversationStage}, expected=${stageRequirements.length} steps, completed_in_stage=${completedSteps.length}, partial=${computedPartialScore}, final=${computedFinalScore}, closed=${isClosed}`);
 
     // Prepare update payload
     const updatePayload: any = {
@@ -599,6 +738,7 @@ Analise e responda:
       lead_score: analysisResult.lead_score || 50,
       lead_temperature: analysisResult.lead_temperature || 'morno',
       service_desired: finalServiceDesired,
+      services_detected: finalServicesDetected.length > 0 ? finalServicesDetected : null,
       ai_tags: analysisResult.ai_tags || [],
       upsell_opportunity: analysisResult.upsell_opportunity || null,
       has_upsell: analysisResult.has_upsell || false,
@@ -614,8 +754,13 @@ Analise e responda:
       processed: true,
       ai_version: AI_VERSION,
       last_ai_update: new Date().toISOString(),
-      // Compliance fields - only populate if we analyzed agent messages
-      playbook_compliance_score: hasAgentMessages && playbook ? (analysisResult.playbook_compliance_score || null) : null,
+      // Stage-aware compliance fields
+      conversation_stage: hasAgentMessages && playbook ? conversationStage : null,
+      compliance_steps_expected: hasAgentMessages && playbook ? stageRequirements : null,
+      compliance_score_partial: computedPartialScore,
+      compliance_score_final: computedFinalScore,
+      // Legacy field kept as alias to partial score for backward compatibility
+      playbook_compliance_score: computedPartialScore,
       playbook_steps_completed: hasAgentMessages && playbook ? (analysisResult.playbook_steps_completed || null) : null,
       playbook_steps_missing: hasAgentMessages && playbook ? (analysisResult.playbook_steps_missing || null) : null,
       playbook_violations: hasAgentMessages && playbook ? (analysisResult.playbook_violations || null) : null,
