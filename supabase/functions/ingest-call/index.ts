@@ -94,6 +94,9 @@ Deno.serve(async (req) => {
       twilio_call_sid: body.twilio_call_sid || null,
       // Metadata
       call_status:    body.call_direction === 'inbound' ? 'inbound' : (body.call_status || null),
+      // Transcription (provided directly by ingestion pipeline)
+      transcription_text:   body.transcription_text   || null,
+      transcription_status: body.transcription_status || (body.transcription_text ? 'completed' : 'pending'),
     };
 
     console.log('[ingest-call] Inserting call:', callData);
