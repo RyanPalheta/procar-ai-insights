@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
     }
 
     // ── Build call record ──────────────────────────────────────────────────────
+    const hasTranscript = !!body.transcription_text;
+
     const callData: Record<string, unknown> = {
       session_id:     body.session_id,
       type:           body.type           || 'phone',
@@ -94,9 +96,9 @@ Deno.serve(async (req) => {
       twilio_call_sid: body.twilio_call_sid || null,
       // Metadata
       call_status:    body.call_direction === 'inbound' ? 'inbound' : (body.call_status || null),
-      // Transcription (provided directly by ingestion pipeline)
+      // Transcription (optional — provided by n8n when available)
       transcription_text:   body.transcription_text   || null,
-      transcription_status: body.transcription_status || (body.transcription_text ? 'completed' : 'pending'),
+      transcription_status: body.transcription_status || (hasTranscript ? 'completed' : 'pending'),
     };
 
     console.log('[ingest-call] Inserting call:', callData);
@@ -116,6 +118,21 @@ Deno.serve(async (req) => {
     }
 
     console.log('[ingest-call] Call created successfully:', data.call_id);
+
+    // ── Fire-and-forget analyze-call when transcript is ready ─────────────────
+    if (hasTranscript && data.call_id) {
+      const supabaseUrl    = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      console.log(`[ingest-call] Triggering analyze-call for call_id: ${data.call_id}`);
+      fetch(`${supabaseUrl}/functions/v1/analyze-call`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ call_id: data.call_id }),
+      }).catch(err => console.error('[ingest-call] analyze-call trigger error:', err));
+    }
 
     return new Response(
       JSON.stringify({
