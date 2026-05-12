@@ -7,15 +7,13 @@ on:
       - 'supabase/migrations/**'
     branches:
       - main
+  workflow_dispatch: # permite rodar manualmente pelo GitHub UI
 
 jobs:
-  # ── Job 1: Deploy edge functions when functions change ──────────────────────
+  # ── Deploy edge functions ────────────────────────────────────────────────────
   deploy-functions:
     name: Deploy Edge Functions
     runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'supabase/functions/')
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,13 +28,10 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-  # ── Job 2: Apply DB migrations when migrations change ───────────────────────
+  # ── Apply DB migrations ──────────────────────────────────────────────────────
   deploy-migrations:
     name: Apply DB Migrations
     runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'supabase/migrations/')
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
