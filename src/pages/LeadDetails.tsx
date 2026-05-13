@@ -51,6 +51,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import AIAnalysisDialog from "@/components/leads/AIAnalysisDialog";
+import CallCard from "@/components/leads/CallCard";
 
 // Mapeamento de nomes de campos para português
 const fieldLabels: Record<string, string> = {
@@ -1003,53 +1004,17 @@ export default function LeadDetails() {
           <CardTitle className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
             Ligações ({calls?.length || 0})
+            <Sparkles className="h-4 w-4 text-primary" />
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loadingCalls ? (
             <div className="text-center py-4">Carregando ligações...</div>
           ) : calls && calls.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>Resultado</TableHead>
-                    <TableHead>Tag</TableHead>
-                    <TableHead>Status Análise</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {calls.map((call) => (
-                    <TableRow key={call.call_id}>
-                      <TableCell className="text-sm">
-                        {new Date(call.created_at).toLocaleString("pt-BR")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{call.type || "N/A"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {call.call_duration 
-                          ? `${Math.floor(call.call_duration / 60)}:${(call.call_duration % 60).toString().padStart(2, '0')}`
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell>{call.call_result || "N/A"}</TableCell>
-                      <TableCell>
-                        {call.call_tag && (
-                          <Badge variant="secondary">{call.call_tag}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={call.ai_analysis_status === "completed" ? "default" : "secondary"}>
-                          {call.ai_analysis_status || "N/A"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              {calls.map((call: any) => (
+                <CallCard key={call.call_id} call={call} />
+              ))}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
