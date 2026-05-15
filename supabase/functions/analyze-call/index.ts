@@ -137,6 +137,7 @@ Avalie:
           },
         }],
         tool_choice: { type: 'function', function: { name: 'analyze_call' } },
+        stream: false,
       }),
     });
 

@@ -576,7 +576,8 @@ Analise e responda:
             }
           }
         ],
-        tool_choice: { type: 'function', function: { name: 'analyze_lead' } }
+        tool_choice: { type: 'function', function: { name: 'analyze_lead' } },
+        stream: false,
       }),
     });
 
