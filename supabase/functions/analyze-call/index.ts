@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const AI_MODEL = 'gemini-2.5-flash';
+const AI_MODEL = 'gemini-2.0-flash';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -166,7 +166,18 @@ Avalie:
     try {
       aiData = JSON.parse(rawText);
     } catch (parseErr) {
-      throw new Error(`Gemini response not valid JSON (status ${aiResponse.status}): ${rawText.substring(0, 300)}`);
+      // Store raw response in audit_logs for debugging
+      if (supabase) {
+        await supabase.from('audit_logs').insert({
+          event_type: 'call_analysis_debug',
+          status: 'error',
+          function_name: 'analyze-call',
+          error_message: `JSON parse failed on Gemini response (HTTP ${aiResponse.status})`,
+          event_details: { call_id, gemini_raw: rawText.substring(0, 800), model: AI_MODEL },
+          execution_time_ms: Date.now() - startTime,
+        });
+      }
+      throw new Error(`Gemini response not valid JSON (HTTP ${aiResponse.status}): ${rawText.substring(0, 300)}`);
     }
 
     let analysis: any = {};
