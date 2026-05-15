@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const AI_MODEL = 'gemini-2.0-flash';
+const AI_MODEL = 'gemini-1.5-flash-latest';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

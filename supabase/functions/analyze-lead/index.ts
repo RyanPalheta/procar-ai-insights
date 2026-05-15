@@ -17,7 +17,7 @@ const AI_CONFIG = AI_PROVIDER === 'openai'
     }
   : {
       gateway: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-      model: Deno.env.get('AI_MODEL_OVERRIDE') || 'gemini-2.5-flash',
+      model: Deno.env.get('AI_MODEL_OVERRIDE') || 'gemini-1.5-flash-latest',
       version: 'google-gemini-flash-v1',
       keyEnv: 'GOOGLE_GEMINI_API_KEY',
     };
