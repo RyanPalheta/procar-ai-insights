@@ -205,18 +205,24 @@ Avalie:
   } catch (error) {
     console.error('[analyze-call] Error:', error);
 
-    if (supabase) {
-      await supabase.from('audit_logs').insert({
-        event_type: 'call_analysis_error',
-        status: 'error',
-        function_name: 'analyze-call',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
-        execution_time_ms: Date.now() - startTime,
-      }).catch(() => {});
+    const errMsg = error instanceof Error ? error.message : 'Internal server error';
+
+    try {
+      if (supabase) {
+        await supabase.from('audit_logs').insert({
+          event_type: 'call_analysis_error',
+          status: 'error',
+          function_name: 'analyze-call',
+          error_message: errMsg.substring(0, 1000),
+          execution_time_ms: Date.now() - startTime,
+        });
+      }
+    } catch (_logErr) {
+      console.error('[analyze-call] Failed to write audit log:', _logErr);
     }
 
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({ error: errMsg.substring(0, 500) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
