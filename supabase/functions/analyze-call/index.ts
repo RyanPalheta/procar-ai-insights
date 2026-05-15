@@ -159,13 +159,23 @@ Avalie:
       throw new Error(`Gemini error (${status}): ${errText}`);
     }
 
-    const aiData = await aiResponse.json();
+    const rawText = await aiResponse.text();
+    console.log('[analyze-call] Gemini raw response (first 500 chars):', rawText.substring(0, 500));
+
+    let aiData: any;
+    try {
+      aiData = JSON.parse(rawText);
+    } catch (parseErr) {
+      throw new Error(`Gemini response not valid JSON (status ${aiResponse.status}): ${rawText.substring(0, 300)}`);
+    }
+
     let analysis: any = {};
 
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       try {
-        analysis = JSON.parse(toolCall.function.arguments);
+        const args = toolCall.function.arguments;
+        analysis = typeof args === 'object' ? args : JSON.parse(args);
       } catch (e) {
         console.error('[analyze-call] Parse error:', e);
       }
