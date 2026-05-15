@@ -116,47 +116,59 @@ Avalie:
 
     console.log(`[analyze-call] Calling Gemini API...`);
 
-    const aiResponse = await fetch(AI_GATEWAY, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${geminiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'analyze_call',
-            description: 'Analisa a qualidade de uma chamada telefônica de vendas',
-            parameters: toolParameters,
-          },
-        }],
-        tool_choice: { type: 'function', function: { name: 'analyze_call' } },
-        stream: false,
-      }),
-    });
+    // Call Gemini with retry on 429 (rate limit)
+    let aiResponse: Response | null = null;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      aiResponse = await fetch(AI_GATEWAY, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${geminiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'analyze_call',
+              description: 'Analisa a qualidade de uma chamada telefônica de vendas',
+              parameters: toolParameters,
+            },
+          }],
+          tool_choice: { type: 'function', function: { name: 'analyze_call' } },
+          stream: false,
+        }),
+      });
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      const status = aiResponse.status;
+      if (aiResponse.status !== 429) break;
+
+      const retryAfter = parseInt(aiResponse.headers.get('retry-after') || '0') || (attempt * 15);
+      console.log(`[analyze-call] Rate limited (429), retrying in ${retryAfter}s (attempt ${attempt}/4)...`);
+      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+    }
+
+    if (!aiResponse!.ok) {
+      const errText = await aiResponse!.text();
+      const httpStatus = aiResponse!.status;
 
       await supabase.from('call_db').update({ ai_analysis_status: 'failed' }).eq('call_id', call_id);
 
-      await supabase.from('audit_logs').insert({
-        event_type: 'call_analysis_failed',
-        status: 'error',
-        function_name: 'analyze-call',
-        error_message: `Gemini ${status}: ${errText.substring(0, 500)}`,
-        event_details: { call_id, http_status: status },
-        execution_time_ms: Date.now() - startTime,
-      });
+      try {
+        await supabase.from('audit_logs').insert({
+          event_type: 'call_analysis_failed',
+          status: 'error',
+          function_name: 'analyze-call',
+          error_message: `Gemini ${httpStatus}: ${errText.substring(0, 500)}`,
+          event_details: { call_id, http_status: httpStatus },
+          execution_time_ms: Date.now() - startTime,
+        });
+      } catch (_) { /* ignore log error */ }
 
-      throw new Error(`Gemini error (${status}): ${errText}`);
+      throw new Error(`Gemini error (${httpStatus}): ${errText}`);
     }
 
     const rawText = await aiResponse.text();
