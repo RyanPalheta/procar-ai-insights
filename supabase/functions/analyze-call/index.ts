@@ -215,6 +215,36 @@ Avalie:
       call_result: analysis.executive_summary?.substring(0, 200) || null,
     }).eq('call_id', call_id);
 
+    // Also propagate call insights back to lead_db
+    if (call.session_id) {
+      const leadUpdate: Record<string, any> = {};
+
+      if (analysis.quality_score !== undefined && analysis.quality_score !== null) {
+        leadUpdate.lead_score = analysis.quality_score;
+      }
+      if (analysis.sentiment) {
+        leadUpdate.sentiment = analysis.sentiment;
+      }
+      if (analysis.quality_score !== undefined && analysis.quality_score !== null) {
+        leadUpdate.lead_temperature = analysis.quality_score >= 70 ? 'quente'
+          : analysis.quality_score >= 40 ? 'morno'
+          : 'frio';
+      }
+
+      if (Object.keys(leadUpdate).length > 0) {
+        const { error: leadUpdateErr } = await supabase
+          .from('lead_db')
+          .update(leadUpdate)
+          .eq('session_id', call.session_id);
+
+        if (leadUpdateErr) {
+          console.warn(`[analyze-call] Failed to update lead_db for session_id ${call.session_id}:`, leadUpdateErr.message);
+        } else {
+          console.log(`[analyze-call] Updated lead_db for session_id ${call.session_id}:`, leadUpdate);
+        }
+      }
+    }
+
     const duration = Date.now() - startTime;
 
     await supabase.from('audit_logs').insert({
@@ -223,6 +253,7 @@ Avalie:
       function_name: 'analyze-call',
       event_details: {
         call_id,
+        session_id: call.session_id,
         quality_score: analysis.quality_score,
         sentiment: analysis.sentiment,
         has_objection: analysis.has_objection,
