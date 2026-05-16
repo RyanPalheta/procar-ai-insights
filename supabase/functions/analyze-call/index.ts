@@ -215,34 +215,53 @@ Avalie:
       call_result: analysis.executive_summary?.substring(0, 200) || null,
     }).eq('call_id', call_id);
 
-    // Also propagate call insights back to lead_db
+    // Propagate call insights back to lead_db via update-lead (ensures history tracking)
     if (call.session_id) {
-      const leadUpdate: Record<string, any> = {};
+      const qs = analysis.quality_score;
+      const leadTemperature = (qs !== undefined && qs !== null)
+        ? (qs >= 70 ? 'quente' : qs >= 40 ? 'morno' : 'frio')
+        : undefined;
 
-      if (analysis.quality_score !== undefined && analysis.quality_score !== null) {
-        leadUpdate.lead_score = analysis.quality_score;
-      }
-      if (analysis.sentiment) {
-        leadUpdate.sentiment = analysis.sentiment;
-      }
-      if (analysis.quality_score !== undefined && analysis.quality_score !== null) {
-        leadUpdate.lead_temperature = analysis.quality_score >= 70 ? 'quente'
-          : analysis.quality_score >= 40 ? 'morno'
-          : 'frio';
-      }
+      const leadUpdatePayload: Record<string, any> = {
+        session_id: call.session_id,
+        change_source: 'call_analysis',
+      };
 
-      if (Object.keys(leadUpdate).length > 0) {
-        const { error: leadUpdateErr } = await supabase
-          .from('lead_db')
-          .update(leadUpdate)
-          .eq('session_id', call.session_id);
+      if (analysis.sentiment)                                         leadUpdatePayload.sentiment                = analysis.sentiment;
+      if (qs !== undefined && qs !== null)                            leadUpdatePayload.lead_score               = qs;
+      if (leadTemperature)                                            leadUpdatePayload.lead_temperature         = leadTemperature;
+      if (analysis.has_objection !== undefined)                       leadUpdatePayload.has_objection            = analysis.has_objection;
+      if (analysis.objection_detail)                                  leadUpdatePayload.objection_detail         = analysis.objection_detail;
+      if (Array.isArray(analysis.objection_categories) && analysis.objection_categories.length > 0)
+                                                                      leadUpdatePayload.objection_categories     = analysis.objection_categories;
+      if (analysis.objection_overcome !== undefined && analysis.objection_overcome !== null)
+                                                                      leadUpdatePayload.objection_overcome       = analysis.objection_overcome;
+      if (analysis.used_offer !== undefined)                          leadUpdatePayload.used_offer               = analysis.used_offer;
+      if (analysis.offer_detail)                                      leadUpdatePayload.offer_detail             = analysis.offer_detail;
+      if (analysis.used_anchoring !== undefined)                      leadUpdatePayload.used_anchoring           = analysis.used_anchoring;
+      if (analysis.anchoring_detail)                                  leadUpdatePayload.anchoring_detail         = analysis.anchoring_detail;
+      if (analysis.compliance_score !== undefined && analysis.compliance_score !== null)
+                                                                      leadUpdatePayload.playbook_compliance_score = analysis.compliance_score;
+      if (analysis.compliance_notes)                                  leadUpdatePayload.playbook_violations      = analysis.compliance_notes;
+      if (Array.isArray(analysis.improvement_points) && analysis.improvement_points.length > 0)
+                                                                      leadUpdatePayload.improvement_point        = analysis.improvement_points.join(' | ');
+      if (analysis.executive_summary)                                 leadUpdatePayload.need_summary             = analysis.executive_summary.substring(0, 200);
+      if (Array.isArray(analysis.call_tags) && analysis.call_tags.length > 0)
+                                                                      leadUpdatePayload.ai_tags                  = analysis.call_tags;
 
-        if (leadUpdateErr) {
-          console.warn(`[analyze-call] Failed to update lead_db for session_id ${call.session_id}:`, leadUpdateErr.message);
-        } else {
-          console.log(`[analyze-call] Updated lead_db for session_id ${call.session_id}:`, leadUpdate);
-        }
+      console.log(`[analyze-call] Updating lead_db for session_id ${call.session_id} with ${Object.keys(leadUpdatePayload).length - 2} fields`);
+
+      const { error: leadUpdateErr } = await supabase.functions.invoke('update-lead', {
+        body: leadUpdatePayload,
+      });
+
+      if (leadUpdateErr) {
+        console.warn(`[analyze-call] Failed to update lead_db for session_id ${call.session_id}:`, leadUpdateErr.message);
+      } else {
+        console.log(`[analyze-call] lead_db updated successfully for session_id ${call.session_id}`);
       }
+    } else {
+      console.warn(`[analyze-call] call_id ${call_id} has no session_id — skipping lead_db update`);
     }
 
     const duration = Date.now() - startTime;
