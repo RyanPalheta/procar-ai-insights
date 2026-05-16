@@ -1,59 +1,295 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Progress } from "@/components/ui/progress";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar, Legend,
+} from "recharts";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { useState } from "react";
-import { FileText, Brain, Phone, PhoneIncoming, PhoneOutgoing } from "lucide-react";
+import {
+  FileText, Brain, Phone, PhoneIncoming, PhoneOutgoing, TrendingUp, TrendingDown,
+  AlertTriangle, Smile, Frown, Meh, Target, Sparkles, Search,
+} from "lucide-react";
 
+/* ----------------- helpers ----------------- */
+const SENTIMENT_COLORS: Record<string, string> = {
+  Positivo: "#22c55e",
+  Neutro: "#94a3b8",
+  Negativo: "#ef4444",
+};
+
+const OBJECTION_LABELS: Record<string, string> = {
+  preco: "Preço",
+  tempo: "Tempo",
+  distancia: "Distância",
+  financiamento: "Financiamento",
+  confianca: "Confiança",
+  concorrencia: "Concorrência",
+  tecnica: "Técnica",
+  indecisao: "Indecisão",
+};
+
+const SCORE_BUCKETS = [
+  { range: "0–20", min: 0, max: 20, color: "#ef4444" },
+  { range: "20–40", min: 20, max: 40, color: "#f97316" },
+  { range: "40–60", min: 40, max: 60, color: "#eab308" },
+  { range: "60–80", min: 60, max: 80, color: "#84cc16" },
+  { range: "80–100", min: 80, max: 101, color: "#22c55e" },
+];
+
+const scoreColor = (s: number | null | undefined) => {
+  if (s == null) return "text-muted-foreground";
+  if (s >= 70) return "text-green-500";
+  if (s >= 40) return "text-yellow-500";
+  return "text-red-500";
+};
+
+const sentimentIcon = (s?: string) => {
+  if (s === "Positivo") return <Smile className="h-4 w-4 text-green-500" />;
+  if (s === "Negativo") return <Frown className="h-4 w-4 text-red-500" />;
+  return <Meh className="h-4 w-4 text-slate-400" />;
+};
+
+/* ----------------- page ----------------- */
 export default function Calls() {
   const [selectedCall, setSelectedCall] = useState<any>(null);
   const [showTranscription, setShowTranscription] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
 
+  /* filters */
+  const [periodDays, setPeriodDays] = useState<string>("30");
+  const [sentimentFilter, setSentimentFilter] = useState<string>("all");
+  const [scoreFilter, setScoreFilter] = useState<string>("all");
+  const [objectionFilter, setObjectionFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+
   const { data: calls, isLoading } = useQuery({
     queryKey: ["calls"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("call_db").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("call_db")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const avgDuration = calls?.length
-    ? Math.round(calls.reduce((acc, call) => acc + (call.call_duration || 0), 0) / calls.length)
-    : 0;
+  /* ----------------- filtered calls ----------------- */
+  const filteredCalls = useMemo(() => {
+    if (!calls) return [];
+    const now = Date.now();
+    const periodMs = periodDays === "all"
+      ? Infinity
+      : Number(periodDays) * 24 * 60 * 60 * 1000;
 
-  const callsByDay = calls?.reduce((acc: any, call) => {
-    const date = new Date(call.created_at).toLocaleDateString("pt-BR");
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {});
+    return calls.filter((call: any) => {
+      const a = call.ai_call_analysis || {};
+      if (periodMs !== Infinity) {
+        const age = now - new Date(call.created_at).getTime();
+        if (age > periodMs) return false;
+      }
+      if (sentimentFilter !== "all" && a.sentiment !== sentimentFilter) return false;
+      if (scoreFilter !== "all") {
+        const s = a.quality_score;
+        if (s == null) return false;
+        if (scoreFilter === "high" && s < 70) return false;
+        if (scoreFilter === "mid" && (s < 40 || s >= 70)) return false;
+        if (scoreFilter === "low" && s >= 40) return false;
+      }
+      if (objectionFilter === "with" && !a.has_objection) return false;
+      if (objectionFilter === "overcome" && !(a.has_objection && a.objection_overcome)) return false;
+      if (objectionFilter === "not_overcome" && !(a.has_objection && a.objection_overcome === false)) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const hay = `${call.from_number || ""} ${call.to_number || ""} ${a.executive_summary || ""} ${(a.call_tags || []).join(" ")}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [calls, periodDays, sentimentFilter, scoreFilter, objectionFilter, search]);
 
-  const chartData = callsByDay
-    ? Object.entries(callsByDay).map(([date, count]) => ({ date, count }))
-    : [];
+  /* previous-period comparison (for delta) */
+  const previousPeriodCalls = useMemo(() => {
+    if (!calls || periodDays === "all") return [];
+    const now = Date.now();
+    const periodMs = Number(periodDays) * 24 * 60 * 60 * 1000;
+    return calls.filter((c: any) => {
+      const age = now - new Date(c.created_at).getTime();
+      return age > periodMs && age <= periodMs * 2;
+    });
+  }, [calls, periodDays]);
 
-  const transcribedCount = calls?.filter((c) => (c as any).transcription_status === "completed").length || 0;
+  /* ----------------- aggregates ----------------- */
+  const stats = useMemo(() => {
+    const total = filteredCalls.length;
+    const analyzed = filteredCalls.filter((c: any) => c.ai_call_analysis);
+    const analyzedCount = analyzed.length;
 
+    const avgDuration = total
+      ? Math.round(filteredCalls.reduce((acc: number, c: any) => acc + (c.call_duration || 0), 0) / total)
+      : 0;
+
+    const scores = analyzed
+      .map((c: any) => c.ai_call_analysis?.quality_score)
+      .filter((s: any) => typeof s === "number");
+    const avgScore = scores.length
+      ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+      : 0;
+
+    const sentimentCounts = { Positivo: 0, Neutro: 0, Negativo: 0 };
+    analyzed.forEach((c: any) => {
+      const s = c.ai_call_analysis?.sentiment;
+      if (s && sentimentCounts[s as keyof typeof sentimentCounts] !== undefined) {
+        sentimentCounts[s as keyof typeof sentimentCounts]++;
+      }
+    });
+    const pctPositive = analyzedCount
+      ? Math.round((sentimentCounts.Positivo / analyzedCount) * 100)
+      : 0;
+
+    const withObj = analyzed.filter((c: any) => c.ai_call_analysis?.has_objection).length;
+    const pctObjection = analyzedCount ? Math.round((withObj / analyzedCount) * 100) : 0;
+    const overcomeCount = analyzed.filter((c: any) => c.ai_call_analysis?.has_objection && c.ai_call_analysis?.objection_overcome).length;
+    const pctOvercome = withObj ? Math.round((overcomeCount / withObj) * 100) : 0;
+
+    const complianceScores = analyzed
+      .map((c: any) => c.ai_call_analysis?.compliance_score)
+      .filter((s: any) => typeof s === "number");
+    const avgCompliance = complianceScores.length
+      ? Math.round(complianceScores.reduce((a: number, b: number) => a + b, 0) / complianceScores.length)
+      : null;
+
+    const pctOffer = analyzedCount
+      ? Math.round((analyzed.filter((c: any) => c.ai_call_analysis?.used_offer).length / analyzedCount) * 100)
+      : 0;
+    const pctAnchoring = analyzedCount
+      ? Math.round((analyzed.filter((c: any) => c.ai_call_analysis?.used_anchoring).length / analyzedCount) * 100)
+      : 0;
+
+    /* delta vs previous period */
+    const totalDelta = previousPeriodCalls.length
+      ? Math.round(((total - previousPeriodCalls.length) / previousPeriodCalls.length) * 100)
+      : null;
+
+    return {
+      total,
+      analyzedCount,
+      avgDuration,
+      avgScore,
+      sentimentCounts,
+      pctPositive,
+      pctObjection,
+      pctOvercome,
+      avgCompliance,
+      pctOffer,
+      pctAnchoring,
+      totalDelta,
+    };
+  }, [filteredCalls, previousPeriodCalls]);
+
+  /* sentiment donut data */
+  const sentimentChartData = useMemo(
+    () => Object.entries(stats.sentimentCounts)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value })),
+    [stats.sentimentCounts]
+  );
+
+  /* score histogram */
+  const scoreHistogram = useMemo(() => {
+    const buckets = SCORE_BUCKETS.map((b) => ({ range: b.range, count: 0, color: b.color }));
+    filteredCalls.forEach((c: any) => {
+      const s = c.ai_call_analysis?.quality_score;
+      if (typeof s !== "number") return;
+      const idx = SCORE_BUCKETS.findIndex((b) => s >= b.min && s < b.max);
+      if (idx >= 0) buckets[idx].count++;
+    });
+    return buckets;
+  }, [filteredCalls]);
+
+  /* score & volume per day */
+  const dailyData = useMemo(() => {
+    const map: Record<string, { date: string; volume: number; scoreSum: number; scoreN: number }> = {};
+    filteredCalls.forEach((c: any) => {
+      const d = new Date(c.created_at).toLocaleDateString("pt-BR");
+      if (!map[d]) map[d] = { date: d, volume: 0, scoreSum: 0, scoreN: 0 };
+      map[d].volume++;
+      const s = c.ai_call_analysis?.quality_score;
+      if (typeof s === "number") {
+        map[d].scoreSum += s;
+        map[d].scoreN++;
+      }
+    });
+    return Object.values(map)
+      .map((d) => ({ date: d.date, volume: d.volume, avgScore: d.scoreN ? Math.round(d.scoreSum / d.scoreN) : null }))
+      .sort((a, b) => {
+        const [da, ma, ya] = a.date.split("/").map(Number);
+        const [db, mb, yb] = b.date.split("/").map(Number);
+        return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+      });
+  }, [filteredCalls]);
+
+  /* objection categories */
+  const objectionStats = useMemo(() => {
+    const counts: Record<string, { total: number; overcome: number }> = {};
+    filteredCalls.forEach((c: any) => {
+      const a = c.ai_call_analysis;
+      if (!a?.has_objection || !Array.isArray(a.objection_categories)) return;
+      a.objection_categories.forEach((cat: string) => {
+        if (!counts[cat]) counts[cat] = { total: 0, overcome: 0 };
+        counts[cat].total++;
+        if (a.objection_overcome) counts[cat].overcome++;
+      });
+    });
+    return Object.entries(counts)
+      .map(([cat, v]) => ({
+        category: OBJECTION_LABELS[cat] || cat,
+        total: v.total,
+        overcome: v.overcome,
+        notOvercome: v.total - v.overcome,
+        pctOvercome: v.total ? Math.round((v.overcome / v.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [filteredCalls]);
+
+  /* top 5 unhandled objections (most painful calls to learn from) */
+  const topUnhandledObjections = useMemo(() => {
+    return filteredCalls
+      .filter((c: any) => c.ai_call_analysis?.has_objection && c.ai_call_analysis?.objection_overcome === false)
+      .sort((a: any, b: any) => (a.ai_call_analysis?.quality_score || 0) - (b.ai_call_analysis?.quality_score || 0))
+      .slice(0, 5);
+  }, [filteredCalls]);
+
+  /* top tags */
+  const topTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredCalls.forEach((c: any) => {
+      (c.ai_call_analysis?.call_tags || []).forEach((t: string) => {
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15);
+  }, [filteredCalls]);
+
+  /* ----------------- UI helpers ----------------- */
   const getTranscriptionBadge = (status: string | null) => {
     switch (status) {
       case "completed": return <Badge variant="success">Transcrita</Badge>;
@@ -64,106 +300,329 @@ export default function Calls() {
     }
   };
 
+  /* ----------------- render ----------------- */
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Chamadas</h2>
-        <p className="text-muted-foreground">
-          Análise detalhada de todas as chamadas
-        </p>
+      {/* Header */}
+      <div className="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Chamadas</h2>
+          <p className="text-muted-foreground">Análise detalhada de todas as chamadas</p>
+        </div>
+        <div className="flex gap-2 flex-wrap items-center">
+          <Select value={periodDays} onValueChange={setPeriodDays}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="all">Todo o período</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Sentimento" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos sentimentos</SelectItem>
+              <SelectItem value="Positivo">Positivo</SelectItem>
+              <SelectItem value="Neutro">Neutro</SelectItem>
+              <SelectItem value="Negativo">Negativo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={scoreFilter} onValueChange={setScoreFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Score" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos scores</SelectItem>
+              <SelectItem value="high">Alto (≥70)</SelectItem>
+              <SelectItem value="mid">Médio (40–70)</SelectItem>
+              <SelectItem value="low">Baixo (&lt;40)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={objectionFilter} onValueChange={setObjectionFilter}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Objeção" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas chamadas</SelectItem>
+              <SelectItem value="with">Com objeção</SelectItem>
+              <SelectItem value="overcome">Contornada</SelectItem>
+              <SelectItem value="not_overcome">Não contornada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+      {/* 8 KPIs */}
       <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-4" glowColor="59, 130, 246">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Total de Chamadas</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total de Chamadas</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{calls?.length || 0}</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              {stats.totalDelta !== null && (
+                <div className={`text-xs flex items-center gap-1 ${stats.totalDelta >= 0 ? "text-green-500" : "text-red-500"}`}>
+                  {stats.totalDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {stats.totalDelta > 0 ? "+" : ""}{stats.totalDelta}% vs período anterior
+                </div>
+              )}
             </CardContent>
           </Card>
         </MagicBentoCard>
+
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Duração Média</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Score Médio</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgDuration}s</div>
+              <div className={`text-2xl font-bold ${scoreColor(stats.avgScore)}`}>{stats.avgScore || "—"}</div>
+              <div className="text-xs text-muted-foreground">{stats.analyzedCount} analisadas</div>
             </CardContent>
           </Card>
         </MagicBentoCard>
+
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Transcritas</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{transcribedCount}</div>
+              <div className="text-2xl font-bold">{stats.pctPositive}%</div>
+              <div className="text-xs text-muted-foreground">{stats.sentimentCounts.Positivo} chamadas positivas</div>
             </CardContent>
           </Card>
         </MagicBentoCard>
+
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Analisadas pela IA</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Duração Média</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {calls?.filter((c) => c.ai_analysis_status === "completed").length || 0}
+              <div className="text-2xl font-bold">{stats.avgDuration}s</div>
+              <div className="text-xs text-muted-foreground">≈ {Math.round(stats.avgDuration / 60)}min</div>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-orange-500" />Com Objeção</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pctObjection}%</div>
+              <Progress value={stats.pctObjection} className="h-1 mt-1" />
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-3 w-3 text-green-500" />Contornadas</CardTitle></CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${scoreColor(stats.pctOvercome)}`}>{stats.pctOvercome}%</div>
+              <Progress value={stats.pctOvercome} className="h-1 mt-1" />
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Compliance Médio</CardTitle></CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${scoreColor(stats.avgCompliance ?? undefined)}`}>
+                {stats.avgCompliance ?? "—"}
               </div>
+              <div className="text-xs text-muted-foreground">aderência ao playbook</div>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Sparkles className="h-3 w-3 text-purple-500" />Usou Oferta</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pctOffer}%</div>
+              <div className="text-xs text-muted-foreground">{stats.pctAnchoring}% com ancoragem</div>
             </CardContent>
           </Card>
         </MagicBentoCard>
       </MagicBentoGrid>
 
-      <MagicBentoCard glowColor="59, 130, 246">
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle>Volume de Chamadas por Dia</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </MagicBentoCard>
+      {/* Visão Geral: 3 charts */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader><CardTitle>Distribuição de Sentimentos</CardTitle></CardHeader>
+            <CardContent className="h-[280px]">
+              {sentimentChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={sentimentChartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                      {sentimentChartData.map((entry, i) => (
+                        <Cell key={i} fill={SENTIMENT_COLORS[entry.name]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Sem dados</div>
+              )}
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
 
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader><CardTitle>Distribuição de Scores</CardTitle></CardHeader>
+            <CardContent className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={scoreHistogram}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="range" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {scoreHistogram.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader><CardTitle>Volume & Score por Dia</CardTitle></CardHeader>
+            <CardContent className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="volume" name="Volume" stroke="#3b82f6" strokeWidth={2} />
+                  <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Score médio" stroke="#22c55e" strokeWidth={2} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+      </div>
+
+      {/* Objeções */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Categorias de Objeção</CardTitle>
+              <p className="text-xs text-muted-foreground">% de contorno por tipo — identifique onde o time precisa treinar</p>
+            </CardHeader>
+            <CardContent className="h-[320px]">
+              {objectionStats.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={objectionStats} layout="vertical" margin={{ left: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="category" type="category" width={100} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="overcome" name="Contornada" stackId="a" fill="#22c55e" />
+                    <Bar dataKey="notOvercome" name="Não contornada" stackId="a" fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Nenhuma objeção identificada no período</div>
+              )}
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="239, 68, 68">
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-500" />Top 5: Objeções Não Contornadas</CardTitle>
+              <p className="text-xs text-muted-foreground">Casos para revisar com o time</p>
+            </CardHeader>
+            <CardContent>
+              {topUnhandledObjections.length > 0 ? (
+                <div className="space-y-2">
+                  {topUnhandledObjections.map((c: any) => (
+                    <button
+                      key={c.call_id}
+                      onClick={() => { setSelectedCall(c); setShowAnalysis(true); }}
+                      className="w-full text-left p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString("pt-BR")}</span>
+                        <Badge variant="destructive" className="text-xs">Score {c.ai_call_analysis?.quality_score ?? "—"}</Badge>
+                      </div>
+                      <p className="text-xs line-clamp-2">{c.ai_call_analysis?.objection_detail || "Sem detalhe"}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground text-sm py-8">Nenhuma objeção não-contornada 🎉</div>
+              )}
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+      </div>
+
+      {/* Tags */}
+      {topTags.length > 0 && (
+        <MagicBentoCard glowColor="139, 92, 246">
+          <Card className="bg-card border-border">
+            <CardHeader><CardTitle>Tags Mais Frequentes</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {topTags.map(([tag, count]) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    {tag} <span className="ml-1 opacity-60">×{count}</span>
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+      )}
+
+      {/* Tabela */}
       <MagicBentoCard glowColor="59, 130, 246">
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle>Lista de Chamadas</CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle>Lista de Chamadas <span className="text-sm font-normal text-muted-foreground">({filteredCalls.length})</span></CardTitle>
+              <div className="relative w-[280px]">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por número, resumo, tag…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-4">Carregando...</div>
-            ) : calls && calls.length > 0 ? (
+            ) : filteredCalls.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tipo</TableHead>
                       <TableHead>De / Para</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Sent.</TableHead>
                       <TableHead>Duração</TableHead>
                       <TableHead>Transcrição</TableHead>
-                      <TableHead>Análise IA</TableHead>
+                      <TableHead>Análise</TableHead>
                       <TableHead>Score</TableHead>
+                      <TableHead>Objeção</TableHead>
                       <TableHead>Data</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {calls.map((call) => {
-                      const c = call as any;
+                    {filteredCalls.map((call: any) => {
+                      const a = call.ai_call_analysis || {};
                       return (
                         <TableRow key={call.call_id}>
                           <TableCell>
@@ -173,48 +632,47 @@ export default function Calls() {
                             </div>
                           </TableCell>
                           <TableCell className="text-xs">
-                            {c.from_number ? (
+                            {call.from_number ? (
                               <div className="space-y-0.5">
-                                <div className="flex items-center gap-1"><PhoneOutgoing className="h-3 w-3" />{c.from_number}</div>
-                                <div className="flex items-center gap-1"><PhoneIncoming className="h-3 w-3" />{c.to_number || "N/A"}</div>
+                                <div className="flex items-center gap-1"><PhoneOutgoing className="h-3 w-3" />{call.from_number}</div>
+                                <div className="flex items-center gap-1"><PhoneIncoming className="h-3 w-3" />{call.to_number || "N/A"}</div>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">N/A</span>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <Badge variant={c.call_status === "completed" ? "success" : "secondary"}>
-                              {c.call_status || call.call_tag || "N/A"}
-                            </Badge>
-                          </TableCell>
+                          <TableCell>{sentimentIcon(a.sentiment)}</TableCell>
                           <TableCell>{call.call_duration || 0}s</TableCell>
-                          <TableCell>{getTranscriptionBadge(c.transcription_status)}</TableCell>
+                          <TableCell>{getTranscriptionBadge(call.transcription_status)}</TableCell>
                           <TableCell>
                             <Badge variant={call.ai_analysis_status === "completed" ? "success" : "secondary"}>
                               {call.ai_analysis_status || "pending"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{call.lead_score || "N/A"}</TableCell>
-                          <TableCell>{new Date(call.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell>
+                            <span className={`font-semibold ${scoreColor(a.quality_score)}`}>
+                              {a.quality_score ?? "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {a.has_objection ? (
+                              a.objection_overcome
+                                ? <Badge variant="success" className="text-xs">Contornada</Badge>
+                                : <Badge variant="destructive" className="text-xs">Não contornada</Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs">{new Date(call.created_at).toLocaleDateString("pt-BR")}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              {c.transcription_text && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => { setSelectedCall(c); setShowTranscription(true); }}
-                                  title="Ver Transcrição"
-                                >
+                              {call.transcription_text && (
+                                <Button variant="ghost" size="sm" onClick={() => { setSelectedCall(call); setShowTranscription(true); }} title="Ver Transcrição">
                                   <FileText className="h-4 w-4" />
                                 </Button>
                               )}
-                              {c.ai_call_analysis && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => { setSelectedCall(c); setShowAnalysis(true); }}
-                                  title="Ver Análise IA"
-                                >
+                              {call.ai_call_analysis && (
+                                <Button variant="ghost" size="sm" onClick={() => { setSelectedCall(call); setShowAnalysis(true); }} title="Ver Análise IA">
                                   <Brain className="h-4 w-4" />
                                 </Button>
                               )}
@@ -227,9 +685,7 @@ export default function Calls() {
                 </Table>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma chamada encontrada
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Nenhuma chamada encontrada com os filtros atuais</div>
             )}
           </CardContent>
         </Card>
@@ -239,10 +695,7 @@ export default function Calls() {
       <Dialog open={showTranscription} onOpenChange={setShowTranscription}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Transcrição da Chamada
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Transcrição da Chamada</DialogTitle>
             <DialogDescription>
               {selectedCall?.from_number && `${selectedCall.from_number} → ${selectedCall.to_number}`}
               {selectedCall?.call_duration && ` • ${selectedCall.call_duration}s`}
@@ -260,10 +713,7 @@ export default function Calls() {
       <Dialog open={showAnalysis} onOpenChange={setShowAnalysis}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Análise de IA da Chamada
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Brain className="h-5 w-5 text-primary" />Análise de IA da Chamada</DialogTitle>
             <DialogDescription>Resultado da análise automatizada</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-auto space-y-4">
@@ -272,9 +722,9 @@ export default function Calls() {
               return (
                 <>
                   <div className="grid grid-cols-3 gap-3">
-                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Qualidade</p><p className="text-2xl font-bold">{a.quality_score || "N/A"}</p></CardContent></Card>
-                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Sentimento</p><p className="text-lg font-semibold">{a.sentiment || "N/A"}</p></CardContent></Card>
-                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Compliance</p><p className="text-2xl font-bold">{a.compliance_score ?? "N/A"}</p></CardContent></Card>
+                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Qualidade</p><p className={`text-2xl font-bold ${scoreColor(a.quality_score)}`}>{a.quality_score || "N/A"}</p></CardContent></Card>
+                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Sentimento</p><p className="text-lg font-semibold flex items-center justify-center gap-2">{sentimentIcon(a.sentiment)}{a.sentiment || "N/A"}</p></CardContent></Card>
+                    <Card><CardContent className="pt-4 text-center"><p className="text-xs text-muted-foreground">Compliance</p><p className={`text-2xl font-bold ${scoreColor(a.compliance_score)}`}>{a.compliance_score ?? "N/A"}</p></CardContent></Card>
                   </div>
                   {a.executive_summary && (
                     <div><h4 className="font-semibold mb-1">Resumo</h4><p className="text-sm text-muted-foreground">{a.executive_summary}</p></div>
