@@ -8,41 +8,52 @@ import type {
   MetaAction,
 } from "@/types/meta-ads";
 
-const META_API_BASE = "https://graph.facebook.com/v21.0";
+// All Meta Ads calls now go through the `meta-ads` Supabase edge function,
+// which holds the access token as a server-side secret. This prevents the
+// Meta API token from leaking into the client bundle.
 
-// Credentials fixed via environment variables — never lost on cache clear
-export function getMetaCredentials() {
-  return {
-    accessToken: import.meta.env.VITE_META_ADS_TOKEN || "",
-    adAccountId: import.meta.env.VITE_META_ADS_ACCOUNT_ID || "",
+type MetaAdsAction =
+  | "test"
+  | "account_insights"
+  | "daily_insights"
+  | "ad_insights"
+  | "campaign_insights";
+
+interface MetaAdsRequestBody {
+  action: MetaAdsAction;
+  params?: {
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
   };
 }
 
+async function invokeMetaAds<T = any>(body: MetaAdsRequestBody): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("meta-ads", { body });
+  if (error) {
+    throw new Error(error.message || "meta-ads function call failed");
+  }
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String(data.error));
+  }
+  return data as T;
+}
+
+// Always enabled — the edge function decides whether credentials are present.
 export function hasMetaCredentials(): boolean {
-  const { accessToken, adAccountId } = getMetaCredentials();
-  return Boolean(accessToken && adAccountId);
+  return true;
+}
+
+// Kept for backward compatibility with any consumer that still reads it.
+// The actual token lives in the edge function secrets.
+export function getMetaCredentials() {
+  return { accessToken: "", adAccountId: "" };
 }
 
 function getActionValue(actions: MetaAction[] | undefined, actionType: string): number {
   if (!actions) return 0;
   const action = actions.find((a) => a.action_type === actionType);
   return action ? parseFloat(action.value) : 0;
-}
-
-async function fetchMeta(endpoint: string): Promise<any> {
-  const { accessToken } = getMetaCredentials();
-  const separator = endpoint.includes("?") ? "&" : "?";
-  const url = `${META_API_BASE}${endpoint}${separator}access_token=${accessToken}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if (data.error) {
-    throw new Error(data.error.message || "Meta API error");
-  }
-  return data;
-}
-
-function buildTimeRange(dateFrom: string, dateTo: string): string {
-  return `time_range={"since":"${dateFrom}","until":"${dateTo}"}`;
 }
 
 function parseInsightToKPIs(row: any): MetaAdsKPIs {
@@ -69,18 +80,14 @@ function parseInsightToKPIs(row: any): MetaAdsKPIs {
 }
 
 export function useMetaAdsKPIs(dateFrom: string, dateTo: string) {
-  const { adAccountId } = getMetaCredentials();
-  const accountPath = `act_${adAccountId}`;
-  const fields = "impressions,clicks,reach,spend,cpm,cpc,ctr,frequency,actions,action_values,cost_per_action_type";
-
   return useQuery<MetaAdsKPIs>({
     queryKey: ["meta-ads-kpis", dateFrom, dateTo],
     queryFn: async () => {
-      const timeRange = buildTimeRange(dateFrom, dateTo);
-      const data = await fetchMeta(
-        `/${accountPath}/insights?fields=${fields}&${timeRange}`
-      );
-      if (!data.data || data.data.length === 0) {
+      const data = await invokeMetaAds({
+        action: "account_insights",
+        params: { date_from: dateFrom, date_to: dateTo },
+      });
+      if (!data?.data || data.data.length === 0) {
         return {
           impressions: 0, clicks: 0, reach: 0, spend: 0, cpm: 0, cpc: 0,
           ctr: 0, cpl: 0, frequency: 0, purchases: 0, costPerPurchase: 0, roas: 0, leads: 0,
@@ -88,25 +95,19 @@ export function useMetaAdsKPIs(dateFrom: string, dateTo: string) {
       }
       return parseInsightToKPIs(data.data[0]);
     },
-    enabled: hasMetaCredentials(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useMetaAdsDailyInsights(dateFrom: string, dateTo: string) {
-  const { adAccountId } = getMetaCredentials();
-  const accountPath = `act_${adAccountId}`;
-  const fields = "impressions,clicks,reach,spend,actions";
-
   return useQuery<MetaAdsDailyData[]>({
     queryKey: ["meta-ads-daily", dateFrom, dateTo],
     queryFn: async () => {
-      const timeRange = buildTimeRange(dateFrom, dateTo);
-      const data = await fetchMeta(
-        `/${accountPath}/insights?fields=${fields}&${timeRange}&time_increment=1`
-      );
-      if (!data.data) return [];
-
+      const data = await invokeMetaAds({
+        action: "daily_insights",
+        params: { date_from: dateFrom, date_to: dateTo },
+      });
+      if (!data?.data) return [];
       return data.data.map((row: any) => ({
         date: row.date_start,
         impressions: parseInt(row.impressions || "0"),
@@ -117,26 +118,20 @@ export function useMetaAdsDailyInsights(dateFrom: string, dateTo: string) {
         leads: getActionValue(row.actions, "lead"),
       }));
     },
-    enabled: hasMetaCredentials(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useMetaAdsBestCreatives(dateFrom: string, dateTo: string, limit = 5) {
-  const { adAccountId } = getMetaCredentials();
-  const accountPath = `act_${adAccountId}`;
-  const fields = "ad_id,ad_name,impressions,clicks,ctr,spend,cpc,actions,cost_per_action_type";
-
   return useQuery<MetaAdCreative[]>({
     queryKey: ["meta-ads-creatives", dateFrom, dateTo, limit],
     queryFn: async () => {
-      const timeRange = buildTimeRange(dateFrom, dateTo);
-      const data = await fetchMeta(
-        `/${accountPath}/insights?fields=${fields}&level=ad&${timeRange}&sort=impressions_descending&limit=${limit}`
-      );
-      if (!data.data) return [];
-
-      const creatives: MetaAdCreative[] = data.data.map((row: any) => {
+      const data = await invokeMetaAds({
+        action: "ad_insights",
+        params: { date_from: dateFrom, date_to: dateTo, limit },
+      });
+      if (!data?.data) return [];
+      return data.data.map((row: any) => {
         const purchases = getActionValue(row.actions, "purchase");
         const spend = parseFloat(row.spend || "0");
         return {
@@ -149,46 +144,25 @@ export function useMetaAdsBestCreatives(dateFrom: string, dateTo: string, limit 
           purchases,
           costPerPurchase: purchases > 0 ? spend / purchases : 0,
           cpc: parseFloat(row.cpc || "0"),
+          thumbnail_url: row.creative_thumbnail_url,
+          title: row.creative_title,
+          body: row.creative_body,
         };
       });
-
-      // Try to fetch thumbnails for top creatives
-      for (const creative of creatives.slice(0, 3)) {
-        try {
-          const adData = await fetchMeta(
-            `/${creative.ad_id}?fields=creative{thumbnail_url,title,body}`
-          );
-          if (adData.creative) {
-            creative.thumbnail_url = adData.creative.thumbnail_url;
-            creative.title = adData.creative.title;
-            creative.body = adData.creative.body;
-          }
-        } catch {
-          // ignore thumbnail fetch errors
-        }
-      }
-
-      return creatives;
     },
-    enabled: hasMetaCredentials(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useMetaAdsCampaigns(dateFrom: string, dateTo: string) {
-  const { adAccountId } = getMetaCredentials();
-  const accountPath = `act_${adAccountId}`;
-  const fields = "campaign_id,campaign_name,impressions,clicks,reach,spend,cpm,cpc,ctr,frequency,actions,action_values,cost_per_action_type";
-
   return useQuery<MetaCampaignRow[]>({
     queryKey: ["meta-ads-campaigns", dateFrom, dateTo],
     queryFn: async () => {
-      const timeRange = buildTimeRange(dateFrom, dateTo);
-      const data = await fetchMeta(
-        `/${accountPath}/insights?fields=${fields}&level=campaign&${timeRange}&sort=spend_descending&limit=50`
-      );
-      if (!data.data) return [];
-
+      const data = await invokeMetaAds({
+        action: "campaign_insights",
+        params: { date_from: dateFrom, date_to: dateTo },
+      });
+      if (!data?.data) return [];
       return data.data.map((row: any) => {
         const purchases = getActionValue(row.actions, "purchase");
         const leads = getActionValue(row.actions, "lead");
@@ -212,7 +186,6 @@ export function useMetaAdsCampaigns(dateFrom: string, dateTo: string) {
         };
       });
     },
-    enabled: hasMetaCredentials(),
     staleTime: 5 * 60 * 1000,
   });
 }
