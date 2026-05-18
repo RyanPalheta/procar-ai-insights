@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .env
 .env.local
+
+# n8n migration artifacts (contain API keys)
+n8n-backups/
+migrate-n8n-urls.cjs
+retrigger-calls.ps1
