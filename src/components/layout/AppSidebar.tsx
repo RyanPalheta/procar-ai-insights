@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Phone, Settings, FileText, Monitor, LogOut, UserCog, UserCheck, Megaphone, BarChart3, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Phone, Settings, FileText, Monitor, LogOut, UserCog, UserCheck, Megaphone, BarChart3, Zap, Radio } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +42,7 @@ const navigationSections = [
   {
     label: "ANÁLISES",
     items: [
+      { title: "Canais", url: "/canais", icon: Radio },
       { title: "Chamadas", url: "/calls", icon: Phone },
       { title: "Meta Ads", url: "/meta-ads", icon: Megaphone },
       { title: "Google Ads", url: "/google-ads", icon: BarChart3 },

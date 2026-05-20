@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Today from "./pages/Today";
+import Channels from "./pages/Channels";
 import Leads from "./pages/Leads";
 import LeadDetails from "./pages/LeadDetails";
 import Calls from "./pages/Calls";
@@ -49,6 +50,16 @@ const App = () => (
                 <ProtectedRoute requiredRole="admin">
                   <AppLayout>
                     <Today />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/canais"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AppLayout>
+                    <Channels />
                   </AppLayout>
                 </ProtectedRoute>
               }
