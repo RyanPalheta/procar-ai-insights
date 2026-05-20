@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import Today from "./pages/Today";
 import Leads from "./pages/Leads";
 import LeadDetails from "./pages/LeadDetails";
 import Calls from "./pages/Calls";
@@ -38,6 +39,16 @@ const App = () => (
                 <ProtectedRoute requiredRole="admin">
                   <AppLayout>
                     <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hoje"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AppLayout>
+                    <Today />
                   </AppLayout>
                 </ProtectedRoute>
               }
