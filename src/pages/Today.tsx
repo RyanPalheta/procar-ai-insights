@@ -23,12 +23,13 @@ const HOT_LEAD_SCORE_THRESHOLD = 70;
 
 interface LeadRow {
   session_id: number;
-  lead_name: string | null;
   channel: string | null;
   sales_status: string | null;
   sentiment: string | null;
   lead_score: number | null;
   lead_temperature: string | null;
+  need_summary: string | null;
+  service_desired: string | null;
   created_at: string;
   last_interaction_at: string | null;
   last_ai_update: string | null;
@@ -126,19 +127,23 @@ export default function Today() {
   const yesterdayEnd = useMemo(() => endOfDay(subDays(now, 1)), [now]);
 
   // --- Leads criados hoje + ontem ---
-  const { data: leadsToday = [], isLoading: loadingLeads } = useQuery<LeadRow[]>({
+  const { data: leadsToday = [], isLoading: loadingLeads, error: leadsError } = useQuery<LeadRow[]>({
     queryKey: ["today-leads", format(todayStart, "yyyy-MM-dd")],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lead_db")
-        .select("session_id, lead_name, channel, sales_status, sentiment, lead_score, lead_temperature, created_at, last_interaction_at, last_ai_update")
+        .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, need_summary, service_desired, created_at, last_interaction_at, last_ai_update")
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString())
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("[Today] leadsToday query error:", error);
+        throw error;
+      }
       return (data as LeadRow[]) || [];
     },
     refetchInterval: REFRESH_INTERVAL_MS,
+    retry: 1, // Fail fast — better to show 0 than infinite "—"
   });
 
   const { data: leadsYesterday = [] } = useQuery<{ session_id: number; sales_status: string | null }[]>({
@@ -246,16 +251,22 @@ export default function Today() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lead_db")
-        .select("session_id, lead_name, channel, sales_status, sentiment, lead_score, lead_temperature, created_at, last_interaction_at, last_ai_update")
+        .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, need_summary, service_desired, created_at, last_interaction_at, last_ai_update")
         .gte("lead_score", HOT_LEAD_SCORE_THRESHOLD)
-        .not("sales_status", "ilike", "%ganha%")
-        .not("sales_status", "ilike", "%perdida%")
         .order("lead_score", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return (data as LeadRow[]) || [];
+        .limit(100);
+      if (error) {
+        console.error("[Today] hot leads query error:", error);
+        throw error;
+      }
+      // Filter closed statuses client-side (avoids fragile Supabase NOT-ILIKE chains)
+      return ((data as LeadRow[]) || []).filter((l) => {
+        const s = (l.sales_status || "").toLowerCase();
+        return !s.includes("ganha") && !s.includes("perdida") && !s.includes("descartada");
+      });
     },
     refetchInterval: REFRESH_INTERVAL_MS,
+    retry: 1,
   });
 
   const needsAttention = useMemo(() => {
@@ -542,7 +553,7 @@ export default function Today() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate">
-                            {l.lead_name || "Sem nome"}
+                            {l.service_desired || l.need_summary || `Lead #${l.session_id}`}
                           </span>
                           <Badge variant="secondary" className="text-[10px]">
                             {normalizeChannel(l.channel)}
