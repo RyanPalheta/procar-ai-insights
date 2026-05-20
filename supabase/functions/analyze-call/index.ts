@@ -8,6 +8,27 @@ const corsHeaders = {
 const AI_GATEWAY = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const AI_MODEL = 'gemini-2.5-flash';
 
+// Company phone for direction detection. Stored numbers appear in both formats:
+// "17816053526" (US E.164 with leading 1) and "7816053526" (without).
+const COMPANY_PHONE = '17816053526';
+
+function normalizePhoneDigits(num: string | null | undefined): string {
+  if (!num) return '';
+  const d = String(num).replace(/\D/g, '');
+  return d.length === 11 && d.startsWith('1') ? d.slice(1) : d;
+}
+
+type CallDirection = 'active' | 'passive' | 'unknown';
+
+function getCallDirection(from: string | null, to: string | null): CallDirection {
+  const company = normalizePhoneDigits(COMPANY_PHONE);
+  const fromN = normalizePhoneDigits(from);
+  const toN = normalizePhoneDigits(to);
+  if (fromN && fromN === company) return 'active';
+  if (toN && toN === company) return 'passive';
+  return 'unknown';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,11 +83,49 @@ Deno.serve(async (req) => {
       playbookText = `\n\nPLAYBOOK DE VENDAS (${playbooks.title}):\n${playbooks.content}`;
     }
 
-    const systemPrompt = `Você é um analista de qualidade de chamadas telefônicas de vendas.
-Analise a transcrição da chamada e avalie a qualidade do atendimento.
+    // Determine call direction (active = seller called out, passive = customer called in)
+    const direction = getCallDirection(call.from_number, call.to_number);
+    console.log(`[analyze-call] Direction detected: ${direction} (from=${call.from_number} to=${call.to_number})`);
+
+    const directionContext = direction === 'active'
+      ? `📞 TIPO DE CHAMADA: ATIVA (OUTBOUND)
+O vendedor da empresa LIGOU para o cliente. Isso muda os critérios de avaliação:
+
+CRITÉRIOS ESPECÍFICOS DE CHAMADA ATIVA:
+- Abertura forte é CRÍTICA (apresentação clara: nome do vendedor + empresa + motivo da ligação em ~10s)
+- Pedir permissão para falar é ESPERADO ("Tem um minuto?" / "É um bom momento?")
+- Cliente NÃO está esperando a ligação → tom não pode ser invasivo
+- Hook nos primeiros 30 segundos é essencial (motivo relevante pro cliente)
+- Qualificação rápida sem ser pushy
+- Próximo passo concreto ao final (agendar, enviar proposta, retornar)
+- AJUSTE NO SCORING: penalizar abertura fraca, premiar quem conseguiu segurar atenção
+- Objeção mais comum esperada: "não tenho interesse / não tenho tempo agora" — avaliar como vendedor lidou`
+      : direction === 'passive'
+      ? `📞 TIPO DE CHAMADA: PASSIVA (INBOUND)
+O CLIENTE ligou para a empresa. Ele já tem interesse — o vendedor NÃO precisa "vender" pra atenção, precisa SERVIR e FECHAR.
+
+CRITÉRIOS ESPECÍFICOS DE CHAMADA PASSIVA:
+- Atendimento cordial e rápido (não fazer cliente esperar/repetir)
+- Identificar necessidade do cliente nos primeiros minutos
+- Responder dúvidas com clareza e segurança técnica
+- Cliente já está QUENTE → tentar FECHAR é esperado (agendar visita, fazer cotação, marcar instalação)
+- Coletar dados de contato (nome, telefone, veículo)
+- Criar urgência apropriada (estoque limitado, promoção, agenda)
+- AJUSTE NO SCORING: premiar quem tentou fechar, penalizar quem só "informou" sem tentar avançar
+- Falta de tentativa de fechamento numa chamada passiva é GRAVE
+- Objeções esperadas: técnicas, preço — não devem haver objeções de "não tenho interesse"`
+      : `📞 TIPO DE CHAMADA: NÃO IDENTIFICADO
+Não foi possível determinar a direção da chamada pelos números. Avalie com critérios universais de qualidade.`;
+
+    const systemPrompt = `Você é um analista de qualidade de chamadas telefônicas de vendas para a PROCAR (loja de som e segurança automotiva).
+
+IMPORTANTE: O TIPO DE CHAMADA (ativa vs passiva) muda completamente o que se espera do vendedor. Use os critérios específicos do tipo para avaliar.
+
 Responda usando a função 'analyze_call' com os campos solicitados.`;
 
     const userPrompt = `Analise esta transcrição de chamada telefônica de vendas:
+
+${directionContext}
 
 TRANSCRIÇÃO:
 ${call.transcription_text}
@@ -75,26 +134,32 @@ DADOS DA CHAMADA:
 - Duração: ${call.call_duration || 'N/A'}s
 - De: ${call.from_number || 'N/A'}
 - Para: ${call.to_number || 'N/A'}
+- Direção: ${direction}
 ${playbookText}
 
 Avalie:
 1. Sentimento geral do cliente
-2. Score de qualidade da chamada (0-100)
+2. Score de qualidade da chamada (0-100) — USE OS CRITÉRIOS DA DIREÇÃO acima
 3. Objeções identificadas
 4. Se as objeções foram contornadas
-5. Compliance com o playbook de vendas (se disponível)
-6. Resumo executivo da chamada (2-3 frases)
-7. Pontos de melhoria para o vendedor
-8. Oportunidades de venda identificadas
-9. Se o vendedor usou técnicas de ancoragem/oferta`;
+5. Compliance com o playbook (se disponível)
+6. Resumo executivo (2-3 frases)
+7. Pontos de melhoria — devem ser ESPECÍFICOS ao tipo da chamada
+8. Oportunidades de venda
+9. Técnicas de ancoragem/oferta
+10. CRÍTICOS DE DIREÇÃO:
+    - Qualidade da abertura (0-10): apresentação, hook, transição
+    - Pediu permissão para falar (só relevante em ATIVAS — em passivas marque false)
+    - Tentou fechar / avançar próximo passo (especialmente crítico em PASSIVAS)
+    - Quão bem o vendedor ADAPTOU sua abordagem ao tipo da chamada (0-10)`;
 
     const toolParameters = {
       type: 'object',
       properties: {
         sentiment: { type: 'string', enum: ['Positivo', 'Neutro', 'Negativo'] },
-        quality_score: { type: 'number', minimum: 0, maximum: 100, description: 'Score de qualidade geral da chamada' },
+        quality_score: { type: 'number', minimum: 0, maximum: 100, description: 'Score de qualidade geral da chamada, considerando os critérios da DIREÇÃO (ativa vs passiva)' },
         executive_summary: { type: 'string', description: 'Resumo executivo da chamada (2-3 frases)' },
-        improvement_points: { type: 'array', items: { type: 'string' }, description: 'Pontos de melhoria para o vendedor' },
+        improvement_points: { type: 'array', items: { type: 'string' }, description: 'Pontos de melhoria — específicos para o tipo da chamada' },
         has_objection: { type: 'boolean' },
         objection_detail: { type: 'string', nullable: true },
         objection_categories: {
@@ -110,8 +175,48 @@ Avalie:
         anchoring_detail: { type: 'string', nullable: true },
         sales_opportunities: { type: 'array', items: { type: 'string' }, description: 'Oportunidades de venda identificadas' },
         call_tags: { type: 'array', items: { type: 'string' }, description: '3-5 tags para categorizar a chamada' },
+
+        // ↓↓↓ NEW DIRECTION-AWARE METRICS ↓↓↓
+        call_direction: {
+          type: 'string',
+          enum: ['active', 'passive', 'unknown'],
+          description: 'Tipo da chamada — use o valor passado em "Direção" acima',
+        },
+        opening_quality: {
+          type: 'number',
+          minimum: 0,
+          maximum: 10,
+          description: 'Qualidade da abertura (0-10). Em ATIVA: apresentação + hook + motivo. Em PASSIVA: cordialidade + identificar necessidade rapidamente.',
+        },
+        permission_asked: {
+          type: 'boolean',
+          description: 'Vendedor pediu permissão pra falar/continuar? Só relevante em ATIVAS (em passivas marque false).',
+        },
+        close_attempt: {
+          type: 'boolean',
+          description: 'Vendedor tentou fechar ou avançar pro próximo passo? (agendar visita, marcar instalação, enviar cotação formal). CRÍTICO em PASSIVAS.',
+        },
+        close_attempt_detail: {
+          type: 'string',
+          nullable: true,
+          description: 'Que tipo de fechamento foi tentado, ou por que não houve tentativa.',
+        },
+        direction_appropriate_score: {
+          type: 'number',
+          minimum: 0,
+          maximum: 10,
+          description: 'Quão bem o vendedor adaptou abordagem/tom ao tipo da chamada (0-10). Ex: vendedor invasivo numa passiva = nota baixa; vendedor passivo numa ativa = nota baixa.',
+        },
+        urgency_created: {
+          type: 'boolean',
+          description: 'Vendedor criou urgência apropriada? (estoque limitado, promoção por tempo, agenda apertada)',
+        },
       },
-      required: ['sentiment', 'quality_score', 'executive_summary', 'improvement_points', 'has_objection', 'used_offer', 'used_anchoring', 'call_tags'],
+      required: [
+        'sentiment', 'quality_score', 'executive_summary', 'improvement_points',
+        'has_objection', 'used_offer', 'used_anchoring', 'call_tags',
+        'call_direction', 'opening_quality', 'close_attempt', 'direction_appropriate_score',
+      ],
     };
 
     console.log(`[analyze-call] Calling Gemini API...`);
@@ -204,6 +309,13 @@ Avalie:
       }
     }
 
+    // Ensure the AI's direction matches what we computed (AI may hallucinate).
+    // We always trust the server-side calculation as the source of truth.
+    if (analysis.call_direction !== direction) {
+      console.log(`[analyze-call] AI returned direction=${analysis.call_direction}, overriding with computed=${direction}`);
+      analysis.call_direction = direction;
+    }
+
     console.log(`[analyze-call] Analysis result:`, analysis);
 
     // Save analysis to call_db
@@ -276,6 +388,10 @@ Avalie:
         quality_score: analysis.quality_score,
         sentiment: analysis.sentiment,
         has_objection: analysis.has_objection,
+        call_direction: direction,
+        opening_quality: analysis.opening_quality,
+        close_attempt: analysis.close_attempt,
+        direction_appropriate_score: analysis.direction_appropriate_score,
         duration_ms: duration,
       },
       execution_time_ms: duration,

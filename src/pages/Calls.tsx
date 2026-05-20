@@ -220,6 +220,50 @@ export default function Calls() {
       ? Math.round(scoresPassive.reduce((a: number, b: number) => a + b, 0) / scoresPassive.length)
       : null;
 
+    /* direction-aware metrics from ai_call_analysis */
+    const analyzedActive = analyzed.filter((c: any) => getCallDirection(c) === "active");
+    const analyzedPassive = analyzed.filter((c: any) => getCallDirection(c) === "passive");
+
+    // Active calls with weak opening (< 5/10)
+    const activeWeakOpening = analyzedActive.filter((c: any) => {
+      const o = c.ai_call_analysis?.opening_quality;
+      return typeof o === "number" && o < 5;
+    }).length;
+
+    // Passive calls without close attempt
+    const passiveNoClose = analyzedPassive.filter((c: any) => {
+      const ca = c.ai_call_analysis?.close_attempt;
+      return ca === false;
+    }).length;
+
+    // Average opening quality
+    const openings = analyzed
+      .map((c: any) => c.ai_call_analysis?.opening_quality)
+      .filter((o: any) => typeof o === "number");
+    const avgOpening = openings.length
+      ? Math.round((openings.reduce((a: number, b: number) => a + b, 0) / openings.length) * 10) / 10
+      : null;
+
+    // Average direction_appropriate_score
+    const adaptScores = analyzed
+      .map((c: any) => c.ai_call_analysis?.direction_appropriate_score)
+      .filter((s: any) => typeof s === "number");
+    const avgAdaptScore = adaptScores.length
+      ? Math.round((adaptScores.reduce((a: number, b: number) => a + b, 0) / adaptScores.length) * 10) / 10
+      : null;
+
+    // Active: % that asked permission
+    const activeWithPermission = analyzedActive.filter((c: any) => c.ai_call_analysis?.permission_asked === true).length;
+    const pctActivePermission = analyzedActive.length
+      ? Math.round((activeWithPermission / analyzedActive.length) * 100)
+      : 0;
+
+    // % that attempted to close
+    const totalCloseAttempts = analyzed.filter((c: any) => c.ai_call_analysis?.close_attempt === true).length;
+    const pctCloseAttempt = analyzed.length
+      ? Math.round((totalCloseAttempts / analyzed.length) * 100)
+      : 0;
+
     return {
       total,
       analyzedCount,
@@ -240,6 +284,14 @@ export default function Calls() {
       pctPassive,
       avgScoreActive,
       avgScorePassive,
+      activeWeakOpening,
+      passiveNoClose,
+      avgOpening,
+      avgAdaptScore,
+      pctActivePermission,
+      pctCloseAttempt,
+      analyzedActiveCount: analyzedActive.length,
+      analyzedPassiveCount: analyzedPassive.length,
     };
   }, [filteredCalls, previousPeriodCalls]);
 
@@ -660,48 +712,102 @@ export default function Calls() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-              <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
-                <div className="flex items-center justify-between mb-3">
+              {/* ATIVAS */}
+              <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5 space-y-3">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <PhoneOutgoing className="h-5 w-5 text-blue-500" />
                     <span className="font-semibold">Ativas (saída)</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">{stats.activeCalls} chamadas</Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <div className="text-xs text-muted-foreground">Score médio</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Score</div>
                     <div className={`text-2xl font-bold ${scoreColor(stats.avgScoreActive ?? undefined)}`}>
                       {stats.avgScoreActive ?? "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground">% do total</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">% total</div>
                     <div className="text-2xl font-bold text-blue-500">{stats.pctActive}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Pediu permissão</div>
+                    <div className="text-2xl font-bold">{stats.pctActivePermission}%</div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-blue-500/10 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3 text-orange-500" />
+                      Abertura fraca (&lt;5/10)
+                    </span>
+                    <span className={`font-semibold ${stats.activeWeakOpening > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+                      {stats.activeWeakOpening} / {stats.analyzedActiveCount}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
-                <div className="flex items-center justify-between mb-3">
+              {/* PASSIVAS */}
+              <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 space-y-3">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <PhoneIncoming className="h-5 w-5 text-emerald-500" />
                     <span className="font-semibold">Passivas (entrada)</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">{stats.passiveCalls} chamadas</Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <div className="text-xs text-muted-foreground">Score médio</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Score</div>
                     <div className={`text-2xl font-bold ${scoreColor(stats.avgScorePassive ?? undefined)}`}>
                       {stats.avgScorePassive ?? "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground">% do total</div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">% total</div>
                     <div className="text-2xl font-bold text-emerald-500">{stats.pctPassive}%</div>
                   </div>
+                  <div>
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Tentou fechar</div>
+                    <div className="text-2xl font-bold">{stats.pctCloseAttempt}%</div>
+                  </div>
                 </div>
+                <div className="pt-2 border-t border-emerald-500/10 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3 text-red-500" />
+                      Sem tentativa de fechamento
+                    </span>
+                    <span className={`font-semibold ${stats.passiveNoClose > 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                      {stats.passiveNoClose} / {stats.analyzedPassiveCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cross-cutting metrics */}
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mt-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Abertura média (geral)</div>
+                <div className={`text-xl font-bold ${stats.avgOpening !== null && stats.avgOpening >= 7 ? "text-green-500" : stats.avgOpening !== null && stats.avgOpening >= 5 ? "text-yellow-500" : "text-red-500"}`}>
+                  {stats.avgOpening ?? "—"}<span className="text-sm text-muted-foreground">/10</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Adaptação à direção</div>
+                <div className={`text-xl font-bold ${stats.avgAdaptScore !== null && stats.avgAdaptScore >= 7 ? "text-green-500" : stats.avgAdaptScore !== null && stats.avgAdaptScore >= 5 ? "text-yellow-500" : "text-red-500"}`}>
+                  {stats.avgAdaptScore ?? "—"}<span className="text-sm text-muted-foreground">/10</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">vendedor ajustou tom ao tipo?</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Tentou fechar (qualquer)</div>
+                <div className="text-xl font-bold">{stats.pctCloseAttempt}%</div>
+                <div className="text-[10px] text-muted-foreground">% chamadas com tentativa</div>
               </div>
             </div>
           </CardContent>
