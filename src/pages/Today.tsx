@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { format, startOfDay, endOfDay, subDays, formatDistanceToNow, parseISO, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getCallDirection } from "@/lib/calls";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -200,6 +201,15 @@ export default function Today() {
     const totalCalls = callsToday.length;
     const totalLeadsYesterday = leadsYesterday.length;
 
+    // Call direction breakdown
+    let activeCalls = 0;
+    let passiveCalls = 0;
+    callsToday.forEach((c) => {
+      const dir = getCallDirection(c);
+      if (dir === "active") activeCalls++;
+      else if (dir === "passive") passiveCalls++;
+    });
+
     const closedToday = leadsToday.filter(
       (l) => l.sales_status?.toLowerCase().includes("ganha")
     ).length;
@@ -240,6 +250,7 @@ export default function Today() {
 
     return {
       totalLeads, totalLeadsYesterday, totalInteractions, totalCalls,
+      activeCalls, passiveCalls,
       closedToday, closedYesterday, avgScore,
       channelData, sentimentData, hourly,
     };
@@ -302,13 +313,17 @@ export default function Today() {
       });
     });
     callsToday.forEach((c) => {
+      const dir = getCallDirection(c);
+      const dirLabel = dir === "active" ? "ATIVA" : dir === "passive" ? "PASSIVA" : "—";
       items.push({
         key: `c-${c.call_id}`,
         time: parseISO(c.created_at),
         type: "call",
         session_id: c.session_id,
         channel: "Telefone",
-        message: `${c.from_number || "?"} → ${c.to_number || "?"} • ${c.call_duration || 0}s`,
+        // Encode direction into sender_type so the icon switches color
+        sender_type: dir === "active" ? "agent" : dir === "passive" ? "client" : null,
+        message: `${dirLabel} • ${c.from_number || "?"} → ${c.to_number || "?"} • ${c.call_duration || 0}s`,
       });
     });
 
@@ -369,6 +384,21 @@ export default function Today() {
           value={loadingCalls ? "—" : metrics.totalCalls}
           icon={Phone}
           glowColor="139, 92, 246"
+          footer={
+            loadingCalls ? null : (
+              <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1" title="Saída (vendedor ligou)">
+                  <PhoneOutgoing className="h-3 w-3 text-blue-500" />
+                  <span className="font-medium text-foreground">{metrics.activeCalls}</span> ativas
+                </span>
+                <span className="text-muted-foreground/40">•</span>
+                <span className="flex items-center gap-1" title="Entrada (cliente ligou)">
+                  <PhoneIncoming className="h-3 w-3 text-emerald-500" />
+                  <span className="font-medium text-foreground">{metrics.passiveCalls}</span> passivas
+                </span>
+              </span>
+            )
+          }
         />
         <KPICard
           title="Vendas"
@@ -421,12 +451,16 @@ export default function Today() {
                       onClick={() => item.session_id && navigate(`/leads/${item.session_id}`)}
                     >
                       <div className="mt-0.5">
-                        {item.type === "call" ? (
+                        {item.type === "call" && item.sender_type === "agent" ? (
+                          <PhoneOutgoing className="h-4 w-4 text-blue-500" title="Chamada ativa" />
+                        ) : item.type === "call" && item.sender_type === "client" ? (
+                          <PhoneIncoming className="h-4 w-4 text-emerald-500" title="Chamada passiva" />
+                        ) : item.type === "call" ? (
                           <Phone className="h-4 w-4 text-purple-500" />
                         ) : item.sender_type === "agent" ? (
-                          <PhoneOutgoing className="h-4 w-4 text-blue-500" />
+                          <MessageSquare className="h-4 w-4 text-blue-500" />
                         ) : (
-                          <PhoneIncoming className="h-4 w-4 text-emerald-500" />
+                          <MessageSquare className="h-4 w-4 text-emerald-500" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

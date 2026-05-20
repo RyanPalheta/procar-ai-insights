@@ -23,8 +23,9 @@ import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import {
   FileText, Brain, Phone, PhoneIncoming, PhoneOutgoing, TrendingUp, TrendingDown,
-  AlertTriangle, Smile, Frown, Meh, Target, Sparkles, Search,
+  AlertTriangle, Smile, Frown, Meh, Target, Sparkles, Search, ArrowRightLeft,
 } from "lucide-react";
+import { getCallDirection, type CallDirection } from "@/lib/calls";
 
 /* ----------------- helpers ----------------- */
 const SENTIMENT_COLORS: Record<string, string> = {
@@ -76,6 +77,7 @@ export default function Calls() {
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [scoreFilter, setScoreFilter] = useState<string>("all");
   const [objectionFilter, setObjectionFilter] = useState<string>("all");
+  const [directionFilter, setDirectionFilter] = useState<"all" | CallDirection>("all");
   const [search, setSearch] = useState("");
 
   const { data: calls, isLoading } = useQuery({
@@ -115,6 +117,7 @@ export default function Calls() {
       if (objectionFilter === "with" && !a.has_objection) return false;
       if (objectionFilter === "overcome" && !(a.has_objection && a.objection_overcome)) return false;
       if (objectionFilter === "not_overcome" && !(a.has_objection && a.objection_overcome === false)) return false;
+      if (directionFilter !== "all" && getCallDirection(call) !== directionFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         const hay = `${call.from_number || ""} ${call.to_number || ""} ${a.executive_summary || ""} ${(a.call_tags || []).join(" ")}`.toLowerCase();
@@ -122,7 +125,7 @@ export default function Calls() {
       }
       return true;
     });
-  }, [calls, periodDays, sentimentFilter, scoreFilter, objectionFilter, search]);
+  }, [calls, periodDays, sentimentFilter, scoreFilter, objectionFilter, directionFilter, search]);
 
   /* previous-period comparison (for delta) */
   const previousPeriodCalls = useMemo(() => {
@@ -187,6 +190,36 @@ export default function Calls() {
       ? Math.round(((total - previousPeriodCalls.length) / previousPeriodCalls.length) * 100)
       : null;
 
+    /* direction breakdown */
+    let activeCalls = 0;
+    let passiveCalls = 0;
+    let unknownDirCalls = 0;
+    filteredCalls.forEach((c: any) => {
+      const dir = getCallDirection(c);
+      if (dir === "active") activeCalls++;
+      else if (dir === "passive") passiveCalls++;
+      else unknownDirCalls++;
+    });
+    const pctActive = total ? Math.round((activeCalls / total) * 100) : 0;
+    const pctPassive = total ? Math.round((passiveCalls / total) * 100) : 0;
+
+    /* score avg per direction */
+    const scoresActive = analyzed
+      .filter((c: any) => getCallDirection(c) === "active")
+      .map((c: any) => c.ai_call_analysis?.quality_score)
+      .filter((s: any) => typeof s === "number");
+    const avgScoreActive = scoresActive.length
+      ? Math.round(scoresActive.reduce((a: number, b: number) => a + b, 0) / scoresActive.length)
+      : null;
+
+    const scoresPassive = analyzed
+      .filter((c: any) => getCallDirection(c) === "passive")
+      .map((c: any) => c.ai_call_analysis?.quality_score)
+      .filter((s: any) => typeof s === "number");
+    const avgScorePassive = scoresPassive.length
+      ? Math.round(scoresPassive.reduce((a: number, b: number) => a + b, 0) / scoresPassive.length)
+      : null;
+
     return {
       total,
       analyzedCount,
@@ -200,6 +233,13 @@ export default function Calls() {
       pctOffer,
       pctAnchoring,
       totalDelta,
+      activeCalls,
+      passiveCalls,
+      unknownDirCalls,
+      pctActive,
+      pctPassive,
+      avgScoreActive,
+      avgScorePassive,
     };
   }, [filteredCalls, previousPeriodCalls]);
 
@@ -346,11 +386,20 @@ export default function Calls() {
               <SelectItem value="not_overcome">Não contornada</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={directionFilter} onValueChange={(v) => setDirectionFilter(v as "all" | CallDirection)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Direção" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas direções</SelectItem>
+              <SelectItem value="active">🔵 Ativas (saída)</SelectItem>
+              <SelectItem value="passive">🟢 Passivas (entrada)</SelectItem>
+              <SelectItem value="unknown">— Não identificadas</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* 8 KPIs */}
-      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-4" glowColor="59, 130, 246">
+      {/* 9 KPIs */}
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5" glowColor="59, 130, 246">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total de Chamadas</CardTitle></CardHeader>
@@ -362,6 +411,38 @@ export default function Calls() {
                   {stats.totalDelta > 0 ? "+" : ""}{stats.totalDelta}% vs período anterior
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />Direção
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-3">
+                <div className="flex items-center gap-1.5" title="Ativas: vendedor ligou">
+                  <PhoneOutgoing className="h-4 w-4 text-blue-500" />
+                  <span className="text-xl font-bold text-blue-500">{stats.activeCalls}</span>
+                </div>
+                <span className="text-muted-foreground/40">/</span>
+                <div className="flex items-center gap-1.5" title="Passivas: cliente ligou">
+                  <PhoneIncoming className="h-4 w-4 text-emerald-500" />
+                  <span className="text-xl font-bold text-emerald-500">{stats.passiveCalls}</span>
+                </div>
+              </div>
+              <div className="flex h-1.5 mt-2 rounded-full overflow-hidden bg-muted">
+                <div className="bg-blue-500" style={{ width: `${stats.pctActive}%` }} />
+                <div className="bg-emerald-500" style={{ width: `${stats.pctPassive}%` }} />
+                <div className="bg-muted-foreground/30 flex-1" />
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {stats.pctActive}% ativas • {stats.pctPassive}% passivas
+                {stats.unknownDirCalls > 0 && ` • ${stats.unknownDirCalls} sem id`}
+              </div>
             </CardContent>
           </Card>
         </MagicBentoCard>
@@ -565,6 +646,68 @@ export default function Calls() {
         </MagicBentoCard>
       </div>
 
+      {/* Ativas vs Passivas — performance comparativa */}
+      <MagicBentoCard glowColor="14, 165, 233">
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-cyan-500" />
+              Ativas vs Passivas
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Auditoria de quem performa melhor — vendedor ligando ou recebendo
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <PhoneOutgoing className="h-5 w-5 text-blue-500" />
+                    <span className="font-semibold">Ativas (saída)</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">{stats.activeCalls} chamadas</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Score médio</div>
+                    <div className={`text-2xl font-bold ${scoreColor(stats.avgScoreActive ?? undefined)}`}>
+                      {stats.avgScoreActive ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">% do total</div>
+                    <div className="text-2xl font-bold text-blue-500">{stats.pctActive}%</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <PhoneIncoming className="h-5 w-5 text-emerald-500" />
+                    <span className="font-semibold">Passivas (entrada)</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">{stats.passiveCalls} chamadas</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Score médio</div>
+                    <div className={`text-2xl font-bold ${scoreColor(stats.avgScorePassive ?? undefined)}`}>
+                      {stats.avgScorePassive ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">% do total</div>
+                    <div className="text-2xl font-bold text-emerald-500">{stats.pctPassive}%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </MagicBentoCard>
+
       {/* Tags */}
       {topTags.length > 0 && (
         <MagicBentoCard glowColor="139, 92, 246">
@@ -608,7 +751,7 @@ export default function Calls() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tipo</TableHead>
+                      <TableHead>Direção</TableHead>
                       <TableHead>De / Para</TableHead>
                       <TableHead>Sent.</TableHead>
                       <TableHead>Duração</TableHead>
@@ -623,13 +766,23 @@ export default function Calls() {
                   <TableBody>
                     {filteredCalls.map((call: any) => {
                       const a = call.ai_call_analysis || {};
+                      const direction = getCallDirection(call);
                       return (
                         <TableRow key={call.call_id}>
                           <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-muted-foreground" />
-                              {call.type || "N/A"}
-                            </div>
+                            {direction === "active" ? (
+                              <Badge variant="outline" className="text-xs gap-1 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                <PhoneOutgoing className="h-3 w-3" />Ativa
+                              </Badge>
+                            ) : direction === "passive" ? (
+                              <Badge variant="outline" className="text-xs gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                                <PhoneIncoming className="h-3 w-3" />Passiva
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+                                <Phone className="h-3 w-3" />—
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-xs">
                             {call.from_number ? (
