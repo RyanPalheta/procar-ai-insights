@@ -417,7 +417,7 @@ export default function Today() {
           value={metrics.avgScore || "—"}
           icon={Gauge}
           glowColor="14, 165, 233"
-          footer={metrics.avgScore >= 70 ? "🔥 alta qualidade" : metrics.avgScore >= 40 ? "moderado" : "baixo"}
+          footer={metrics.avgScore >= 70 ? "alta qualidade" : metrics.avgScore >= 40 ? "moderado" : "baixo"}
         />
         <KPICard
           title="Atenção"
@@ -569,7 +569,7 @@ export default function Today() {
           <CardContent>
             {needsAttention.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-6">
-                ✅ Todos os leads quentes têm interação recente
+                Todos os leads quentes têm interação recente
               </p>
             ) : (
               <div className="space-y-1">

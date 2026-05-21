@@ -16,15 +16,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
   PieChart, Pie,
 } from "recharts";
-import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink } from "lucide-react";
+import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink, Instagram, Facebook, BarChart3 } from "lucide-react";
 import { subDays } from "date-fns";
 
 /* ----------------- helpers ----------------- */
-const CHANNEL_META: Record<string, { label: string; color: string; emoji: string }> = {
-  whatsapp: { label: "WhatsApp", color: "#25D366", emoji: "💬" },
-  facebook: { label: "Facebook", color: "#1877F2", emoji: "👍" },
-  instagram: { label: "Instagram", color: "#E4405F", emoji: "📷" },
-  phone: { label: "Telefone", color: "#8b5cf6", emoji: "📞" },
+import type { LucideIcon } from "lucide-react";
+const CHANNEL_META: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
+  whatsapp: { label: "WhatsApp", color: "#25D366", Icon: MessageSquare },
+  facebook: { label: "Facebook", color: "#1877F2", Icon: Facebook },
+  instagram: { label: "Instagram", color: "#E4405F", Icon: Instagram },
+  phone: { label: "Telefone", color: "#8b5cf6", Icon: Phone },
 };
 
 function normalizeChannelKey(raw: string | null): string | null {
@@ -259,11 +260,21 @@ export default function Channels() {
 
       <Tabs defaultValue="compare">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
-          <TabsTrigger value="compare">📊 Comparativo</TabsTrigger>
-          <TabsTrigger value="whatsapp">💬 WhatsApp</TabsTrigger>
-          <TabsTrigger value="instagram">📷 Instagram</TabsTrigger>
-          <TabsTrigger value="facebook">👍 Facebook</TabsTrigger>
-          <TabsTrigger value="phone">📞 Telefone</TabsTrigger>
+          <TabsTrigger value="compare" className="gap-2">
+            <BarChart3 className="h-4 w-4" />Comparativo
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-2">
+            <MessageSquare className="h-4 w-4" />WhatsApp
+          </TabsTrigger>
+          <TabsTrigger value="instagram" className="gap-2">
+            <Instagram className="h-4 w-4" />Instagram
+          </TabsTrigger>
+          <TabsTrigger value="facebook" className="gap-2">
+            <Facebook className="h-4 w-4" />Facebook
+          </TabsTrigger>
+          <TabsTrigger value="phone" className="gap-2">
+            <Phone className="h-4 w-4" />Telefone
+          </TabsTrigger>
         </TabsList>
 
         {/* ===== Comparativo ===== */}
@@ -274,12 +285,14 @@ export default function Channels() {
             <>
               {/* KPI row: one big card per channel */}
               <MagicBentoGrid className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" glowColor="59, 130, 246">
-                {comparativeData.map((c) => (
+                {comparativeData.map((c) => {
+                  const ChIcon = c.meta.Icon;
+                  return (
                   <MagicBentoCard key={c.channel} glowColor="59, 130, 246">
                     <Card className="bg-card border-border">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                          <span className="text-base">{c.meta.emoji}</span>
+                          <ChIcon className="h-4 w-4" style={{ color: c.meta.color }} />
                           {c.meta.label}
                         </CardTitle>
                       </CardHeader>
@@ -313,7 +326,8 @@ export default function Channels() {
                       </CardContent>
                     </Card>
                   </MagicBentoCard>
-                ))}
+                  );
+                })}
               </MagicBentoGrid>
 
               {/* Comparative bars */}

@@ -442,8 +442,8 @@ export default function Calls() {
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Direção" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas direções</SelectItem>
-              <SelectItem value="active">🔵 Ativas (saída)</SelectItem>
-              <SelectItem value="passive">🟢 Passivas (entrada)</SelectItem>
+              <SelectItem value="active">Ativas (saída)</SelectItem>
+              <SelectItem value="passive">Passivas (entrada)</SelectItem>
               <SelectItem value="unknown">— Não identificadas</SelectItem>
             </SelectContent>
           </Select>
@@ -691,7 +691,7 @@ export default function Calls() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-sm py-8">Nenhuma objeção não-contornada 🎉</div>
+                <div className="text-center text-muted-foreground text-sm py-8">Nenhuma objeção não-contornada</div>
               )}
             </CardContent>
           </Card>
