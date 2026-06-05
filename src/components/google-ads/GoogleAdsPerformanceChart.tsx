@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { MousePointerClick } from "lucide-react";
 import type { GoogleAdsDailyData } from "@/types/google-ads";
@@ -34,6 +35,11 @@ export function GoogleAdsPerformanceChart({ data }: GoogleAdsPerformanceChartPro
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <MousePointerClick className="h-4 w-4 text-yellow-500" />
             Cliques e Conversoes
+            <ChartInfoTooltip
+              description="Compara cliques e conversoes diarios do Google Ads; Eixo X = dia (dd/MM), barra amarela = cliques e barra verde = conversoes no mesmo dia."
+              source="Metricas reportadas pela API do Google Ads para o periodo selecionado. Nao passa pela Kommo."
+              calculation="Cada par de barras plota o total de cliques (clicks) e de conversoes (conversions) reportados pela API naquele dia, agrupados por data."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

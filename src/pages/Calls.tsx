@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import {
   FileText, Brain, Phone, PhoneIncoming, PhoneOutgoing, TrendingUp, TrendingDown,
   AlertTriangle, Smile, Frown, Meh, Target, Sparkles, Search, ArrowRightLeft,
@@ -566,7 +567,7 @@ export default function Calls() {
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle>Distribuição de Sentimentos</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Sentimentos <ChartInfoTooltip description="Mostra a divisão das chamadas analisadas entre os sentimentos Positivo, Neutro e Negativo." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com análise concluída e com o campo sentiment preenchido." calculation="Conta quantas chamadas há em cada sentimento (ai_call_analysis.sentiment) e mostra a fatia de cada um no total." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               {sentimentChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -589,7 +590,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle>Distribuição de Scores</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Scores <ChartInfoTooltip description="Eixo X = faixas de score de qualidade (0–20 até 80–100); barra = nº de chamadas em cada faixa." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com quality_score numérico preenchido." calculation="Cada chamada é alocada na faixa do seu quality_score (ai_call_analysis.quality_score) e conta-se quantas caem em cada faixa." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={scoreHistogram}>
@@ -610,7 +611,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle>Volume & Score por Dia</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Volume & Score por Dia <ChartInfoTooltip description="Eixo X = dias; linha azul = volume de chamadas no dia; linha verde = score médio do dia (escala 0–100)." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Agrupa todas as chamadas do período por dia de created_at; o score só usa chamadas com quality_score preenchido." calculation="Por dia: volume = nº de chamadas; score médio = média dos quality_score das chamadas analisadas daquele dia." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyData}>
@@ -634,7 +635,7 @@ export default function Calls() {
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border lg:col-span-2">
             <CardHeader>
-              <CardTitle>Categorias de Objeção</CardTitle>
+              <CardTitle className="flex items-center gap-2">Categorias de Objeção <ChartInfoTooltip description="Barras horizontais por tipo de objeção (preço, tempo, etc.), divididas entre objeções contornadas (verde) e não contornadas (vermelho)." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com has_objection e com objection_categories preenchido." calculation="Para cada categoria em ai_call_analysis.objection_categories, conta o total e quantas tiveram objection_overcome = true (contornadas); o restante é não contornadas." /></CardTitle>
               <p className="text-xs text-muted-foreground">% de contorno por tipo — identifique onde o time precisa treinar</p>
             </CardHeader>
             <CardContent className="h-[320px]">

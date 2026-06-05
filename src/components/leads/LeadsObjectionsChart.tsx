@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { BarList } from "@tremor/react";
 import { AlertTriangle } from "lucide-react";
 
@@ -24,6 +25,11 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               Ranking de Objeções
+              <ChartInfoTooltip
+                description="Ranqueia as categorias de objeção mais frequentes; cada barra = uma categoria, o valor = quantas vezes ela apareceu nos leads."
+                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com categorias de objeção detectadas pela IA (campo objection_categories preenchido), respeitando os filtros ativos."
+                calculation="Conta a ocorrência de cada categoria em objection_categories (um lead pode contar em várias categorias); a % é a participação da categoria sobre o total de ocorrências."
+              />
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center h-[300px]">
@@ -47,6 +53,11 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Ranking de Objeções
+            <ChartInfoTooltip
+              description="Ranqueia as categorias de objeção mais frequentes; cada barra = uma categoria, o valor = quantas vezes ela apareceu nos leads."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com categorias de objeção detectadas pela IA (campo objection_categories preenchido), respeitando os filtros ativos."
+              calculation="Conta a ocorrência de cada categoria em objection_categories (um lead pode contar em várias categorias); a % é a participação da categoria sobre o total de ocorrências."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

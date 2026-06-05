@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { DonutChart } from "@tremor/react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -36,7 +37,26 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-card border-border h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle>{mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {mode === "all" ? "Leads por Canal" : "Vendas Fechadas por Canal"}
+            <ChartInfoTooltip
+              description={
+                mode === "all"
+                  ? "Distribui o volume de leads por canal de origem (WhatsApp, Facebook, Instagram); cada fatia mostra a contagem e o % do total."
+                  : "Distribui apenas as vendas ganhas por canal de origem; cada fatia mostra a contagem de fechamentos e a taxa de conversão do canal."
+              }
+              source={
+                mode === "all"
+                  ? "Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera todos os leads do filtro, agrupando o campo channel (normalizado)."
+                  : "Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sales_status 'ganha' e channel diferente de 'N/A'."
+              }
+              calculation={
+                mode === "all"
+                  ? "Conta os leads por canal (channel normalizado) e calcula a fatia como contagem do canal ÷ total de leads × 100."
+                  : "Para cada canal: vendas ganhas no canal como valor; conversão = ganhas do canal ÷ total de leads do canal × 100."
+              }
+            />
+          </CardTitle>
           <ToggleGroup
             type="single"
             value={mode}

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -825,6 +826,11 @@ export default function Dashboard() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 Taxa de Objeções Contornadas
+                <ChartInfoTooltip
+                  description="Mostra quantas objeções dos leads foram contornadas pelo agente, confrontando contornadas x não contornadas sobre o total de leads com objeção."
+                  source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com objeção registrada (has_objection = true)."
+                  calculation="Taxa = leads com objection_overcome = true ÷ total de leads com objeção × 100."
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -873,6 +879,11 @@ export default function Dashboard() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
                 Uso de Estratégias de Venda
+                <ChartInfoTooltip
+                  description="Mostra com que frequência o agente usou ofertas/promoções e ancoragem de preço, confrontando os leads em que cada estratégia foi usada x não usada."
+                  source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com mensagens do agente analisadas (used_offer ou used_anchoring preenchidos)."
+                  calculation="Ofertas = leads com used_offer = true ÷ total analisado × 100; Ancoragem = leads com used_anchoring = true ÷ total analisado × 100."
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>

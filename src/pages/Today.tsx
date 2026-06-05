@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { DonutChart } from "@tremor/react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import {
@@ -489,7 +490,7 @@ export default function Today() {
         <div className="space-y-4">
           <MagicBentoCard glowColor="16, 185, 129">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Canais de hoje</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Canais de hoje <ChartInfoTooltip description="Distribui os leads criados hoje por canal de origem (WhatsApp, Instagram, Facebook, Telefone) para mostrar de onde vêm os contatos do dia." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads criados hoje (created_at entre o início e o fim do dia)." calculation="Conta quantos leads de hoje há em cada canal normalizado e exibe cada fatia da rosca como esse total." /></CardTitle></CardHeader>
               <CardContent>
                 {metrics.channelData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem dados</p>
@@ -509,7 +510,7 @@ export default function Today() {
 
           <MagicBentoCard glowColor="245, 158, 11">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Sentimento de hoje</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Sentimento de hoje <ChartInfoTooltip description="Distribui os leads criados hoje pelo sentimento detectado pela IA (Positivo, Neutro, Negativo) para mostrar o clima dos contatos do dia." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads criados hoje com o campo sentiment preenchido pela IA." calculation="Conta quantos leads de hoje há em cada categoria de sentimento e exibe cada fatia da rosca como esse total." /></CardTitle></CardHeader>
               <CardContent>
                 {metrics.sentimentData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem leads analisados</p>
@@ -532,7 +533,7 @@ export default function Today() {
       {/* Hourly distribution */}
       <MagicBentoCard glowColor="139, 92, 246">
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle>Distribuição por hora</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2">Distribuição por hora <ChartInfoTooltip description="Eixo X = horas do dia (0h a 23h); as barras comparam o volume de leads novos e de chamadas em cada hora de hoje." source="Leads do banco do dashboard (Supabase, tabela lead_db) e chamadas registradas via Twilio (tabela call_db); ambos criados hoje. Não é leitura ao vivo da Kommo." calculation="Para cada hora, conta os leads e as chamadas cujo created_at cai naquela hora e plota duas barras (Leads e Chamadas)." /></CardTitle></CardHeader>
           <CardContent className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics.hourly}>

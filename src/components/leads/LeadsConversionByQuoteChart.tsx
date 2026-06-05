@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Lightbulb, DollarSign } from "lucide-react";
 
 interface ConversionByQuoteData {
@@ -101,6 +102,11 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Conversão por Cotação
+              <ChartInfoTooltip
+                description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
+                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
+                calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -120,6 +126,11 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Conversão por Cotação
+              <ChartInfoTooltip
+                description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
+                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
+                calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -139,6 +150,11 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Conversão por Cotação
+            <ChartInfoTooltip
+              description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
+              calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
