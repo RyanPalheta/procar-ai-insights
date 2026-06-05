@@ -332,7 +332,7 @@ Analise e responda:
 5. Tags relevantes para categorização (3-5 tags)
 6. Há oportunidade de upsell? (sim/não) - Identifique se o cliente poderia se beneficiar de produtos/serviços adicionais
 7. Se há upsell, quais produtos/serviços adicionais o cliente poderia contratar? (lista)
-8. Se há upsell, qual o valor estimado em R$ dessa oportunidade? (número ou null se impossível estimar)
+8. Se há upsell, qual o valor estimado em USD (dólares americanos) dessa oportunidade? (número ou null se impossível estimar)
 9. Descrição textual da oportunidade de upsell
 10. Resumo das principais necessidades do cliente (2-3 frases)
 11. Resumo da necessidade principal em UMA ÚNICA FRASE CURTA (máximo 15 palavras, ex: "Precisa de orçamento para festa de 50 pessoas")
@@ -357,7 +357,7 @@ Analise e responda:
 16. O vendedor utilizou estratégia de ancoragem de preço? (sim/não)
     - Exemplos: Mostrou preço "de X por Y", comparou com concorrência, apresentou valor agregado antes do preço, ofereceu pacote com mais valor percebido
 17. Se usou ancoragem, descreva qual estratégia em uma frase curta
-18. Foi mencionado algum valor/preço na conversa pelo vendedor? Se sim, extraia o valor numérico (ex: "$85" → 85, "R$ 450,00" → 450)
+18. Foi mencionado algum valor/preço na conversa pelo vendedor? Se sim, extraia o valor numérico exatamente como falado, em USD/dólares (ex: "$85" → 85, "$450.00" → 450). NÃO converta para outra moeda.
 19. Uma cotação formal de preço foi apresentada ao cliente?`;
 
     if (hasAgentMessages && playbook) {
@@ -439,7 +439,7 @@ Analise e responda:
         upsell_value_estimate: {
           type: 'number',
           nullable: true,
-          description: 'Valor estimado em reais da oportunidade de upsell (null se não for possível estimar)'
+          description: 'Valor estimado em dólares americanos (USD) da oportunidade de upsell (null se não for possível estimar)'
         },
         customer_needs_summary: {
           type: 'string',
@@ -505,7 +505,7 @@ Analise e responda:
         quoted_price: {
           type: 'number',
           nullable: true,
-          description: 'Valor monetário cotado pelo vendedor (ex: 85 para "$85", 450 para "R$ 450,00"). Null se nenhum preço foi mencionado.'
+          description: 'Valor monetário cotado pelo vendedor em USD/dólares, extraído exatamente como falado (ex: 85 para "$85", 450 para "$450.00"). NÃO converta moeda. Null se nenhum preço foi mencionado.'
         },
         has_quote: {
           type: 'boolean',

@@ -4,6 +4,7 @@ import { BarChart } from "@tremor/react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatUSD } from "@/lib/utils";
 import { Lightbulb, DollarSign } from "lucide-react";
 
 interface ConversionByQuoteData {
@@ -82,7 +83,7 @@ export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuo
         </p>
         {d._avgQuote > 0 && (
           <p className="text-xs mt-1">
-            Valor médio: R$ {d._avgQuote.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            Valor médio: {formatUSD(d._avgQuote)}
           </p>
         )}
         <p className="font-semibold mt-1">Taxa: {d._rate?.toFixed(1)}%</p>

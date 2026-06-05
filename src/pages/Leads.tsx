@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatUSD } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -544,7 +545,7 @@ export default function Leads() {
               </div>
               <KPICard
                 title="Valor Potencial Upsell"
-                value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "N/A"}
+                value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue) : "N/A"}
                 icon={DollarSign}
                 variant="success"
                 description="Estimativa total"

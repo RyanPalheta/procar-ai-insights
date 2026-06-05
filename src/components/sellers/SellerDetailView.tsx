@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KPICard } from "@/components/dashboard/KPICard";
+import { formatUSD } from "@/lib/utils";
 import { SellerGoalStatus, GoalData } from "./SellerGoalStatus";
 import { SellerKPI } from "./SellersRankingTable";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
@@ -101,7 +102,7 @@ export function SellerDetailView({ seller, goals, periodDays }: SellerDetailView
         <KPICard title="Taxa de Conversão" value={`${seller.conversion_rate.toFixed(1)}%`} icon={TrendingUp} description={`${seller.won_leads}/${seller.total_audited} leads`} />
         <KPICard title="Leads Auditados" value={seller.total_audited} icon={Users} />
         <KPICard title="C/ Cotação" value={seller.leads_with_quote} icon={Target} />
-        <KPICard title="Valor Médio" value={`R$ ${seller.avg_quoted_price.toFixed(0)}`} icon={DollarSign} />
+        <KPICard title="Valor Médio" value={formatUSD(seller.avg_quoted_price, 0)} icon={DollarSign} />
         <KPICard title="Score Médio" value={seller.avg_score.toFixed(1)} icon={TrendingUp} />
         <KPICard title="Presenciais" value={seller.walking_leads} icon={Footprints} />
         <KPICard title="Objeções Superadas" value={`${objectionOvercomeRate.toFixed(1)}%`} icon={Shield} description={`${seller.objections_overcome}/${seller.total_with_objection}`} />
