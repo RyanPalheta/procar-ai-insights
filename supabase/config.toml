@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.sync-to-kommo]
 verify_jwt = false
+
+[functions.reconcile-kommo]
+verify_jwt = false
