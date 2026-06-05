@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { cn, formatUSD } from "@/lib/utils";
 
 export interface GoalData {
   metric: string;
@@ -70,7 +70,7 @@ export function SellerGoalStatus({ goal, compact = false }: SellerGoalStatusProp
     if (metric.includes("rate") || metric === "conversion_rate" || metric === "objections_overcome_rate") {
       return `${val.toFixed(1)}%`;
     }
-    if (metric === "avg_quoted_price") return `R$ ${val.toFixed(0)}`;
+    if (metric === "avg_quoted_price") return formatUSD(val, 0);
     if (metric === "median_first_response_time") return `${val.toFixed(0)} min`;
     return val.toFixed(0);
   };

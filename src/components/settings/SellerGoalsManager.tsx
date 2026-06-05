@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 const METRICS = [
   { value: "conversion_rate", label: "Taxa de Conversão (%)", direction: ">=" },
   { value: "leads_with_quote", label: "Leads c/ Cotação", direction: ">=" },
-  { value: "avg_quoted_price", label: "Valor Médio Cotado (R$)", direction: ">=" },
+  { value: "avg_quoted_price", label: "Valor Médio Cotado (USD)", direction: ">=" },
   { value: "objections_overcome_rate", label: "Objeções Superadas (%)", direction: ">=" },
   { value: "median_first_response_time", label: "Tempo 1ª Resposta (min)", direction: "<=" },
   { value: "walking_leads", label: "Leads Presenciais", direction: ">=" },

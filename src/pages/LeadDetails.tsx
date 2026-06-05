@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatUSD } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -447,7 +448,7 @@ export default function LeadDetails() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {lead.lead_price ? `R$ ${lead.lead_price.toLocaleString('pt-BR')}` : "N/A"}
+              {lead.lead_price ? formatUSD(lead.lead_price) : "N/A"}
             </div>
           </CardContent>
         </Card>
@@ -622,7 +623,7 @@ export default function LeadDetails() {
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Valor Estimado</label>
                     <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
-                      R$ {(lead as any).upsell_value_estimate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatUSD((lead as any).upsell_value_estimate)}
                     </p>
                   </div>
                 )}

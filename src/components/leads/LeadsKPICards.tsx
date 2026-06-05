@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
+import { formatUSD } from "@/lib/utils";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -358,7 +359,7 @@ export function LeadsKPICards({
                 <div className="cursor-help">
                   <KPICard
                     title="Valor Médio Cotado"
-                    value={avgQuotedPrice > 0 ? `R$ ${avgQuotedPrice.toFixed(2)}` : "N/A"}
+                    value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
                     icon={DollarSign}
                     variant="success"
                     description={scorePeriod === "all" ? "Ticket médio" : `Últimos ${periodLabels[scorePeriod]}`}
@@ -457,7 +458,7 @@ export function LeadsKPICards({
                 <div className="cursor-help">
                   <KPICard
                     title="Valor Upsell"
-                    value={upsellTotalValue > 0 ? `R$ ${upsellTotalValue.toFixed(0)}` : "N/A"}
+                    value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
                     icon={BadgeDollarSign}
                     variant={upsellTotalValue > 0 ? "success" : "default"}
                     description={scorePeriod === "all" ? "Potencial estimado" : `Últimos ${periodLabels[scorePeriod]}`}
