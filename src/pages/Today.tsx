@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
-import { DonutChart } from "@tremor/react";
+import { BarChart } from "@tremor/react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import {
   Users, MessageSquare, Phone, DollarSign, Gauge, AlertTriangle,
@@ -535,12 +535,14 @@ export default function Today() {
                 {metrics.channelData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem dados</p>
                 ) : (
-                  <DonutChart
+                  <BarChart
                     data={metrics.channelData}
-                    category="value"
                     index="name"
+                    categories={["value"]}
                     colors={channelColors}
+                    showLegend={false}
                     showAnimation
+                    yAxisWidth={28}
                     className="h-[150px]"
                   />
                 )}
@@ -555,12 +557,14 @@ export default function Today() {
                 {metrics.sentimentData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem leads analisados</p>
                 ) : (
-                  <DonutChart
+                  <BarChart
                     data={metrics.sentimentData}
-                    category="value"
                     index="name"
+                    categories={["value"]}
                     colors={sentimentColors}
+                    showLegend={false}
                     showAnimation
+                    yAxisWidth={28}
                     className="h-[150px]"
                   />
                 )}
