@@ -6,6 +6,7 @@ import { PlaybookManager } from "@/components/settings/PlaybookManager";
 import { ProductManager } from "@/components/settings/ProductManager";
 import { AlertsManager } from "@/components/settings/AlertsManager";
 import { SellerGoalsManager } from "@/components/settings/SellerGoalsManager";
+import { KommoReconciliation } from "@/components/settings/KommoReconciliation";
 
 
 export default function Settings() {
@@ -24,6 +25,7 @@ export default function Settings() {
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
           <TabsTrigger value="seller-goals">Metas Vendedores</TabsTrigger>
           <TabsTrigger value="audit">Auditoria IA</TabsTrigger>
+          <TabsTrigger value="reconciliation">Reconciliação Kommo</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: AI Settings (existing content) */}
@@ -140,6 +142,11 @@ export default function Settings() {
             </p>
             <ProductManager />
           </div>
+        </TabsContent>
+
+        {/* Tab 5: Reconciliação Kommo × Dashboard */}
+        <TabsContent value="reconciliation" className="space-y-6">
+          <KommoReconciliation />
         </TabsContent>
 
       </Tabs>
