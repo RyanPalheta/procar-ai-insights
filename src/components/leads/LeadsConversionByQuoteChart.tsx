@@ -16,15 +16,17 @@ interface ConversionByQuoteData {
 }
 
 interface LeadsConversionByQuoteChartProps {
-  periodDays: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
 }
 
-export function LeadsConversionByQuoteChart({ periodDays }: LeadsConversionByQuoteChartProps) {
+export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversionByQuoteChartProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["conversion-by-quote-bracket", periodDays],
+    queryKey: ["conversion-by-quote-bracket", dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_conversion_by_quote_bracket", {
-        period_days: periodDays
+        date_from: dateFrom,
+        date_to: dateTo,
       });
       if (error) throw error;
       return data as ConversionByQuoteData[];

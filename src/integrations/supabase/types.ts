@@ -457,9 +457,9 @@ export type Database = {
       }
     }
     Functions: {
-      get_cold_audit_kpis: { Args: { period_days?: number }; Returns: Json }
+      get_cold_audit_kpis: { Args: { period_days?: number; date_from?: string; date_to?: string }; Returns: Json }
       get_conversion_by_quote_bracket: {
-        Args: { period_days?: number }
+        Args: { period_days?: number; date_from?: string; date_to?: string }
         Returns: {
           avg_quote_value: number
           conversion_rate: number
@@ -469,7 +469,7 @@ export type Database = {
         }[]
       }
       get_conversion_by_response_time: {
-        Args: { period_days?: number }
+        Args: { period_days?: number; date_from?: string; date_to?: string }
         Returns: {
           conversion_rate: number
           converted_leads: number
@@ -484,8 +484,8 @@ export type Database = {
           session_id: number
         }[]
       }
-      get_leads_kpis: { Args: { period_days?: number }; Returns: Json }
-      get_sellers_kpis: { Args: { period_days?: number }; Returns: Json }
+      get_leads_kpis: { Args: { period_days?: number; date_from?: string; date_to?: string }; Returns: Json }
+      get_sellers_kpis: { Args: { period_days?: number; date_from?: string; date_to?: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

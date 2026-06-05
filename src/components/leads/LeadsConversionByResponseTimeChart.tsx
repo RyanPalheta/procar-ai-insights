@@ -14,15 +14,17 @@ interface ConversionByResponseTimeData {
 }
 
 interface LeadsConversionByResponseTimeChartProps {
-  periodDays: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
 }
 
-export function LeadsConversionByResponseTimeChart({ periodDays }: LeadsConversionByResponseTimeChartProps) {
+export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsConversionByResponseTimeChartProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["conversion-by-response-time", periodDays],
+    queryKey: ["conversion-by-response-time", dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_conversion_by_response_time", {
-        period_days: periodDays
+        date_from: dateFrom,
+        date_to: dateTo,
       });
       if (error) throw error;
       return data as ConversionByResponseTimeData[];

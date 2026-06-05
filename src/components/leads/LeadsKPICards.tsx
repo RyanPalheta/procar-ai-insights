@@ -4,7 +4,8 @@ import { formatUSD } from "@/lib/utils";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import {
   Tooltip,
   TooltipContent,
@@ -12,8 +13,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-export type ScorePeriod = "all" | "7" | "30" | "90";
 
 const RESPONSE_TIME_THRESHOLD_KEY = "leads_response_time_threshold";
 const DEFAULT_THRESHOLD = 60;
@@ -37,16 +36,9 @@ interface LeadsKPICardsProps {
   upsellLeadsVariation: number | null;
   upsellTotalValue: number;
   upsellTotalValueVariation: number | null;
-  scorePeriod: ScorePeriod;
-  onScorePeriodChange: (period: ScorePeriod) => void;
+  period: PeriodValue;
+  onPeriodChange: (value: PeriodValue) => void;
 }
-
-const periodLabels: Record<ScorePeriod, string> = {
-  "all": "Todos",
-  "7": "7 dias",
-  "30": "30 dias",
-  "90": "90 dias"
-};
 
 const formatResponseTime = (minutes: number): string => {
   if (minutes === 0) return "N/A";
@@ -66,63 +58,63 @@ const kpiTooltips = {
   conversionRate: {
     title: "Taxa de Conversão",
     description: "Percentual de leads que foram convertidos em vendas ganhas.",
-    comparison: (period: ScorePeriod) => period === "all" 
-      ? "Mostrando dados de todo o período" 
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+    comparison: (periodLabel: string, isAll: boolean) => isAll
+      ? "Mostrando dados de todo o período"
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   avgScore: {
     title: "Score Médio",
     description: "Média dos scores de qualificação atribuídos pela IA aos leads.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   newLeads24h: {
     title: "Leads Novos (24h)",
     description: "Quantidade de novos leads auditados nas últimas 24 horas.",
-    comparison: (_period: ScorePeriod) => "Comparando com as 24 horas anteriores"
+    comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com as 24 horas anteriores"
   },
   leadsWithQuote: {
     title: "Leads com Cotação",
     description: "Quantidade de leads que possuem um valor de cotação definido.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   avgQuotedPrice: {
     title: "Valor Médio Cotado",
     description: "Ticket médio das cotações realizadas.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   medianFirstResponseTime: {
     title: "Tempo Mediano 1ª Resposta",
     description: "Mediana do tempo entre a 1ª e 3ª interação do lead. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   walkingLeads: {
     title: "Leads Presenciais",
     description: "Quantidade de leads marcados como presenciais (walking), ou seja, clientes que visitaram a loja fisicamente.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   upsellLeads: {
     title: "Oportunidades de Upsell",
     description: "Quantidade de leads onde a IA identificou oportunidade de vender produtos/serviços adicionais.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   upsellTotalValue: {
     title: "Valor Potencial Upsell",
     description: "Soma dos valores estimados de upsell identificados pela IA nos leads do período.",
-    comparison: (period: ScorePeriod) => period === "all"
+    comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
-      : `Comparando os últimos ${periodLabels[period]} com o período anterior de mesma duração`
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
   }
 };
 
@@ -145,9 +137,11 @@ export function LeadsKPICards({
   upsellLeadsVariation,
   upsellTotalValue,
   upsellTotalValueVariation,
-  scorePeriod,
-  onScorePeriodChange
+  period,
+  onPeriodChange
 }: LeadsKPICardsProps) {
+  const isAll = period.preset === "all";
+  const periodLabel = resolvePeriod(period).label;
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [alertDismissed, setAlertDismissed] = useState(false);
 
@@ -191,7 +185,7 @@ export function LeadsKPICards({
 
   const getTrend = (variation: number | null | undefined, alwaysShow = false, invertColors = false) => {
     if (variation === null || variation === undefined) return undefined;
-    if (!alwaysShow && scorePeriod === "all") return undefined;
+    if (!alwaysShow && isAll) return undefined;
     return {
       value: Math.abs(parseFloat(variation.toFixed(1))),
       isPositive: invertColors ? variation < 0 : variation >= 0,
@@ -223,40 +217,10 @@ export function LeadsKPICards({
         </Alert>
       )}
 
-      {/* Header with Period Toggle */}
+      {/* Header with Period Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">Indicadores de Performance</h3>
-        <ToggleGroup 
-          type="single" 
-          value={scorePeriod} 
-          onValueChange={(v) => v && onScorePeriodChange(v as ScorePeriod)}
-          className="bg-muted p-1 rounded-lg"
-        >
-          <ToggleGroupItem 
-            value="7" 
-            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
-          >
-            7 dias
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="30" 
-            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
-          >
-            30 dias
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="90" 
-            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
-          >
-            90 dias
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="all" 
-            className="text-xs px-3 h-7 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md"
-          >
-            Todos
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <PeriodFilter value={period} onChange={onPeriodChange} />
       </div>
       
       <TooltipProvider delayDuration={200}>
@@ -283,7 +247,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.conversionRate.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.conversionRate.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.conversionRate.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.conversionRate.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -296,7 +260,7 @@ export function LeadsKPICards({
                     value={avgScore.toFixed(1)}
                     icon={Award}
                     variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-                    description={scorePeriod === "all" ? "Todos os leads" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Todos os leads" : periodLabel}
                     trend={getTrend(scoreVariation)}
                   />
                 </div>
@@ -305,7 +269,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.avgScore.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.avgScore.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.avgScore.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.avgScore.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -327,7 +291,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.newLeads24h.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.newLeads24h.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.newLeads24h.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.newLeads24h.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -340,7 +304,7 @@ export function LeadsKPICards({
                     value={leadsWithQuote}
                     icon={Receipt}
                     variant="default"
-                    description={scorePeriod === "all" ? "Com preço definido" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Com preço definido" : periodLabel}
                     trend={getTrend(leadsWithQuoteVariation)}
                   />
                 </div>
@@ -349,7 +313,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.leadsWithQuote.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.leadsWithQuote.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.leadsWithQuote.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.leadsWithQuote.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -362,7 +326,7 @@ export function LeadsKPICards({
                     value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
                     icon={DollarSign}
                     variant="success"
-                    description={scorePeriod === "all" ? "Ticket médio" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Ticket médio" : periodLabel}
                     trend={getTrend(avgQuotedPriceVariation)}
                   />
                 </div>
@@ -371,7 +335,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.avgQuotedPrice.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.avgQuotedPrice.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -392,7 +356,7 @@ export function LeadsKPICards({
                     value={formatResponseTime(medianFirstResponseTime)}
                     icon={Timer}
                     variant={medianFirstResponseTime > 0 && medianFirstResponseTime <= threshold * 0.5 ? "success" : medianFirstResponseTime <= threshold ? "warning" : "destructive"}
-                    description={scorePeriod === "all" ? "Entre 1ª e 3ª interação" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Entre 1ª e 3ª interação" : periodLabel}
                     trend={getTrend(medianFirstResponseTimeVariation, false, true)}
                   />
                 </div>
@@ -401,7 +365,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.medianFirstResponseTime.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.medianFirstResponseTime.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.medianFirstResponseTime.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.medianFirstResponseTime.comparison(periodLabel, isAll)}</p>
                   <p className="text-xs mt-1 pt-1 border-t border-border">
                     <span className="font-medium">Limite configurado:</span> {formatResponseTime(threshold)}
                   </p>
@@ -417,7 +381,7 @@ export function LeadsKPICards({
                     value={walkingLeads}
                     icon={Footprints}
                     variant={walkingLeads > 0 ? "success" : "default"}
-                    description={scorePeriod === "all" ? "Walking leads" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Walking leads" : periodLabel}
                     trend={getTrend(walkingLeadsVariation)}
                   />
                 </div>
@@ -426,7 +390,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.walkingLeads.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.walkingLeads.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.walkingLeads.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.walkingLeads.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -439,7 +403,7 @@ export function LeadsKPICards({
                     value={upsellLeads}
                     icon={PackagePlus}
                     variant={upsellLeads > 0 ? "success" : "default"}
-                    description={scorePeriod === "all" ? "Leads com upsell" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Leads com upsell" : periodLabel}
                     trend={getTrend(upsellLeadsVariation)}
                   />
                 </div>
@@ -448,7 +412,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -461,7 +425,7 @@ export function LeadsKPICards({
                     value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
                     icon={BadgeDollarSign}
                     variant={upsellTotalValue > 0 ? "success" : "default"}
-                    description={scorePeriod === "all" ? "Potencial estimado" : `Últimos ${periodLabels[scorePeriod]}`}
+                    description={isAll ? "Potencial estimado" : periodLabel}
                     trend={getTrend(upsellTotalValueVariation)}
                   />
                 </div>
@@ -470,7 +434,7 @@ export function LeadsKPICards({
                 <div className="space-y-1">
                   <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(scorePeriod)}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(periodLabel, isAll)}</p>
                 </div>
               </TooltipContent>
             </Tooltip>

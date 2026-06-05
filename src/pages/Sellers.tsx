@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import { SellersRankingTable, SellerKPI } from "@/components/sellers/SellersRankingTable";
 import { GoalData } from "@/components/sellers/SellerGoalStatus";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,16 +18,16 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 export default function Sellers() {
-  const [periodDays, setPeriodDays] = useState<"all" | "7" | "30" | "90">("30");
-
-  const periodValue = periodDays === "all" ? null : parseInt(periodDays);
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "30" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
 
   // Fetch sellers KPIs
   const { data: sellersData, isLoading: loadingSellers } = useQuery({
-    queryKey: ["sellers-kpis", periodDays],
+    queryKey: ["sellers-kpis", range.fromIso, range.toIso],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_sellers_kpis", {
-        period_days: periodValue,
+        date_from: range.fromIso,
+        date_to: range.toIso,
       });
       if (error) throw error;
       return (data as unknown as SellerKPI[]) || [];
@@ -114,18 +115,7 @@ export default function Sellers() {
             Desempenho e metas por vendedor
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {(["7", "30", "90", "all"] as const).map(p => (
-            <Button
-              key={p}
-              variant={periodDays === p ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPeriodDays(p)}
-            >
-              {p === "all" ? "Todos" : `${p}d`}
-            </Button>
-          ))}
-        </div>
+        <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
       {loadingSellers ? (
@@ -138,7 +128,8 @@ export default function Sellers() {
           sellers={sellersData || []}
           goals={[]}
           sellerGoalsMap={sellerGoalsMap}
-          periodDays={periodValue}
+          dateFrom={range.fromIso}
+          dateTo={range.toIso}
         />
       )}
     </div>

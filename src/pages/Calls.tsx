@@ -26,6 +26,8 @@ import {
   AlertTriangle, Smile, Frown, Meh, Target, Sparkles, Search, ArrowRightLeft,
 } from "lucide-react";
 import { getCallDirection, type CallDirection } from "@/lib/calls";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, previousResolved, type PeriodValue } from "@/lib/period";
 
 /* ----------------- helpers ----------------- */
 const SENTIMENT_COLORS: Record<string, string> = {
@@ -73,7 +75,8 @@ export default function Calls() {
   const [showAnalysis, setShowAnalysis] = useState(false);
 
   /* filters */
-  const [periodDays, setPeriodDays] = useState<string>("30");
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "30" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
   const [sentimentFilter, setSentimentFilter] = useState<string>("all");
   const [scoreFilter, setScoreFilter] = useState<string>("all");
   const [objectionFilter, setObjectionFilter] = useState<string>("all");
@@ -95,17 +98,12 @@ export default function Calls() {
   /* ----------------- filtered calls ----------------- */
   const filteredCalls = useMemo(() => {
     if (!calls) return [];
-    const now = Date.now();
-    const periodMs = periodDays === "all"
-      ? Infinity
-      : Number(periodDays) * 24 * 60 * 60 * 1000;
 
     return calls.filter((call: any) => {
       const a = call.ai_call_analysis || {};
-      if (periodMs !== Infinity) {
-        const age = now - new Date(call.created_at).getTime();
-        if (age > periodMs) return false;
-      }
+      const ts = new Date(call.created_at);
+      if (range.from !== null && ts < range.from) return false;
+      if (range.to !== null && ts > range.to) return false;
       if (sentimentFilter !== "all" && a.sentiment !== sentimentFilter) return false;
       if (scoreFilter !== "all") {
         const s = a.quality_score;
@@ -125,18 +123,18 @@ export default function Calls() {
       }
       return true;
     });
-  }, [calls, periodDays, sentimentFilter, scoreFilter, objectionFilter, directionFilter, search]);
+  }, [calls, range, sentimentFilter, scoreFilter, objectionFilter, directionFilter, search]);
 
   /* previous-period comparison (for delta) */
   const previousPeriodCalls = useMemo(() => {
-    if (!calls || periodDays === "all") return [];
-    const now = Date.now();
-    const periodMs = Number(periodDays) * 24 * 60 * 60 * 1000;
+    if (!calls) return [];
+    const prev = previousResolved(range);
+    if (!prev) return [];
     return calls.filter((c: any) => {
-      const age = now - new Date(c.created_at).getTime();
-      return age > periodMs && age <= periodMs * 2;
+      const t = new Date(c.created_at);
+      return t >= prev.from && t <= prev.to;
     });
-  }, [calls, periodDays]);
+  }, [calls, range]);
 
   /* ----------------- aggregates ----------------- */
   const stats = useMemo(() => {
@@ -402,15 +400,7 @@ export default function Calls() {
           <p className="text-muted-foreground">Análise detalhada de todas as chamadas</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <Select value={periodDays} onValueChange={setPeriodDays}>
-            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="all">Todo o período</SelectItem>
-            </SelectContent>
-          </Select>
+          <PeriodFilter value={period} onChange={setPeriod} />
           <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Sentimento" /></SelectTrigger>
             <SelectContent>

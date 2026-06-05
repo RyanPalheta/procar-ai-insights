@@ -24,13 +24,14 @@ const CHART_COLORS = [
 interface SellerDetailViewProps {
   seller: SellerKPI & { conversion_rate: number; objections_rate: number };
   goals: GoalData[];
-  periodDays: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
 }
 
-export function SellerDetailView({ seller, goals, periodDays }: SellerDetailViewProps) {
+export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDetailViewProps) {
   // Fetch leads for this seller for charts
   const { data: sellerLeads } = useQuery({
-    queryKey: ["seller-leads", seller.seller_id, periodDays],
+    queryKey: ["seller-leads", seller.seller_id, dateFrom, dateTo],
     queryFn: async () => {
       let query = supabase
         .from("lead_db")
@@ -38,11 +39,8 @@ export function SellerDetailView({ seller, goals, periodDays }: SellerDetailView
         .eq("sales_person_id", seller.seller_id)
         .not("last_ai_update", "is", null);
 
-      if (periodDays) {
-        const start = new Date();
-        start.setDate(start.getDate() - periodDays);
-        query = query.gte("created_at", start.toISOString());
-      }
+      if (dateFrom) query = query.gte("created_at", dateFrom);
+      if (dateTo) query = query.lte("created_at", dateTo);
 
       const { data, error } = await query.order("created_at", { ascending: true });
       if (error) throw error;
