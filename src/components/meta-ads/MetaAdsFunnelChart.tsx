@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { Filter } from "lucide-react";
 import type { MetaAdsKPIs } from "@/types/meta-ads";
@@ -38,6 +39,11 @@ export function MetaAdsFunnelChart({ data }: MetaAdsFunnelChartProps) {
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <Filter className="h-4 w-4 text-primary" />
             Funil de Conversao
+            <ChartInfoTooltip
+              description="Mostra o funil de conversao do Meta Ads com 4 etapas (Impressoes, Cliques, Leads e Compras); cada barra representa o volume total da etapa no periodo selecionado."
+              source="Metricas reportadas pela API da Meta Ads para o periodo selecionado. Nao passa pela Kommo."
+              calculation="Cada etapa soma o total agregado do periodo: impressoes, cliques (clicks), leads (action lead) e compras (action purchase) reportados pela API."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

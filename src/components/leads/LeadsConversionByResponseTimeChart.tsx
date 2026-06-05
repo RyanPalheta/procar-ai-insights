@@ -4,6 +4,7 @@ import { BarChart } from "@tremor/react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Lightbulb, Clock } from "lucide-react";
 
 interface ConversionByResponseTimeData {
@@ -86,6 +87,11 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Conversão por Tempo de Resposta
+              <ChartInfoTooltip
+                description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
+                source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
+                calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -105,6 +111,11 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Conversão por Tempo de Resposta
+              <ChartInfoTooltip
+                description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
+                source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
+                calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -124,6 +135,11 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Conversão por Tempo de Resposta
+            <ChartInfoTooltip
+              description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
+              source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
+              calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

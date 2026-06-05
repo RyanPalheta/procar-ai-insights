@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Thermometer } from "lucide-react";
 import { useMemo } from "react";
 
@@ -64,6 +65,11 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
           <CardTitle className="flex items-center gap-2 text-lg">
             <Thermometer className="h-5 w-5" />
             Temperatura dos Leads
+            <ChartInfoTooltip
+              description="Resume a temperatura média dos leads (Quente, Morno, Frio) num termômetro e lista a contagem de leads em cada faixa."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com lead_temperature preenchido (normalizado)."
+              calculation="Cada lead recebe peso (Quente=3, Morno=2, Frio=1); o score médio = soma ponderada ÷ total define a faixa e o preenchimento do termômetro."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

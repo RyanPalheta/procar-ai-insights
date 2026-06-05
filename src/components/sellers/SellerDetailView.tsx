@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
 import { SellerGoalStatus, GoalData } from "./SellerGoalStatus";
@@ -126,7 +127,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Timeline */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Timeline de Leads</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Timeline de Leads <ChartInfoTooltip description="Eixo X = dias (dd/MM); a linha mostra quantos leads deste vendedor foram criados em cada dia do período selecionado." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido), dentro do intervalo de datas." calculation="Agrupa os leads por dia de created_at e conta quantos há em cada dia." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -144,7 +145,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Status Distribution */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Status de Venda</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Status de Venda <ChartInfoTooltip description="Distribui os leads deste vendedor pelo status de venda (sales_status) para mostrar em que etapa do funil eles estão." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com sales_status preenchido, dentro do intervalo de datas." calculation="Conta os leads em cada sales_status, ordena do maior para o menor e exibe os 6 principais como fatias da pizza." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -163,7 +164,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Objection Categories */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top Objeções</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Top Objeções <ChartInfoTooltip description="Eixo Y = categorias de objeção; as barras comparam quantas vezes cada objeção apareceu nos leads deste vendedor." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com objection_categories preenchido, dentro do intervalo de datas." calculation="Soma quantas vezes cada categoria aparece nas listas objection_categories dos leads, ordena do maior para o menor e exibe as 6 principais." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { DonutChart } from "@tremor/react";
 import { ClipboardCheck } from "lucide-react";
 
@@ -46,6 +47,11 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
           <CardTitle className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-primary" />
             Distribuição de Compliance
+            <ChartInfoTooltip
+              description="Distribui os leads por faixa de aderência ao playbook (Excelente/Bom/Regular/Baixo); cada fatia = quantidade de leads na faixa e o centro mostra a nota média."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com nota de compliance da IA (campo playbook_compliance_score preenchido), respeitando os filtros ativos."
+              calculation="Classifica playbook_compliance_score em faixas (>=80 Excelente, 60-79 Bom, 40-59 Regular, <40 Baixo) e conta os leads de cada faixa; o número central é a média de playbook_compliance_score."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { motion } from "framer-motion";
 
 interface LeadsLanguageChartProps {
@@ -41,7 +42,14 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle>Leads por Língua</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Leads por Língua
+            <ChartInfoTooltip
+              description="Distribui os leads pela língua identificada (ex.: PT-BR, EN-USA, ES); o tamanho da bandeira e a barra confrontam a quantidade e o % de cada idioma."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com lead_language preenchido (exclui 'N/A' e 'NDA')."
+              calculation="Conta os leads por idioma (lead_language) e calcula o % = leads do idioma ÷ total de leads com idioma × 100."
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-6">

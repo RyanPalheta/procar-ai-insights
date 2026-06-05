@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { BarList } from "@tremor/react";
 
 interface LeadsStatusChartProps {
@@ -32,7 +33,14 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle>Leads por Status</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Leads por Status
+            <ChartInfoTooltip
+              description="Mostra os 5 status de venda mais frequentes; cada barra confronta a quantidade de leads naquele status e seu % sobre o total."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sales_status preenchido (campo normalizado)."
+              calculation="Conta os leads por status (sales_status normalizado), mantém os 5 maiores e exibe valor e % = leads do status ÷ total dos status × 100."
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <BarList

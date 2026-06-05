@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { MousePointerClick } from "lucide-react";
 import type { MetaAdsDailyData } from "@/types/meta-ads";
@@ -34,6 +35,11 @@ export function MetaAdsPerformanceChart({ data }: MetaAdsPerformanceChartProps) 
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <MousePointerClick className="h-4 w-4 text-primary" />
             Impressoes & Cliques
+            <ChartInfoTooltip
+              description="Compara a evolucao diaria de impressoes e cliques no Meta Ads; Eixo X = dia (dd/MM), linha esquerda = impressoes (eixo Y esquerdo) e linha verde = cliques (eixo Y direito)."
+              source="Metricas reportadas pela API da Meta Ads para o periodo selecionado. Nao passa pela Kommo."
+              calculation="Cada ponto plota o total de impressoes e de cliques (clicks) reportados pela API naquele dia; sem agregacao adicional alem do agrupamento diario."
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

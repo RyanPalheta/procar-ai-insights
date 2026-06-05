@@ -10,6 +10,7 @@ import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -326,7 +327,7 @@ export default function Channels() {
               <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle>Volume de Leads por Canal</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Volume de Leads por Canal <ChartInfoTooltip description="Compara o total de leads originados em cada canal (WhatsApp, Instagram, Facebook e Telefone); eixo X = canal, barra = quantidade de leads." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera leads criados no período, agrupados pelo campo channel." calculation="Conta o número de leads de cada canal após normalizar o campo channel (whatsapp/instagram/facebook/phone)." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData} margin={{ left: 0 }}>
@@ -347,7 +348,7 @@ export default function Channels() {
 
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle>Taxa de Conversão por Canal</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal <ChartInfoTooltip description="Compara a taxa de conversão em vendas de cada canal; eixo X = canal, barra = % de leads ganhos." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera leads do período com campo channel preenchido; ganhos são identificados pelo sales_status contendo 'ganha'." calculation="Conversão = leads com sales_status 'ganha' ÷ total de leads do canal × 100." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData}>
@@ -534,7 +535,7 @@ function ChannelDetail({
         {/* Sentiment donut */}
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2"><Smile className="h-4 w-4" />Sentimento</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Smile className="h-4 w-4" />Sentimento <ChartInfoTooltip description="Mostra a distribuição do sentimento (Positivo, Neutro, Negativo) dos leads deste canal; cada fatia = parcela de leads em cada categoria." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads do canal com o campo sentiment preenchido pela IA." calculation="Conta os leads em cada categoria de sentiment (Positivo/Neutro/Negativo); a fatia é a proporção de cada categoria sobre o total analisado." /></CardTitle></CardHeader>
             <CardContent className="h-[260px]">
               {sentimentData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -559,7 +560,7 @@ function ChannelDetail({
         <MagicBentoCard className="lg:col-span-2" glowColor="59, 130, 246">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Clock className="h-4 w-4" />Mensagens por hora do dia</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Clock className="h-4 w-4" />Mensagens por hora do dia <ChartInfoTooltip description="Mostra o volume de mensagens deste canal por hora do dia (0h a 23h); eixo X = hora, barra = quantidade de mensagens, para identificar horários de pico." source="Mensagens dos canais digitais (WhatsApp/Instagram/Facebook) na tabela interaction_db. Não vem da Kommo. Considera as interações do período com o campo channel correspondente a este canal." calculation="Agrupa as interações pela hora do timestamp (getHours) e soma a quantidade de mensagens em cada uma das 24 faixas horárias." /></CardTitle>
               <p className="text-xs text-muted-foreground">Identifique horários de pico pra dimensionar equipe</p>
             </CardHeader>
             <CardContent className="h-[260px]">

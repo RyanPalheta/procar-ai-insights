@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { motion } from "framer-motion";
 
 interface LeadsSentimentChartProps {
@@ -35,7 +36,14 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
     <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
       <Card className="bg-card border-border h-full">
         <CardHeader>
-          <CardTitle>Distribuição de Sentimento</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Distribuição de Sentimento
+            <ChartInfoTooltip
+              description="Distribui os leads pelo sentimento detectado (Positivo, Neutro, Negativo); o tamanho do emoji e a barra confrontam a quantidade e o % de cada sentimento."
+              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA (analyze-lead) é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sentiment preenchido (exclui 'N/A')."
+              calculation="Conta os leads por sentimento (sentiment normalizado em Positivo/Neutro/Negativo) e calcula o % = leads do sentimento ÷ total com sentimento × 100."
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center gap-6 py-8">
