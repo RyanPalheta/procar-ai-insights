@@ -1,5 +1,6 @@
 import { DollarSign, Tag, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 
 interface EfficiencyMetric {
   label: string;
@@ -8,8 +9,15 @@ interface EfficiencyMetric {
   isActive?: boolean;
 }
 
+interface TVSectionInfo {
+  description: string;
+  source?: string;
+  calculation?: string;
+}
+
 interface TVEfficiencySectionProps {
   metrics: EfficiencyMetric[];
+  info?: TVSectionInfo;
 }
 
 const iconMap = {
@@ -18,11 +26,18 @@ const iconMap = {
   objection: MessageSquare,
 };
 
-export function TVEfficiencySection({ metrics }: TVEfficiencySectionProps) {
+export function TVEfficiencySection({ metrics, info }: TVEfficiencySectionProps) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100 h-full">
-      <h3 className="text-xl font-semibold text-slate-800 mb-6">
+      <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
         Eficiência Comercial
+        {info && (
+          <ChartInfoTooltip
+            description={info.description}
+            source={info.source}
+            calculation={info.calculation}
+          />
+        )}
       </h3>
       
       <div className="grid grid-cols-3 gap-4 h-[calc(100%-3.5rem)]">

@@ -1,5 +1,6 @@
 import { AlertTriangle, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 
 interface ObjectionItem {
   rank: number;
@@ -8,16 +9,24 @@ interface ObjectionItem {
   count?: number;
 }
 
+interface TVSectionInfo {
+  description: string;
+  source?: string;
+  calculation?: string;
+}
+
 interface TVObjectionRankingProps {
   objections: ObjectionItem[];
   overallRate: number;
   alertMessage?: string;
+  info?: TVSectionInfo;
 }
 
-export function TVObjectionRanking({ 
-  objections, 
+export function TVObjectionRanking({
+  objections,
   overallRate,
-  alertMessage 
+  alertMessage,
+  info
 }: TVObjectionRankingProps) {
   const getRankColor = (rank: number) => {
     switch (rank) {
@@ -31,8 +40,15 @@ export function TVObjectionRanking({
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-slate-800">
+        <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
           Foco de Melhoria - Objeções
+          {info && (
+            <ChartInfoTooltip
+              description={info.description}
+              source={info.source}
+              calculation={info.calculation}
+            />
+          )}
         </h3>
         
         <div className={cn(

@@ -287,12 +287,17 @@ export default function Channels() {
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                           <ChIcon className="h-4 w-4" style={{ color: c.meta.color }} />
                           {c.meta.label}
+                          <ChartInfoTooltip
+                            description={`Resumo de ${c.meta.label}: leads, conversão e score são do chat auditado (subconjunto, ≠ total Kommo); 1ª resposta e % respondidas vêm das mensagens.`}
+                            source="Leads/Conversão/Score: lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. 1ª resposta/% respondidas: mensagens do interaction_db (não passa pela Kommo)."
+                            calculation="Leads = contagem no canal/período. Conversão = ganhos (sales_status 'ganha') ÷ leads × 100. Score = média do lead_score. 1ª resposta = mediana do tempo até resposta do agente. % respondidas = sessões respondidas ÷ iniciadas pelo cliente."
+                          />
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div>
                           <div className="text-2xl font-bold" style={{ color: c.meta.color }}>{c.totalLeads}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">leads</div>
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">leads · chat auditados</div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t">
                           <div>
@@ -327,7 +332,7 @@ export default function Channels() {
               <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle className="flex items-center gap-2">Volume de Leads por Canal <ChartInfoTooltip description="Compara o total de leads originados em cada canal (WhatsApp, Instagram, Facebook e Telefone); eixo X = canal, barra = quantidade de leads." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera leads criados no período, agrupados pelo campo channel." calculation="Conta o número de leads de cada canal após normalizar o campo channel (whatsapp/instagram/facebook/phone)." /></CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Volume de Leads por Canal (chat auditados · ≠ total Kommo) <ChartInfoTooltip description="Compara o total de leads originados em cada canal (WhatsApp, Instagram, Facebook e Telefone); eixo X = canal, barra = quantidade de leads. É um subconjunto (apenas chat), não bate com o total da Kommo." source="lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n). Não inclui agendamentos, pagamentos, telefone nem entrada manual → subconjunto da Kommo. Filtro: leads criados no período, agrupados pelo campo channel." calculation="Conta o número de leads de cada canal após normalizar o campo channel (whatsapp/instagram/facebook/phone)." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData} margin={{ left: 0 }}>
@@ -348,7 +353,7 @@ export default function Channels() {
 
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal <ChartInfoTooltip description="Compara a taxa de conversão em vendas de cada canal; eixo X = canal, barra = % de leads ganhos." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera leads do período com campo channel preenchido; ganhos são identificados pelo sales_status contendo 'ganha'." calculation="Conversão = leads com sales_status 'ganha' ÷ total de leads do canal × 100." /></CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal (chat auditados · ≠ total Kommo) <ChartInfoTooltip description="Compara a taxa de conversão em vendas de cada canal; eixo X = canal, barra = % de leads ganhos. Base é o subconjunto de chat auditado, não o total da Kommo." source="lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. Filtro: leads do período com channel preenchido; ganhos = sales_status contendo 'ganha'." calculation="Conversão = leads com sales_status 'ganha' ÷ total de leads do canal × 100." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData}>
@@ -372,8 +377,15 @@ export default function Channels() {
               <MagicBentoCard glowColor="59, 130, 246">
                 <Card className="bg-card border-border">
                   <CardHeader>
-                    <CardTitle>Ranking Comparativo</CardTitle>
-                    <p className="text-xs text-muted-foreground">Compare canais lado a lado em todas as métricas</p>
+                    <CardTitle className="flex items-center gap-2">
+                      Ranking Comparativo
+                      <ChartInfoTooltip
+                        description="Compara os canais lado a lado em todas as métricas. Leads, Vendas, Conversão, Score e % Positivo são do chat auditado (subconjunto, ≠ total Kommo); 1ª Resp e % Respondidas vêm das mensagens."
+                        source="Leads/Vendas/Conversão/Score/% Positivo: lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. 1ª Resp/% Respondidas: mensagens do interaction_db (não passa pela Kommo)."
+                        calculation="Leads = contagem no período. Vendas = sales_status 'ganha'. Conversão = vendas ÷ leads × 100. Score = média do lead_score. % Positivo = leads com sentiment Positivo ÷ analisados. 1ª Resp = mediana do tempo de resposta do agente. % Respondidas = sessões respondidas ÷ iniciadas pelo cliente."
+                      />
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">Compare canais lado a lado em todas as métricas · Leads/Conversão = chat auditado (≠ total Kommo)</p>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -446,6 +458,11 @@ export default function Channels() {
               <CardTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5 text-purple-500" />
                 Análise de Telefone
+                <ChartInfoTooltip
+                  description="Resumo do canal telefone: leads, score e conversão vêm do chat auditado de telefone (subconjunto, ≠ total Kommo); 'chamadas no período' vem das ligações reais analisadas."
+                  source="Leads/Score/Conversão: lead_db (Supabase self-hosted), alimentado SÓ por conversas de chat → subconjunto da Kommo. Chamadas: call_db (Twilio + análise de IA), independe da Kommo."
+                  calculation="Leads = leads com channel telefone no período. Score = média do lead_score. Conversão = sales_status 'ganha' ÷ leads × 100. Chamadas = nº de registros em call_db no período."
+                />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -456,7 +473,7 @@ export default function Channels() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
                   <div className="text-2xl font-bold text-purple-500">{channelStats.phone?.totalLeads || 0}</div>
-                  <div className="text-xs text-muted-foreground">leads de telefone</div>
+                  <div className="text-xs text-muted-foreground">leads de telefone · chat auditados</div>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50">
                   <div className="text-2xl font-bold">{calls.length}</div>
@@ -518,17 +535,72 @@ function ChannelDetail({
     <>
       {/* KPIs */}
       <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6" glowColor="59, 130, 246">
-        <KPI label="Leads" value={stats.totalLeads} icon={Users} color={meta.color} />
-        <KPI label="Vendas (Ganha)" value={stats.closedWon} icon={TrendingUp} color="#22c55e" />
-        <KPI label="Conversão" value={`${stats.convRate.toFixed(1)}%`} icon={Gauge} color={meta.color} />
-        <KPI label="Score médio" value={stats.avgScore ?? "—"} icon={Gauge} color={stats.avgScore && stats.avgScore >= 70 ? "#22c55e" : stats.avgScore && stats.avgScore >= 40 ? "#eab308" : "#ef4444"} />
+        <KPI
+          label="Leads · chat auditados"
+          value={stats.totalLeads}
+          icon={Users}
+          color={meta.color}
+          info={{
+            description: `Total de leads de ${meta.label} originados no período. É um subconjunto (apenas chat) e não bate com o total da Kommo.`,
+            source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n). Não inclui agendamentos, pagamentos, telefone nem entrada manual → subconjunto da Kommo. Filtro: leads do canal no período.",
+            calculation: "Conta os leads cujo campo channel normaliza para este canal, criados dentro do período selecionado.",
+          }}
+        />
+        <KPI
+          label="Vendas (Ganha) · chat"
+          value={stats.closedWon}
+          icon={TrendingUp}
+          color="#22c55e"
+          info={{
+            description: `Leads de ${meta.label} marcados como ganhos. Conta só os leads auditados de chat, não o total de vendas da Kommo.`,
+            source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. Filtro: ganhos = sales_status contendo 'ganha'.",
+            calculation: "Conta os leads do canal cujo sales_status contém 'ganha'.",
+          }}
+        />
+        <KPI
+          label="Conversão · chat"
+          value={`${stats.convRate.toFixed(1)}%`}
+          icon={Gauge}
+          color={meta.color}
+          info={{
+            description: `% de leads de ${meta.label} que viraram venda. Base é o subconjunto de chat auditado, não o total da Kommo.`,
+            source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. Filtro: ganhos = sales_status contendo 'ganha'.",
+            calculation: "Leads com sales_status 'ganha' ÷ total de leads do canal × 100.",
+          }}
+        />
+        <KPI
+          label="Score médio · chat"
+          value={stats.avgScore ?? "—"}
+          icon={Gauge}
+          color={stats.avgScore && stats.avgScore >= 70 ? "#22c55e" : stats.avgScore && stats.avgScore >= 40 ? "#eab308" : "#ef4444"}
+          info={{
+            description: `Média do lead_score (0–100) dos leads de ${meta.label}. Considera só os leads de chat auditados pela IA.`,
+            source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. Filtro: auditados pela IA = lead_score preenchido.",
+            calculation: "Média aritmética do lead_score dos leads do canal que têm score numérico, arredondada.",
+          }}
+        />
         <KPI
           label="1ª resposta (md)"
           value={fmtMinutes(responseStats?.medianResponse ?? null)}
           icon={Clock}
           color={responseStats?.medianResponse !== null && responseStats?.medianResponse < 60 ? "#22c55e" : "#eab308"}
+          info={{
+            description: `Tempo mediano até a primeira resposta do agente após a primeira mensagem do cliente em ${meta.label}.`,
+            source: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook). Não passa pela Kommo. Filtro: sessões do canal que tiveram resposta do agente.",
+            calculation: "Por sessão, diferença em minutos entre a 1ª msg do cliente e a 1ª msg do agente posterior; reporta a mediana (descarta deltas negativos ou ≥ 7 dias).",
+          }}
         />
-        <KPI label="% respondidas" value={`${responseStats?.responseRate ?? 0}%`} icon={MessageSquare} color={responseStats?.responseRate >= 80 ? "#22c55e" : "#eab308"} />
+        <KPI
+          label="% respondidas"
+          value={`${responseStats?.responseRate ?? 0}%`}
+          icon={MessageSquare}
+          color={responseStats?.responseRate >= 80 ? "#22c55e" : "#eab308"}
+          info={{
+            description: `% de conversas de ${meta.label} iniciadas pelo cliente que receberam ao menos uma resposta do agente.`,
+            source: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook). Não passa pela Kommo. Filtro: sessões do canal iniciadas pelo cliente.",
+            calculation: "Sessões com resposta do agente ÷ sessões iniciadas pelo cliente × 100.",
+          }}
+        />
       </MagicBentoGrid>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
@@ -581,7 +653,14 @@ function ChannelDetail({
       {/* Insights card */}
       <MagicBentoCard glowColor="59, 130, 246">
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle>Insights de {meta.label}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2">
+            Insights de {meta.label}
+            <ChartInfoTooltip
+              description={`Resumo do canal: total de leads, sessões respondidas e objeções. Os volumes de leads são do chat auditado (subconjunto, ≠ total Kommo); as sessões vêm das mensagens.`}
+              source="Total de leads / objeções: lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) → subconjunto da Kommo. Leads que responderam: sessões do interaction_db (não passa pela Kommo)."
+              calculation="Total de leads = contagem no canal/período. Leads que responderam = sessões com 1ª msg do cliente. Taxa de objeções = leads com has_objection ÷ total × 100. % contornadas = objeções com objection_overcome ÷ leads com objeção × 100."
+            />
+          </CardTitle></CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center justify-between">
@@ -608,12 +687,27 @@ function ChannelDetail({
   );
 }
 
-function KPI({ label, value, icon: Icon, color }: { label: string; value: any; icon: any; color: string }) {
+function KPI({ label, value, icon: Icon, color, info }: {
+  label: string;
+  value: any;
+  icon: any;
+  color: string;
+  info?: { description: string; source?: string; calculation?: string };
+}) {
   return (
     <MagicBentoCard glowColor="59, 130, 246">
       <Card className="bg-card border-border h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-xs font-medium text-muted-foreground">{label}</CardTitle>
+          <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            {label}
+            {info && (
+              <ChartInfoTooltip
+                description={info.description}
+                source={info.source}
+                calculation={info.calculation}
+              />
+            )}
+          </CardTitle>
           <Icon className="h-3 w-3 text-muted-foreground" />
         </CardHeader>
         <CardContent>

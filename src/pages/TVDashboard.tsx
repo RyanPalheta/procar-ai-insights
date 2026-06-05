@@ -14,6 +14,7 @@ import { TVKPICard } from "@/components/tv/TVKPICard";
 import { TVQualitySection } from "@/components/tv/TVQualitySection";
 import { TVEfficiencySection } from "@/components/tv/TVEfficiencySection";
 import { TVObjectionRanking } from "@/components/tv/TVObjectionRanking";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, previousResolved, type PeriodValue } from "@/lib/period";
 import {
@@ -526,7 +527,12 @@ export default function TVDashboard() {
             value={metrics?.leadsCount ?? 0}
             icon={Users}
             trend={trends?.leads}
-            subtitle="vs. período anterior"
+            subtitle="Chat (lead_db) · ≠ total Kommo"
+            info={{
+              description: "Total de leads criados no período e vendedor selecionados.",
+              source: "lead_db (Supabase), alimentado só por conversas de WhatsApp/chat (Evolution API → n8n). É um subconjunto da Kommo: não inclui Shopmonkey, pagamentos, telefone nem entrada manual.",
+              calculation: "Conta todos os registros do lead_db com created_at dentro do período (e do vendedor, se filtrado).",
+            }}
           />
         </motion.div>
         <motion.div variants={itemVariants}>
@@ -535,7 +541,12 @@ export default function TVDashboard() {
             value={`${Math.round(kpisData?.conversion_rate ?? 0)}%`}
             icon={Percent}
             trend={trends?.conversion}
-            subtitle="vs. período anterior"
+            subtitle="Auditados (chat) · ≠ total Kommo"
+            info={{
+              description: "Percentual de leads auditados que foram ganhos no período.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo, sem Shopmonkey, pagamentos, telefone ou entrada manual. Considera auditados pela IA (last_ai_update preenchido); ganhos = sales_status com 'ganha', 'won' ou 'agendamento confirmado'.",
+              calculation: "won_leads ÷ total_audited × 100 via RPC get_leads_kpis, ambos restritos a leads auditados no período.",
+            }}
           />
         </motion.div>
         <motion.div variants={itemVariants}>
@@ -546,6 +557,11 @@ export default function TVDashboard() {
             trend={trends?.response}
             isAlert={(kpisData?.median_first_response_time_minutes ?? 0) > 15}
             subtitle="tempo mediano"
+            info={{
+              description: "Tempo mediano até a primeira resposta nas conversas do período.",
+              source: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook), unidas ao lead_db pela sessão.",
+              calculation: "Por sessão com ao menos 3 mensagens, mede o intervalo entre a 1ª e a 3ª mensagem (em minutos) e tira a mediana (percentil 50) via RPC get_leads_kpis.",
+            }}
           />
         </motion.div>
         <motion.div variants={itemVariants}>
@@ -554,7 +570,12 @@ export default function TVDashboard() {
             value={(metrics?.avgRating ?? 0).toFixed(1)}
             icon={Star}
             trend={trends?.rating}
-            subtitle="avaliação de atendimento"
+            subtitle="Atendimentos de chat auditados"
+            info={{
+              description: "Média da nota de avaliação do atendimento dos leads auditados.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo. Considera auditados pela IA (last_ai_update preenchido) com service_rating preenchido.",
+              calculation: "Média de service_rating entre os leads auditados do período que têm nota registrada.",
+            }}
           />
         </motion.div>
       </motion.div>
@@ -567,10 +588,50 @@ export default function TVDashboard() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8"
       >
         {[
-          { label: "Compliance Script", value: metrics?.avgCompliance ?? 0, trend: trends?.compliance, unit: "%" },
-          { label: "Saudação Inicial", value: metrics?.saudacaoRate ?? 0, trend: trends?.saudacao, unit: "%" },
-          { label: "Qualificação", value: metrics?.qualificacaoRate ?? 0, trend: trends?.qualificacao, unit: "%" },
-          { label: "Objeções Contornadas", value: metrics?.objectionOvercomeRate ?? 0, trend: trends?.objection, unit: "%" },
+          {
+            label: "Compliance Script",
+            value: metrics?.avgCompliance ?? 0,
+            trend: trends?.compliance,
+            unit: "%",
+            info: {
+              description: "Aderência média ao roteiro de atendimento nos leads auditados.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo. Considera auditados pela IA (last_ai_update preenchido) com playbook_compliance_score.",
+              calculation: "Média de playbook_compliance_score entre os leads auditados do período, arredondada.",
+            },
+          },
+          {
+            label: "Saudação Inicial",
+            value: metrics?.saudacaoRate ?? 0,
+            trend: trends?.saudacao,
+            unit: "%",
+            info: {
+              description: "Percentual de atendimentos auditados que abriram com saudação.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo. Considera auditados pela IA (last_ai_update preenchido).",
+              calculation: "Leads auditados com has_greeting ÷ total de auditados do período × 100.",
+            },
+          },
+          {
+            label: "Qualificação",
+            value: metrics?.qualificacaoRate ?? 0,
+            trend: trends?.qualificacao,
+            unit: "%",
+            info: {
+              description: "Percentual de atendimentos auditados que qualificaram o lead.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo. Considera auditados pela IA (last_ai_update preenchido).",
+              calculation: "Leads auditados com has_qualification ÷ total de auditados do período × 100.",
+            },
+          },
+          {
+            label: "Objeções Contornadas",
+            value: metrics?.objectionOvercomeRate ?? 0,
+            trend: trends?.objection,
+            unit: "%",
+            info: {
+              description: "Percentual de leads com objeção em que a objeção foi contornada.",
+              source: "lead_db (Supabase), só conversas de WhatsApp/chat — subconjunto da Kommo. Considera auditados pela IA (last_ai_update preenchido) com objeção detectada.",
+              calculation: "Leads auditados com objection_overcome ÷ leads auditados com has_objection no período × 100.",
+            },
+          },
         ].map((item, index) => (
           <motion.div 
             key={item.label}
@@ -580,7 +641,14 @@ export default function TVDashboard() {
             className="bg-white rounded-2xl shadow-md p-5 border border-slate-100 cursor-default"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-slate-500 text-sm font-medium">{item.label}</span>
+              <span className="flex items-center gap-1.5 text-slate-500 text-sm font-medium">
+                {item.label}
+                <ChartInfoTooltip
+                  description={item.info.description}
+                  source={item.info.source}
+                  calculation={item.info.calculation}
+                />
+              </span>
               {item.trend && (
                 <motion.span 
                   initial={{ scale: 0 }}
@@ -632,6 +700,11 @@ export default function TVDashboard() {
               { label: "Qualificação de Lead", value: metrics?.qualificacaoRate ?? 0, showAlert: true },
             ]}
             insight="Atendimentos com compliance alto convertem 28% mais"
+            info={{
+              description: "Qualidade do atendimento nos leads auditados: aderência ao roteiro, saudação inicial e qualificação do lead.",
+              source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) — subconjunto da Kommo (sem Shopmonkey/pagamentos/telefone/manual). Considera leads auditados pela IA (last_ai_update preenchido) do período/vendedor.",
+              calculation: "Compliance = média de playbook_compliance_score; Saudação = % com has_greeting; Qualificação = % com has_qualification, sempre sobre os leads auditados do período.",
+            }}
           />
         </motion.div>
         <motion.div 
@@ -645,6 +718,11 @@ export default function TVDashboard() {
               { label: "Promoções/Âncora", icon: "promo", value: metrics?.anchoringRate ?? 0 },
               { label: "Contorno de Objeções", icon: "objection", value: metrics?.objectionOvercomeRate ?? 0 },
             ]}
+            info={{
+              description: "Uso de alavancas comerciais nos leads auditados: apresentação financeira (oferta), promoções/ancoragem e contorno de objeções.",
+              source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) — subconjunto da Kommo (sem Shopmonkey/pagamentos/telefone/manual). Considera leads auditados pela IA (last_ai_update preenchido) do período/vendedor.",
+              calculation: "Financeira = % com used_offer; Promoções/Âncora = % com used_anchoring (ambos sobre o total de auditados); Contorno de Objeções = % com objection_overcome entre os auditados que tiveram has_objection.",
+            }}
           />
         </motion.div>
       </motion.div>
@@ -659,6 +737,11 @@ export default function TVDashboard() {
         <TVObjectionRanking
           objections={metrics?.objectionRanking ?? []}
           overallRate={metrics?.objectionOvercomeRate ?? 0}
+          info={{
+            description: "Ranking das objeções mais frequentes nos atendimentos e a taxa em que cada uma foi contornada, com a taxa geral de contorno do período.",
+            source: "lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n) — subconjunto da Kommo (sem Shopmonkey/pagamentos/telefone/manual). Considera leads auditados pela IA (last_ai_update preenchido) do período/vendedor.",
+            calculation: "Agrupa os leads auditados por objection_categories; para cada categoria, contorno = % com objection_overcome. As 3 categorias mais frequentes formam o ranking; 'Contorno Geral' = % de objection_overcome entre os auditados com has_objection.",
+          }}
           alertMessage={
             metrics?.lowestObjection && metrics.lowestObjection.overcomeRate < 60
               ? `Objeção "${metrics.lowestObjection.label}" está com baixo contorno neste período`

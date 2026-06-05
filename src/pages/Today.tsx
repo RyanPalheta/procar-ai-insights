@@ -89,19 +89,29 @@ function TrendIcon({ trend }: { trend: "up" | "down" | "neutral" }) {
 }
 
 function KPICard({
-  title, value, icon: Icon, glowColor, footer,
+  title, value, icon: Icon, glowColor, footer, info,
 }: {
   title: string;
   value: React.ReactNode;
   icon: React.ComponentType<{ className?: string }>;
   glowColor: string;
   footer?: React.ReactNode;
+  info?: { description: string; source?: string; calculation?: string };
 }) {
   return (
     <MagicBentoCard glowColor={glowColor}>
       <Card className="bg-card border-border h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            {title}
+            {info && (
+              <ChartInfoTooltip
+                description={info.description}
+                source={info.source}
+                calculation={info.calculation}
+              />
+            )}
+          </CardTitle>
           <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -366,10 +376,15 @@ export default function Today() {
           value={loadingLeads ? "—" : metrics.totalLeads}
           icon={Users}
           glowColor="16, 185, 129"
+          info={{
+            description: "Leads de chat criados hoje, comparados com ontem.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo.",
+            calculation: "Conta os leads com created_at entre o início e o fim de hoje; a variação compara com a contagem de ontem.",
+          }}
           footer={
             <span className="flex items-center gap-1">
               <TrendIcon trend={leadsVariation.trend} />
-              {leadsVariation.label}
+              {leadsVariation.label} · só chat
             </span>
           }
         />
@@ -378,6 +393,11 @@ export default function Today() {
           value={loadingInteractions ? "—" : metrics.totalInteractions}
           icon={MessageSquare}
           glowColor="59, 130, 246"
+          info={{
+            description: "Total de mensagens trocadas hoje (recebidas e enviadas).",
+            source: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook).",
+            calculation: "Conta as interações com timestamp dentro de hoje (limitado às 500 mais recentes do dia).",
+          }}
           footer="recebidas e enviadas"
         />
         <KPICard
@@ -385,6 +405,11 @@ export default function Today() {
           value={loadingCalls ? "—" : metrics.totalCalls}
           icon={Phone}
           glowColor="139, 92, 246"
+          info={{
+            description: "Chamadas telefônicas registradas hoje, separadas em ativas (saída) e passivas (entrada).",
+            source: "Chamadas do call_db (Twilio + análise de IA). Independe da Kommo.",
+            calculation: "Conta as chamadas com created_at dentro de hoje; a direção (ativa/passiva) é deduzida dos números de origem/destino.",
+          }}
           footer={
             loadingCalls ? null : (
               <span className="flex items-center gap-2">
@@ -406,10 +431,15 @@ export default function Today() {
           value={metrics.closedToday}
           icon={DollarSign}
           glowColor="245, 158, 11"
+          info={{
+            description: "Leads de chat marcados como ganhos hoje, comparados com ontem.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo; ganhos = sales_status com 'ganha'.",
+            calculation: "Conta os leads criados hoje cujo sales_status contém 'ganha'; a variação compara com ontem.",
+          }}
           footer={
             <span className="flex items-center gap-1">
               <TrendIcon trend={closedVariation.trend} />
-              {closedVariation.label}
+              {closedVariation.label} · só chat
             </span>
           }
         />
@@ -418,6 +448,11 @@ export default function Today() {
           value={metrics.avgScore || "—"}
           icon={Gauge}
           glowColor="14, 165, 233"
+          info={{
+            description: "Score de qualidade médio (IA) dos leads de chat criados hoje.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo; considera só leads com lead_score preenchido.",
+            calculation: "Média de lead_score entre os leads de hoje que têm score preenchido, arredondada para inteiro.",
+          }}
           footer={metrics.avgScore >= 70 ? "alta qualidade" : metrics.avgScore >= 40 ? "moderado" : "baixo"}
         />
         <KPICard
@@ -425,6 +460,11 @@ export default function Today() {
           value={needsAttention.length}
           icon={AlertTriangle}
           glowColor="239, 68, 68"
+          info={{
+            description: `Leads de chat quentes (score ≥ ${HOT_LEAD_SCORE_THRESHOLD}) ainda abertos e sem interação há ${HOT_LEAD_THRESHOLD_MINUTES}+ minutos.`,
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Exclui status ganha/perdida/descartada. Não é limitado a hoje.",
+            calculation: `Entre os leads com lead_score ≥ ${HOT_LEAD_SCORE_THRESHOLD} e abertos, conta os sem last_interaction_at ou com a última interação há ${HOT_LEAD_THRESHOLD_MINUTES}+ minutos (máx. 10 exibidos).`,
+          }}
           footer={`hot leads sem resposta há ${HOT_LEAD_THRESHOLD_MINUTES}min+`}
         />
       </MagicBentoGrid>

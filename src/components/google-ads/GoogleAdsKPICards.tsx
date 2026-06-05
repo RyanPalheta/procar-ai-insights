@@ -34,6 +34,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={DollarSign}
           variant="default"
           description="Investimento no periodo"
+          info={{
+            description: "Total investido nas campanhas do Google Ads no periodo selecionado.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "Soma de cost_micros das linhas do periodo, dividida por 1.000.000.",
+          }}
         />
         <KPICard
           title="Impressoes"
@@ -41,6 +46,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={Eye}
           variant="default"
           description="Vezes que os anuncios foram vistos"
+          info={{
+            description: "Numero de vezes que os anuncios foram exibidos no periodo.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "Soma do campo impressions das linhas do periodo.",
+          }}
         />
         <KPICard
           title="Cliques"
@@ -48,6 +58,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={MousePointerClick}
           variant="default"
           description="Cliques nos anuncios"
+          info={{
+            description: "Total de cliques recebidos pelos anuncios no periodo.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "Soma do campo clicks das linhas do periodo.",
+          }}
         />
         <KPICard
           title="CTR"
@@ -55,6 +70,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={Percent}
           variant={data.ctr >= 3 ? "success" : data.ctr >= 1 ? "warning" : "destructive"}
           description="Taxa de cliques"
+          info={{
+            description: "Percentual de impressoes que geraram cliques.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "cliques / impressoes x 100 (somados no periodo).",
+          }}
         />
         <KPICard
           title="CPC"
@@ -62,6 +82,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={CircleDollarSign}
           variant={data.cpc <= 2 ? "success" : data.cpc <= 5 ? "warning" : "destructive"}
           description="Custo por clique"
+          info={{
+            description: "Custo medio por clique no anuncio.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "gasto / cliques (somados no periodo).",
+          }}
         />
         <KPICard
           title="Conversoes"
@@ -69,6 +94,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={Target}
           variant={data.conversions > 0 ? "success" : "default"}
           description="Total de conversoes"
+          info={{
+            description: "Total de conversoes atribuidas aos anuncios no periodo.",
+            source: "Metricas da API do Google Ads (conversoes configuradas na conta). Nao passa pela Kommo.",
+            calculation: "Soma do campo conversions das linhas do periodo.",
+          }}
         />
         <KPICard
           title="ROAS"
@@ -76,6 +106,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={TrendingUp}
           variant={data.roas >= 3 ? "success" : data.roas >= 1 ? "warning" : "default"}
           description="Retorno sobre gasto"
+          info={{
+            description: "Retorno sobre o investimento: valor de conversao por dolar gasto.",
+            source: "Metricas da API do Google Ads (valor das conversoes na conta). Nao passa pela Kommo.",
+            calculation: "valor de conversoes (conversions_value) / gasto, somados no periodo.",
+          }}
         />
         <KPICard
           title="Campanhas Ativas"
@@ -83,6 +118,11 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           icon={LayoutGrid}
           variant="default"
           description="Campanhas com status ativo"
+          info={{
+            description: "Quantidade de campanhas habilitadas no periodo.",
+            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
+            calculation: "Campaign_id unicos com campaign_status = ENABLED nas linhas do periodo.",
+          }}
         />
       </div>
     </MagicBentoGrid>
