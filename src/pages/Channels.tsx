@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import {
@@ -17,7 +18,6 @@ import {
   PieChart, Pie,
 } from "recharts";
 import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink, Instagram, Facebook, BarChart3 } from "lucide-react";
-import { subDays } from "date-fns";
 
 /* ----------------- helpers ----------------- */
 import type { LucideIcon } from "lucide-react";
@@ -56,21 +56,19 @@ function scoreColor(s: number | null): string {
 
 /* ----------------- page ----------------- */
 export default function Channels() {
-  const [period, setPeriod] = useState<"7" | "30" | "90" | "all">("30");
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "30" });
 
-  const periodStartIso = useMemo(() => {
-    if (period === "all") return null;
-    return subDays(new Date(), Number(period)).toISOString();
-  }, [period]);
+  const range = useMemo(() => resolvePeriod(period), [period]);
 
   /* --------- queries --------- */
   const { data: leads = [], isLoading: loadingLeads } = useQuery({
-    queryKey: ["channels-leads", period],
+    queryKey: ["channels-leads", range.fromIso, range.toIso],
     queryFn: async () => {
       let q = supabase
         .from("lead_db")
         .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, has_objection, objection_overcome, created_at, last_interaction_at");
-      if (periodStartIso) q = q.gte("created_at", periodStartIso);
+      if (range.fromIso) q = q.gte("created_at", range.fromIso);
+      if (range.toIso) q = q.lte("created_at", range.toIso);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -78,13 +76,14 @@ export default function Channels() {
   });
 
   const { data: interactions = [], isLoading: loadingInteractions } = useQuery({
-    queryKey: ["channels-interactions", period],
+    queryKey: ["channels-interactions", range.fromIso, range.toIso],
     queryFn: async () => {
       let q = supabase
         .from("interaction_db")
         .select("session_id, channel, sender_type, timestamp")
         .limit(50000);
-      if (periodStartIso) q = q.gte("timestamp", periodStartIso);
+      if (range.fromIso) q = q.gte("timestamp", range.fromIso);
+      if (range.toIso) q = q.lte("timestamp", range.toIso);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -92,12 +91,13 @@ export default function Channels() {
   });
 
   const { data: calls = [] } = useQuery({
-    queryKey: ["channels-calls", period],
+    queryKey: ["channels-calls", range.fromIso, range.toIso],
     queryFn: async () => {
       let q = supabase
         .from("call_db")
         .select("call_id, session_id, call_duration, lead_score, ai_call_analysis, created_at");
-      if (periodStartIso) q = q.gte("created_at", periodStartIso);
+      if (range.fromIso) q = q.gte("created_at", range.fromIso);
+      if (range.toIso) q = q.lte("created_at", range.toIso);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
@@ -247,15 +247,7 @@ export default function Channels() {
           <h2 className="text-2xl font-semibold tracking-tight">Análise por Canal</h2>
           <p className="text-muted-foreground">Performance e comportamento separados por WhatsApp, Instagram, Facebook e Telefone</p>
         </div>
-        <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Últimos 7 dias</SelectItem>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-            <SelectItem value="all">Todo o período</SelectItem>
-          </SelectContent>
-        </Select>
+        <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
       <Tabs defaultValue="compare">

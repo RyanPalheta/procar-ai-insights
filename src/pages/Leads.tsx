@@ -14,9 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Calendar, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { differenceInHours, startOfDay, endOfDay, isWithinInterval, parseISO, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { differenceInHours } from "date-fns";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -61,9 +63,8 @@ export default function Leads() {
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [scoreRange, setScoreRange] = useState<[number, number]>([0, 100]);
   const [complianceRange, setComplianceRange] = useState<[number, number]>([0, 100]);
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
-  const [activeDatePreset, setActiveDatePreset] = useState<string | null>(null);
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "all" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
   const [showFilters, setShowFilters] = useState(false);
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -231,20 +232,11 @@ export default function Leads() {
         return false;
       }
 
-      if (dateFrom || dateTo) {
-        const leadDate = parseISO(lead.created_at);
-        
-        if (dateFrom && dateTo) {
-          const fromDate = startOfDay(parseISO(dateFrom));
-          const toDate = endOfDay(parseISO(dateTo));
-          if (!isWithinInterval(leadDate, { start: fromDate, end: toDate })) return false;
-        } else if (dateFrom) {
-          const fromDate = startOfDay(parseISO(dateFrom));
-          if (leadDate < fromDate) return false;
-        } else if (dateTo) {
-          const toDate = endOfDay(parseISO(dateTo));
-          if (leadDate > toDate) return false;
-        }
+      // Period filter (standardized)
+      if (range.from !== null || range.to !== null) {
+        const created = new Date(lead.created_at);
+        if (range.from !== null && created < range.from) return false;
+        if (range.to !== null && created > range.to) return false;
       }
 
       // Cold audit filters
@@ -295,7 +287,7 @@ export default function Leads() {
     });
 
     return result;
-  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, dateFrom, dateTo, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter, upsellFilter]);
+  }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, range.from, range.to, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter, upsellFilter]);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
@@ -317,9 +309,7 @@ export default function Leads() {
     setSellerFilter("all");
     setScoreRange([0, 100]);
     setComplianceRange([0, 100]);
-    setDateFrom("");
-    setDateTo("");
-    setActiveDatePreset(null);
+    setPeriod({ preset: "all" });
     setColdAuditFilter("all");
     setReactivationFilter("all");
     setFollowupFilter("all");
@@ -337,8 +327,7 @@ export default function Leads() {
     sellerFilter !== "all",
     scoreRange[0] !== 0 || scoreRange[1] !== 100,
     complianceRange[0] !== 0 || complianceRange[1] !== 100,
-    dateFrom !== "",
-    dateTo !== "",
+    period.preset !== "all",
     coldAuditFilter !== "all",
     reactivationFilter !== "all",
     followupFilter !== "all",
@@ -357,33 +346,6 @@ export default function Leads() {
         return { icon: <Snowflake className="h-3 w-3" />, label: "Frio", className: "bg-blue-500 text-white border-blue-500" };
       default:
         return null;
-    }
-  };
-
-  const applyQuickDateFilter = (period: "today" | "last7days" | "last30days" | "lastMonth") => {
-    const today = new Date();
-    const todayStr = format(today, "yyyy-MM-dd");
-    setActiveDatePreset(period);
-    resetPage();
-
-    switch (period) {
-      case "today":
-        setDateFrom(todayStr);
-        setDateTo(todayStr);
-        break;
-      case "last7days":
-        setDateFrom(format(subDays(today, 7), "yyyy-MM-dd"));
-        setDateTo(todayStr);
-        break;
-      case "last30days":
-        setDateFrom(format(subDays(today, 30), "yyyy-MM-dd"));
-        setDateTo(todayStr);
-        break;
-      case "lastMonth":
-        const lastMonth = subMonths(today, 1);
-        setDateFrom(format(startOfMonth(lastMonth), "yyyy-MM-dd"));
-        setDateTo(format(endOfMonth(lastMonth), "yyyy-MM-dd"));
-        break;
     }
   };
 
@@ -473,6 +435,7 @@ export default function Leads() {
             {leads && <span className="ml-1">({leads.length} total)</span>}
           </p>
         </div>
+        <PeriodFilter value={period} onChange={(v) => { setPeriod(v); resetPage(); }} />
       </div>
 
       {/* Cold Audit KPIs */}
@@ -602,56 +565,10 @@ export default function Leads() {
 
           {showFilters && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
-              {/* Date Range Filter */}
-              <div className="space-y-4 pb-4 border-b">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Filtros Rápidos de Período
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    { key: "today", label: "Hoje" },
-                    { key: "last7days", label: "Últimos 7 dias" },
-                    { key: "last30days", label: "Últimos 30 dias" },
-                    { key: "lastMonth", label: "Último mês" },
-                  ] as const).map(({ key, label }) => (
-                    <Button
-                      key={key}
-                      variant={activeDatePreset === key ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => applyQuickDateFilter(key)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Data Inicial
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => { setDateFrom(e.target.value); setActiveDatePreset(null); resetPage(); }}
-                    max={dateTo || undefined}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Data Final
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => { setDateTo(e.target.value); setActiveDatePreset(null); resetPage(); }}
-                    min={dateFrom || undefined}
-                  />
-                </div>
+              {/* Date Range Filter (standardized) */}
+              <div className="space-y-2 pb-4 border-b">
+                <Label>Período</Label>
+                <PeriodFilter value={period} onChange={(v) => { setPeriod(v); resetPage(); }} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

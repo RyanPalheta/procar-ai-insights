@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -12,12 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 
 export default function Interactions() {
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "30" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
+
   const { data: interactions, isLoading } = useQuery({
-    queryKey: ["interactions"],
+    queryKey: ["interactions", range.fromIso, range.toIso],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("interaction_db")
         .select(`
           *,
@@ -25,7 +31,11 @@ export default function Interactions() {
             processed
           )
         `)
-        .order("timestamp", { ascending: false });
+        .order("timestamp", { ascending: false })
+        .limit(5000);
+      if (range.fromIso) q = q.gte("timestamp", range.fromIso);
+      if (range.toIso) q = q.lte("timestamp", range.toIso);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -33,11 +43,14 @@ export default function Interactions() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Interações</h2>
-        <p className="text-muted-foreground">
-          Análise de mensagens e interações com clientes
-        </p>
+      <div className="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Interações</h2>
+          <p className="text-muted-foreground">
+            Análise de mensagens e interações com clientes
+          </p>
+        </div>
+        <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
       <MagicBentoGrid className="grid gap-4 md:grid-cols-2" glowColor="59, 130, 246">

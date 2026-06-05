@@ -14,9 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, X, AlertTriangle, Lightbulb, Gift, Anchor, TrendingUp } from "lucide-react";
-import { differenceInHours, parseISO, format, subDays, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
+import { differenceInHours, differenceInDays, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
+import { resolvePeriod, type PeriodValue } from "@/lib/period";
 
 // Chart Components
 import { LeadsKPICards } from "@/components/leads/LeadsKPICards";
@@ -67,17 +67,16 @@ export default function Dashboard() {
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [languageFilter, setLanguageFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  
+
   // Period Controls
-  const [scorePeriod, setScorePeriod] = useState<"all" | "7" | "30" | "90">("7");
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "7" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
   const [channelMode, setChannelMode] = useState<"all" | "closed">("all");
 
   // Fetch ALL leads using pagination to bypass 1000-row limit
   const { data: leads } = useQuery({
-    queryKey: ["leads", scorePeriod, dateFrom?.toISOString(), dateTo?.toISOString()],
+    queryKey: ["leads", range.fromIso, range.toIso],
     queryFn: async () => {
       const batchSize = 1000;
       let allLeads: any[] = [];
@@ -91,15 +90,8 @@ export default function Dashboard() {
           .order("created_at", { ascending: false });
 
         // Apply period filter server-side
-        if (dateFrom) {
-          query = query.gte("created_at", startOfDay(dateFrom).toISOString());
-        } else if (scorePeriod !== "all") {
-          const periodStart = subDays(new Date(), parseInt(scorePeriod));
-          query = query.gte("created_at", startOfDay(periodStart).toISOString());
-        }
-        if (dateTo) {
-          query = query.lte("created_at", endOfDay(dateTo).toISOString());
-        }
+        if (range.fromIso) query = query.gte("created_at", range.fromIso);
+        if (range.toIso) query = query.lte("created_at", range.toIso);
 
         const { data, error } = await query.range(from, from + batchSize - 1);
         if (error) throw error;
@@ -114,11 +106,11 @@ export default function Dashboard() {
 
   // Fetch KPIs via RPC
   const { data: kpisData } = useQuery({
-    queryKey: ["leads-kpis", scorePeriod],
+    queryKey: ["leads-kpis", range.fromIso, range.toIso],
     queryFn: async () => {
-      const periodDays = scorePeriod === "all" ? null : parseInt(scorePeriod);
-      const { data, error } = await supabase.rpc("get_leads_kpis", { 
-        period_days: periodDays 
+      const { data, error } = await supabase.rpc("get_leads_kpis", {
+        date_from: range.fromIso,
+        date_to: range.toIso,
       });
       if (error) throw error;
       return data as {
@@ -228,36 +220,24 @@ export default function Dashboard() {
       if (languageFilter !== "all") {
         if (lead.lead_language !== languageFilter) return false;
       }
-      if (dateFrom) {
-        const createdAt = new Date(lead.created_at);
-        if (createdAt < startOfDay(dateFrom)) return false;
-      }
-      if (dateTo) {
-        const createdAt = new Date(lead.created_at);
-        if (createdAt > endOfDay(dateTo)) return false;
-      }
       return true;
     }) || [];
-  }, [leads, channelFilter, statusFilter, languageFilter, dateFrom, dateTo]);
+  }, [leads, channelFilter, statusFilter, languageFilter]);
 
-  const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all" || !!dateFrom || !!dateTo;
+  const hasActiveGlobalFilters = channelFilter !== "all" || statusFilter !== "all" || languageFilter !== "all";
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (channelFilter !== "all") count++;
     if (statusFilter !== "all") count++;
     if (languageFilter !== "all") count++;
-    if (dateFrom) count++;
-    if (dateTo) count++;
     return count;
-  }, [channelFilter, statusFilter, languageFilter, dateFrom, dateTo]);
+  }, [channelFilter, statusFilter, languageFilter]);
 
   const clearGlobalFilters = () => {
     setChannelFilter("all");
     setStatusFilter("all");
     setLanguageFilter("all");
-    setDateFrom(undefined);
-    setDateTo(undefined);
   };
 
   // KPI Calculations
@@ -527,10 +507,16 @@ export default function Dashboard() {
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
 
-    // Timeline data — uses the main scorePeriod filter
-    const timelinePeriodDays = scorePeriod === "all" ? 90 : parseInt(scorePeriod);
+    // Timeline data — uses the resolved period range span
+    const timelinePeriodDays = range.from && range.to
+      ? Math.max(1, differenceInDays(range.to, range.from) + 1)
+      : 90;
     const timelineCounts = new Map<string, number>();
-    const periodStart = subDays(new Date(), timelinePeriodDays);
+    // Anchor buckets to the END of the resolved range (range.to) so that
+    // "Ontem"/past custom ranges line up with the dd/MM keys the leads carry.
+    // For "Todos"/no upper bound, fall back to now (preserves the old behavior).
+    const endRef = range.to ?? new Date();
+    const periodStart = range.from ?? subDays(endRef, timelinePeriodDays);
     globalFilteredLeads.forEach(l => {
       const leadDate = parseISO(l.created_at);
       if (leadDate >= periodStart) {
@@ -541,7 +527,7 @@ export default function Dashboard() {
 
     const timelineData: Array<{ date: string; count: number }> = [];
     for (let i = timelinePeriodDays - 1; i >= 0; i--) {
-      const date = subDays(new Date(), i);
+      const date = subDays(endRef, i);
       const dateKey = format(date, "dd/MM");
       timelineData.push({
         date: dateKey,
@@ -649,7 +635,7 @@ export default function Dashboard() {
       notUsedAnchoring,
       anchoringRate
     };
-  }, [globalFilteredLeads, scorePeriod]);
+  }, [globalFilteredLeads, range]);
 
   // Recent objections
   const recentObjections = useMemo(() => {
@@ -764,14 +750,6 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
 
-                {/* Date Range Filter */}
-                <DateRangeFilter
-                  dateFrom={dateFrom}
-                  dateTo={dateTo}
-                  onDateFromChange={setDateFrom}
-                  onDateToChange={setDateTo}
-                />
-                
                 {/* Clear Button */}
                 {hasActiveGlobalFilters && (
                   <Button variant="ghost" size="sm" onClick={clearGlobalFilters} className="h-9">
@@ -786,10 +764,10 @@ export default function Dashboard() {
       </Collapsible>
 
       {/* KPI Cards Section */}
-      <LeadsKPICards 
-        {...kpiMetrics} 
-        scorePeriod={scorePeriod}
-        onScorePeriodChange={setScorePeriod}
+      <LeadsKPICards
+        {...kpiMetrics}
+        period={period}
+        onPeriodChange={setPeriod}
       />
 
       {/* Timeline Chart - Full Width */}
@@ -828,11 +806,13 @@ export default function Dashboard() {
 
       {/* Conversion by Response Time & Quote Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <LeadsConversionByResponseTimeChart 
-          periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
+        <LeadsConversionByResponseTimeChart
+          dateFrom={range.fromIso}
+          dateTo={range.toIso}
         />
-        <LeadsConversionByQuoteChart 
-          periodDays={scorePeriod === "all" ? null : parseInt(scorePeriod)} 
+        <LeadsConversionByQuoteChart
+          dateFrom={range.fromIso}
+          dateTo={range.toIso}
         />
       </div>
 

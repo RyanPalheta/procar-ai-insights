@@ -27,7 +27,8 @@ interface SellersRankingTableProps {
   sellers: SellerKPI[];
   goals: GoalData[][];
   sellerGoalsMap: Map<string, GoalData[]>;
-  periodDays: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
 }
 
 type SortKey = "seller_id" | "conversion_rate" | "leads_with_quote" | "objections_rate" | "total_audited" | "walking_leads";
@@ -41,7 +42,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "seller_id", label: "Nome (A-Z)" },
 ];
 
-export function SellersRankingTable({ sellers, sellerGoalsMap, periodDays }: SellersRankingTableProps) {
+export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo }: SellersRankingTableProps) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total_audited");
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
@@ -318,7 +319,8 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, periodDays }: Sel
             <SellerDetailView
               seller={selectedSellerData}
               goals={sellerGoalsMap.get(selectedSeller!) || []}
-              periodDays={periodDays}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
             />
           )}
         </DialogContent>

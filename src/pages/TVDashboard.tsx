@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Percent, Clock, Star, RefreshCw, Home, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { format, subDays, startOfDay } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
@@ -14,7 +14,8 @@ import { TVKPICard } from "@/components/tv/TVKPICard";
 import { TVQualitySection } from "@/components/tv/TVQualitySection";
 import { TVEfficiencySection } from "@/components/tv/TVEfficiencySection";
 import { TVObjectionRanking } from "@/components/tv/TVObjectionRanking";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
+import { resolvePeriod, previousResolved, type PeriodValue } from "@/lib/period";
 import {
   Select,
   SelectContent,
@@ -34,13 +35,6 @@ const objectionLabels: Record<string, string> = {
   tecnica: "Técnica/Produto",
   indecisao: "Indecisão",
 };
-
-// Period options
-const periodOptions = [
-  { value: "1", label: "Hoje", days: 1 },
-  { value: "7", label: "7 dias", days: 7 },
-  { value: "30", label: "30 dias", days: 30 },
-];
 
 // Animation variants
 const containerVariants = {
@@ -95,9 +89,9 @@ const sectionVariants = {
 };
 
 export default function TVDashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState("7");
+  const [period, setPeriod] = useState<PeriodValue>({ preset: "7" });
+  const range = useMemo(() => resolvePeriod(period), [period]);
   const [selectedSeller, setSelectedSeller] = useState("all");
-  const periodDays = parseInt(selectedPeriod);
   const { role, signOut } = useAuth();
   const navigate = useNavigate();
   const isAdmin = role === "admin";
@@ -148,9 +142,9 @@ export default function TVDashboard() {
 
   // Fetch KPIs from RPC with dynamic period
   const { data: kpisData } = useQuery({
-    queryKey: ["tv-kpis", periodDays],
+    queryKey: ["tv-kpis", range.fromIso, range.toIso],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_leads_kpis", { period_days: periodDays });
+      const { data, error } = await supabase.rpc("get_leads_kpis", { date_from: range.fromIso, date_to: range.toIso });
       if (error) throw error;
       // Map flat RPC response to structured format
       const raw = data as any;
@@ -186,29 +180,30 @@ export default function TVDashboard() {
     return Array.from(sellers).sort();
   }, [leads]);
 
-  // Filter leads by selected period and seller
+  // Filter leads by selected period and seller (calendar bounds)
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
-    const startDate = startOfDay(subDays(new Date(), periodDays));
     return leads.filter(l => {
-      if (new Date(l.created_at) < startDate) return false;
+      const created = new Date(l.created_at);
+      if (range.from !== null && created < range.from) return false;
+      if (range.to !== null && created > range.to) return false;
       if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
       return true;
     });
-  }, [leads, periodDays, selectedSeller]);
+  }, [leads, range.fromIso, range.toIso, selectedSeller]);
 
   // Previous period leads for comparison
   const previousPeriodLeads = useMemo(() => {
     if (!leads) return [];
-    const currentStart = startOfDay(subDays(new Date(), periodDays));
-    const previousStart = startOfDay(subDays(new Date(), periodDays * 2));
+    const prev = previousResolved(range);
+    if (!prev) return [];
     return leads.filter(l => {
-      const date = new Date(l.created_at);
-      if (!(date >= previousStart && date < currentStart)) return false;
+      const created = new Date(l.created_at);
+      if (!(created >= prev.from && created <= prev.to)) return false;
       if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
       return true;
     });
-  }, [leads, periodDays, selectedSeller]);
+  }, [leads, range.fromIso, range.toIso, selectedSeller]);
 
 
   // Calculate metrics for current period
@@ -426,7 +421,7 @@ export default function TVDashboard() {
   }, [kpisData, metrics, previousMetrics]);
 
   const lastUpdate = dataUpdatedAt ? format(new Date(dataUpdatedAt), "HH:mm:ss", { locale: ptBR }) : "";
-  const periodLabel = periodOptions.find(p => p.value === selectedPeriod)?.label || "7 dias";
+  const periodLabel = range.label;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 lg:p-8 overflow-hidden">
@@ -482,30 +477,14 @@ export default function TVDashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
         >
-          {/* Period Toggle */}
+          {/* Period Filter */}
           <div className="flex items-center gap-3">
             <span className="text-slate-500 text-sm font-medium">Período:</span>
-            <ToggleGroup 
-              type="single" 
-              value={selectedPeriod} 
-              onValueChange={(value) => value && setSelectedPeriod(value)}
-              className="bg-white rounded-xl p-1 shadow-sm border border-slate-200"
-            >
-              {periodOptions.map((option) => (
-                <ToggleGroupItem
-                  key={option.value}
-                  value={option.value}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-lg transition-all",
-                    selectedPeriod === option.value
-                      ? "bg-slate-800 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100"
-                  )}
-                >
-                  {option.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              presets={["today", "yesterday", "7", "30", "90"]}
+            />
           </div>
 
           {/* Seller Filter */}
