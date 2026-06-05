@@ -1,5 +1,6 @@
 import { AlertTriangle, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 
 interface QualityMetric {
   label: string;
@@ -7,9 +8,16 @@ interface QualityMetric {
   showAlert?: boolean;
 }
 
+interface TVSectionInfo {
+  description: string;
+  source?: string;
+  calculation?: string;
+}
+
 interface TVQualitySectionProps {
   metrics: QualityMetric[];
   insight?: string;
+  info?: TVSectionInfo;
 }
 
 function TVProgressBar({ 
@@ -48,11 +56,18 @@ function TVProgressBar({
   );
 }
 
-export function TVQualitySection({ metrics, insight }: TVQualitySectionProps) {
+export function TVQualitySection({ metrics, insight, info }: TVQualitySectionProps) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100 h-full">
-      <h3 className="text-xl font-semibold text-slate-800 mb-6">
+      <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
         Qualidade de Atendimento
+        {info && (
+          <ChartInfoTooltip
+            description={info.description}
+            source={info.source}
+            calculation={info.calculation}
+          />
+        )}
       </h3>
       
       <div className="space-y-5">

@@ -17,6 +17,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const RESPONSE_TIME_THRESHOLD_KEY = "leads_response_time_threshold";
 const DEFAULT_THRESHOLD = 60;
 
+// Renders the extra provenance lines (fonte + cálculo) inside an existing
+// TooltipContent, below the comparison line.
+const TooltipProvenance = ({ fonte, calculo }: { fonte: string; calculo: string }) => (
+  <div className="mt-1 pt-1 border-t border-border space-y-0.5">
+    <p className="text-[11px] leading-snug text-muted-foreground">
+      <span className="font-medium text-foreground">Fonte:</span> {fonte}
+    </p>
+    <p className="text-[11px] leading-snug text-muted-foreground">
+      <span className="font-medium text-foreground">Como é calculado:</span> {calculo}
+    </p>
+  </div>
+);
+
 interface LeadsKPICardsProps {
   conversionRate: number;
   conversionRateVariation: number | null;
@@ -54,10 +67,19 @@ const formatResponseTime = (minutes: number): string => {
   return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
 };
 
+// Fonte comum a todos os indicadores de lead_db: o BI lê o lead_db, que é
+// alimentado SÓ por conversas de WhatsApp/chat (Evolution API -> n8n). NÃO há sync
+// ativo de todos os leads da Kommo, então NÃO inclui agendamentos Shopmonkey,
+// pagamentos, telefone nem entrada manual -> é um SUBCONJUNTO da Kommo.
+const LEAD_DB_SOURCE =
+  "Lead_db: alimentado só por conversas de WhatsApp/chat (sem sync de toda a Kommo) — é um subconjunto da Kommo, não o total.";
+
 const kpiTooltips = {
   conversionRate: {
     title: "Taxa de Conversão",
     description: "Percentual de leads que foram convertidos em vendas ganhas.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: leads auditados pela IA (last_ai_update preenchido).`,
+    calculo: "won_leads ÷ total_audited × 100. Ganhos = sales_status contém 'ganha', 'won' ou 'agendamento confirmado'; total = leads auditados (last_ai_update preenchido) no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -65,6 +87,8 @@ const kpiTooltips = {
   avgScore: {
     title: "Score Médio",
     description: "Média dos scores de qualificação atribuídos pela IA aos leads.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: leads auditados pela IA (last_ai_update preenchido).`,
+    calculo: "AVG(lead_score) dos leads auditados (last_ai_update preenchido) com lead_score definido no período, arredondado a 1 casa.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -72,11 +96,15 @@ const kpiTooltips = {
   newLeads24h: {
     title: "Leads Novos (24h)",
     description: "Quantidade de novos leads auditados nas últimas 24 horas.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: todos os leads criados no lead_db (created_at).`,
+    calculo: "COUNT de leads com created_at nas últimas 24h. Comparação: COUNT das 24h anteriores (48h a 24h atrás). Janela fixa, ignora o filtro de período.",
     comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com as 24 horas anteriores"
   },
   leadsWithQuote: {
     title: "Leads com Cotação",
     description: "Quantidade de leads que possuem um valor de cotação definido.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com cotação (lead_price preenchido).`,
+    calculo: "COUNT de leads auditados (last_ai_update preenchido) com lead_price preenchido (não nulo) no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -84,6 +112,8 @@ const kpiTooltips = {
   avgQuotedPrice: {
     title: "Valor Médio Cotado",
     description: "Ticket médio das cotações realizadas.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com cotação (lead_price preenchido).`,
+    calculo: "AVG(lead_price) dos leads auditados (last_ai_update preenchido) com lead_price preenchido no período, arredondado a 2 casas.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -91,6 +121,8 @@ const kpiTooltips = {
   medianFirstResponseTime: {
     title: "Tempo Mediano 1ª Resposta",
     description: "Mediana do tempo entre a 1ª e 3ª interação do lead. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
+    fonte: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook), cruzadas com leads do lead_db (subconjunto de chat da Kommo).",
+    calculo: "Mediana (PERCENTILE_CONT 0.5) de (timestamp da 3ª − timestamp da 1ª interação), em minutos, das sessões com ao menos 3 interações; leads filtrados por created_at no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -98,6 +130,8 @@ const kpiTooltips = {
   walkingLeads: {
     title: "Leads Presenciais",
     description: "Quantidade de leads marcados como presenciais (walking), ou seja, clientes que visitaram a loja fisicamente.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA marcados como presenciais (is_walking = true).`,
+    calculo: "COUNT de leads auditados (last_ai_update preenchido) com is_walking = true no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -105,6 +139,8 @@ const kpiTooltips = {
   upsellLeads: {
     title: "Oportunidades de Upsell",
     description: "Quantidade de leads onde a IA identificou oportunidade de vender produtos/serviços adicionais.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com upsell detectado (has_upsell = true).`,
+    calculo: "COUNT de leads auditados (last_ai_update preenchido) com has_upsell = true no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -112,6 +148,8 @@ const kpiTooltips = {
   upsellTotalValue: {
     title: "Valor Potencial Upsell",
     description: "Soma dos valores estimados de upsell identificados pela IA nos leads do período.",
+    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com upsell detectado (has_upsell = true).`,
+    calculo: "SUM(upsell_value_estimate) dos leads auditados (last_ai_update preenchido) com has_upsell = true no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -238,7 +276,7 @@ export function LeadsKPICards({
                     value={`${conversionRate.toFixed(1)}%`}
                     icon={TrendingUp}
                     variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
-                    description="Leads ganhos vs total"
+                    description="Ganhos vs auditados (chat) · ≠ Kommo"
                     trend={getTrend(conversionRateVariation)}
                   />
                 </div>
@@ -248,6 +286,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.conversionRate.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.conversionRate.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.conversionRate.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.conversionRate.fonte} calculo={kpiTooltips.conversionRate.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -260,7 +299,7 @@ export function LeadsKPICards({
                     value={avgScore.toFixed(1)}
                     icon={Award}
                     variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-                    description={isAll ? "Todos os leads" : periodLabel}
+                    description={isAll ? "Auditados (chat) · ≠ Kommo" : periodLabel}
                     trend={getTrend(scoreVariation)}
                   />
                 </div>
@@ -270,6 +309,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.avgScore.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.avgScore.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.avgScore.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.avgScore.fonte} calculo={kpiTooltips.avgScore.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -282,7 +322,7 @@ export function LeadsKPICards({
                     value={newLeads24h}
                     icon={Clock}
                     variant="default"
-                    description="vs. 24h anteriores"
+                    description="Chat (lead_db) · ≠ Kommo"
                     trend={getTrend(newLeads24hVariation, true)}
                   />
                 </div>
@@ -292,6 +332,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.newLeads24h.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.newLeads24h.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.newLeads24h.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.newLeads24h.fonte} calculo={kpiTooltips.newLeads24h.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -304,7 +345,7 @@ export function LeadsKPICards({
                     value={leadsWithQuote}
                     icon={Receipt}
                     variant="default"
-                    description={isAll ? "Com preço definido" : periodLabel}
+                    description={isAll ? "Auditados c/ preço · ≠ Kommo" : periodLabel}
                     trend={getTrend(leadsWithQuoteVariation)}
                   />
                 </div>
@@ -314,6 +355,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.leadsWithQuote.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.leadsWithQuote.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.leadsWithQuote.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.leadsWithQuote.fonte} calculo={kpiTooltips.leadsWithQuote.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -326,7 +368,7 @@ export function LeadsKPICards({
                     value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
                     icon={DollarSign}
                     variant="success"
-                    description={isAll ? "Ticket médio" : periodLabel}
+                    description={isAll ? "Ticket médio · auditados (chat)" : periodLabel}
                     trend={getTrend(avgQuotedPriceVariation)}
                   />
                 </div>
@@ -336,6 +378,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.avgQuotedPrice.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.avgQuotedPrice.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.avgQuotedPrice.fonte} calculo={kpiTooltips.avgQuotedPrice.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -369,6 +412,7 @@ export function LeadsKPICards({
                   <p className="text-xs mt-1 pt-1 border-t border-border">
                     <span className="font-medium">Limite configurado:</span> {formatResponseTime(threshold)}
                   </p>
+                  <TooltipProvenance fonte={kpiTooltips.medianFirstResponseTime.fonte} calculo={kpiTooltips.medianFirstResponseTime.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -381,7 +425,7 @@ export function LeadsKPICards({
                     value={walkingLeads}
                     icon={Footprints}
                     variant={walkingLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Walking leads" : periodLabel}
+                    description={isAll ? "Walking · auditados (chat)" : periodLabel}
                     trend={getTrend(walkingLeadsVariation)}
                   />
                 </div>
@@ -391,6 +435,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.walkingLeads.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.walkingLeads.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.walkingLeads.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.walkingLeads.fonte} calculo={kpiTooltips.walkingLeads.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -403,7 +448,7 @@ export function LeadsKPICards({
                     value={upsellLeads}
                     icon={PackagePlus}
                     variant={upsellLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Leads com upsell" : periodLabel}
+                    description={isAll ? "Upsell · auditados (chat)" : periodLabel}
                     trend={getTrend(upsellLeadsVariation)}
                   />
                 </div>
@@ -413,6 +458,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.upsellLeads.fonte} calculo={kpiTooltips.upsellLeads.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -425,7 +471,7 @@ export function LeadsKPICards({
                     value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
                     icon={BadgeDollarSign}
                     variant={upsellTotalValue > 0 ? "success" : "default"}
-                    description={isAll ? "Potencial estimado" : periodLabel}
+                    description={isAll ? "Estimado · auditados (chat)" : periodLabel}
                     trend={getTrend(upsellTotalValueVariation)}
                   />
                 </div>
@@ -435,6 +481,7 @@ export function LeadsKPICards({
                   <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
                   <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
                   <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.upsellTotalValue.fonte} calculo={kpiTooltips.upsellTotalValue.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>

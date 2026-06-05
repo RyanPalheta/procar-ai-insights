@@ -452,7 +452,12 @@ export default function Leads() {
                 value={coldKpis.total_cold}
                 icon={Snowflake}
                 variant="warning"
-                description="Total com auditoria fria"
+                description="Total com auditoria fria · chat ≠ Kommo"
+                info={{
+                  description: "Quantidade de leads que passaram pela auditoria de leads frios (sem avanço/parados).",
+                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido.",
+                  calculation: "RPC get_cold_audit_kpis → total_cold: COUNT(*) do lead_db onde cold_audit_at IS NOT NULL.",
+                }}
               />
             </div>
             <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setFollowupFilter("nok"); resetPage(); }}>
@@ -461,7 +466,12 @@ export default function Leads() {
                 value={coldKpis.without_followup}
                 icon={UserX}
                 variant="destructive"
-                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios`}
+                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios · chat ≠ Kommo`}
+                info={{
+                  description: "Leads frios cuja auditoria apontou follow-up inadequado pelo vendedor.",
+                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido e cold_audit_followup_ok = false.",
+                  calculation: "RPC get_cold_audit_kpis → without_followup (cold_audit_followup_ok = false). O % exibido = without_followup ÷ total_cold × 100.",
+                }}
               />
             </div>
             <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); setReactivationFilter("alta"); resetPage(); }}>
@@ -470,7 +480,12 @@ export default function Leads() {
                 value={coldKpis.reactivatable}
                 icon={RotateCcw}
                 variant="success"
-                description="Chance alta ou média"
+                description="Chance alta ou média · chat ≠ Kommo"
+                info={{
+                  description: "Leads frios com chance de reativação considerada alta ou média pela IA.",
+                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido e cold_audit_reactivation_chance in ('alta','media').",
+                  calculation: "RPC get_cold_audit_kpis → reactivatable: COUNT(*) com cold_audit_reactivation_chance em ('alta','media').",
+                }}
               />
             </div>
             <KPICard
@@ -478,7 +493,12 @@ export default function Leads() {
               value={`${coldKpis.followup_ok_rate}%`}
               icon={CheckCircle2}
               variant="default"
-              description="Vendedores com follow-up adequado"
+              description="Follow-up adequado · chat ≠ Kommo"
+              info={{
+                description: "Percentual dos leads frios auditados em que o follow-up foi considerado adequado.",
+                source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido.",
+                calculation: "RPC get_cold_audit_kpis → followup_ok_rate: COUNT(cold_audit_followup_ok = true) × 100 ÷ total de leads frios auditados, arredondado a 1 casa.",
+              }}
             />
           </div>
         </div>
@@ -503,7 +523,12 @@ export default function Leads() {
                   value={upsellCount}
                   icon={TrendingUp}
                   variant="success"
-                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos leads auditados`}
+                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos leads auditados · chat ≠ Kommo`}
+                  info={{
+                    description: "Leads auditados em que a IA identificou oportunidade de upsell.",
+                    source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: has_upsell = true (e last_ai_update preenchido).",
+                    calculation: "Conta os leads carregados com has_upsell e last_ai_update. O % = esses leads ÷ total de leads auditados (last_ai_update preenchido) × 100.",
+                  }}
                 />
               </div>
               <KPICard
@@ -511,7 +536,12 @@ export default function Leads() {
                 value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue) : "N/A"}
                 icon={DollarSign}
                 variant="success"
-                description="Estimativa total"
+                description="Estimativa total · chat ≠ Kommo"
+                info={{
+                  description: "Soma estimada do valor das oportunidades de upsell identificadas.",
+                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: has_upsell = true (e last_ai_update preenchido).",
+                  calculation: "SUM(upsell_value_estimate) dos leads com has_upsell e last_ai_update, somado no cliente e formatado em USD.",
+                }}
               />
             </div>
           </div>

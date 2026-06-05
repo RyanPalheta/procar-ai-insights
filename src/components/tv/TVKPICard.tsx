@@ -1,5 +1,6 @@
 import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 
 interface TVKPICardProps {
   title: string;
@@ -11,15 +12,21 @@ interface TVKPICardProps {
   };
   isAlert?: boolean;
   subtitle?: string;
+  info?: {
+    description: string;
+    source?: string;
+    calculation?: string;
+  };
 }
 
-export function TVKPICard({ 
-  title, 
-  value, 
-  icon: Icon, 
+export function TVKPICard({
+  title,
+  value,
+  icon: Icon,
   trend,
   isAlert = false,
-  subtitle
+  subtitle,
+  info
 }: TVKPICardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100 h-full flex flex-col">
@@ -34,6 +41,14 @@ export function TVKPICard({
           )} />
         </div>
         <span className="text-slate-500 text-lg font-medium">{title}</span>
+        {info && (
+          <ChartInfoTooltip
+            className="ml-auto"
+            description={info.description}
+            source={info.source}
+            calculation={info.calculation}
+          />
+        )}
       </div>
       
       <div className="flex-1 flex flex-col justify-center">

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
 
@@ -57,7 +58,14 @@ export default function Interactions() {
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Total de Interações</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Total de Interações
+                <ChartInfoTooltip
+                  description="Número de mensagens/interações carregadas no período selecionado."
+                  source="Mensagens do interaction_db (WhatsApp/Instagram/Facebook). Não vem da Kommo."
+                  calculation="Conta as linhas do interaction_db dentro do período (filtro por timestamp, limite de 5000 registros mais recentes)."
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{interactions?.length || 0}</div>
@@ -67,7 +75,14 @@ export default function Interactions() {
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Processadas</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Processadas
+                <ChartInfoTooltip
+                  description="Interações cujo lead já foi marcado como processado."
+                  source="Mensagens do interaction_db (WhatsApp/Instagram/Facebook), unidas ao lead_db pela sessão. Não vem da Kommo."
+                  calculation="Conta as interações do período em que o lead vinculado (lead_db) tem processed = true."
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">

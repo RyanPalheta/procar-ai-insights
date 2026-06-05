@@ -98,14 +98,94 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Taxa de Conversão" value={`${seller.conversion_rate.toFixed(1)}%`} icon={TrendingUp} description={`${seller.won_leads}/${seller.total_audited} leads`} />
-        <KPICard title="Leads Auditados" value={seller.total_audited} icon={Users} />
-        <KPICard title="C/ Cotação" value={seller.leads_with_quote} icon={Target} />
-        <KPICard title="Valor Médio" value={formatUSD(seller.avg_quoted_price, 0)} icon={DollarSign} />
-        <KPICard title="Score Médio" value={seller.avg_score.toFixed(1)} icon={TrendingUp} />
-        <KPICard title="Presenciais" value={seller.walking_leads} icon={Footprints} />
-        <KPICard title="Objeções Superadas" value={`${objectionOvercomeRate.toFixed(1)}%`} icon={Shield} description={`${seller.objections_overcome}/${seller.total_with_objection}`} />
-        <KPICard title="Novos (24h)" value={seller.new_audited_24h} icon={Percent} />
+        <KPICard
+          title="Taxa de Conversão"
+          value={`${seller.conversion_rate.toFixed(1)}%`}
+          icon={TrendingUp}
+          description={`${seller.won_leads}/${seller.total_audited} · só chat auditado`}
+          info={{
+            description: "Percentual dos leads deste vendedor que foram ganhos.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido); ganhos = sales_status com 'ganha'/'won'/'agendamento confirmado'.",
+            calculation: "won_leads ÷ total_audited × 100 (leads ganhos sobre leads auditados deste vendedor no período).",
+          }}
+        />
+        <KPICard
+          title="Leads Auditados"
+          value={seller.total_audited}
+          icon={Users}
+          description="Só chat auditado · ≠ total Kommo"
+          info={{
+            description: "Quantidade de leads deste vendedor já analisados pela IA no período.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido).",
+            calculation: "Conta os leads deste vendedor com last_ai_update preenchido criados no intervalo selecionado.",
+          }}
+        />
+        <KPICard
+          title="C/ Cotação"
+          value={seller.leads_with_quote}
+          icon={Target}
+          description="Só chat auditado · ≠ total Kommo"
+          info={{
+            description: "Leads deste vendedor que receberam uma cotação de preço.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com cotação (lead_price preenchido).",
+            calculation: "Conta os leads deste vendedor (auditados) que têm lead_price preenchido no intervalo.",
+          }}
+        />
+        <KPICard
+          title="Valor Médio"
+          value={formatUSD(seller.avg_quoted_price, 0)}
+          icon={DollarSign}
+          description="Só chat auditado · ≠ total Kommo"
+          info={{
+            description: "Valor médio cotado nos leads deste vendedor que têm cotação.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com cotação (lead_price preenchido).",
+            calculation: "Média de lead_price entre os leads deste vendedor que têm lead_price preenchido no intervalo.",
+          }}
+        />
+        <KPICard
+          title="Score Médio"
+          value={seller.avg_score.toFixed(1)}
+          icon={TrendingUp}
+          description="Só chat auditado · ≠ total Kommo"
+          info={{
+            description: "Score de qualidade médio atribuído pela IA aos leads deste vendedor.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com lead_score preenchido.",
+            calculation: "Média de lead_score entre os leads deste vendedor com score preenchido no intervalo.",
+          }}
+        />
+        <KPICard
+          title="Presenciais"
+          value={seller.walking_leads}
+          icon={Footprints}
+          description="Só chat auditado · ≠ total Kommo"
+          info={{
+            description: "Leads deste vendedor identificados como atendimento presencial (walk-in).",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido); presenciais = is_walking verdadeiro.",
+            calculation: "Conta os leads deste vendedor (auditados) com is_walking = verdadeiro no intervalo.",
+          }}
+        />
+        <KPICard
+          title="Objeções Superadas"
+          value={`${objectionOvercomeRate.toFixed(1)}%`}
+          icon={Shield}
+          description={`${seller.objections_overcome}/${seller.total_with_objection} · só chat auditado`}
+          info={{
+            description: "Percentual de leads com objeção em que o vendedor conseguiu superá-la.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) com objeção detectada (has_objection verdadeiro).",
+            calculation: "objections_overcome ÷ total_with_objection × 100 (leads com objeção superada sobre leads com objeção deste vendedor).",
+          }}
+        />
+        <KPICard
+          title="Novos (24h)"
+          value={seller.new_audited_24h}
+          icon={Percent}
+          description="Só chat auditado · últimas 24h"
+          info={{
+            description: "Leads auditados deste vendedor criados nas últimas 24 horas.",
+            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido).",
+            calculation: "Conta os leads deste vendedor (auditados) com created_at nas últimas 24h — janela móvel, independente do intervalo selecionado.",
+          }}
+        />
       </div>
 
       {/* Goals Section */}

@@ -2,6 +2,7 @@ import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
@@ -15,6 +16,12 @@ interface KPICardProps {
     isNegativeChange?: boolean;
   };
   variant?: "default" | "success" | "warning" | "destructive";
+  /** Explicação no hover (bolinha "?"): o que mostra, Fonte do dado e como é calculado. */
+  info?: {
+    description: string;
+    source?: string;
+    calculation?: string;
+  };
 }
 
 export function KPICard({
@@ -24,6 +31,7 @@ export function KPICard({
   description,
   trend,
   variant = "default",
+  info,
 }: KPICardProps) {
   // Icon background colors based on variant
   const iconBgStyles = {
@@ -59,22 +67,31 @@ export function KPICard({
               <Icon className="h-3.5 w-3.5" />
             </div>
 
-            {trend && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[10px] font-semibold px-1 py-0 h-5 flex items-center gap-0.5",
-                  trendBadgeStyles
-                )}
-              >
-                {trend.isNegativeChange ? (
-                  <TrendingDown className="h-2.5 w-2.5" />
-                ) : (
-                  <TrendingUp className="h-2.5 w-2.5" />
-                )}
-                {trend.isNegativeChange ? "-" : "+"}{trend.value}%
-              </Badge>
-            )}
+            <div className="flex items-center gap-1">
+              {info && (
+                <ChartInfoTooltip
+                  description={info.description}
+                  source={info.source}
+                  calculation={info.calculation}
+                />
+              )}
+              {trend && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] font-semibold px-1 py-0 h-5 flex items-center gap-0.5",
+                    trendBadgeStyles
+                  )}
+                >
+                  {trend.isNegativeChange ? (
+                    <TrendingDown className="h-2.5 w-2.5" />
+                  ) : (
+                    <TrendingUp className="h-2.5 w-2.5" />
+                  )}
+                  {trend.isNegativeChange ? "-" : "+"}{trend.value}%
+                </Badge>
+              )}
+            </div>
           </div>
 
           <p className="text-[11px] text-muted-foreground mb-0.5 leading-tight truncate">{title}</p>
