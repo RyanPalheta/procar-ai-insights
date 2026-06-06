@@ -124,10 +124,14 @@ export default function Sellers() {
           abaixo (auditados) não cobre. */}
       <SellersShopmonkeyKPIs dateFrom={range.fromIso} dateTo={range.toIso} />
 
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground">
-          Performance no atendimento (clientes que a IA ja analisou)
-        </h3>
+      <div className="space-y-1 rounded-lg border border-amber-200/60 bg-amber-50/40 dark:border-amber-500/20 dark:bg-amber-950/10 p-3">
+        <h3 className="text-sm font-semibold">Qualidade do atendimento no chat (amostra auditada pela IA)</h3>
+        <p className="text-xs text-muted-foreground">
+          Mede conversão, objeções e cotações dos leads de <b>chat (WhatsApp)</b> que a IA analisou — é um
+          <b> subconjunto</b>, NÃO a atividade total da loja. Por isso os números <b>não batem</b> com o painel
+          ShopMonkey acima: um vendedor costuma ter <b>mais agendamentos</b> (loja real) do que leads de chat
+          auditados (ex.: clientes de telefone/presenciais não passam pelo chat).
+        </p>
       </div>
 
       {loadingSellers ? (
