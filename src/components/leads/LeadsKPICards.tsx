@@ -120,9 +120,9 @@ const kpiTooltips = {
   },
   medianFirstResponseTime: {
     title: "Tempo Mediano 1ª Resposta",
-    description: "Mediana do tempo entre a 1ª e 3ª interação do lead. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
-    fonte: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook), cruzadas com leads do lead_db (subconjunto de chat da Kommo).",
-    calculo: "Mediana (PERCENTILE_CONT 0.5) de (timestamp da 3ª − timestamp da 1ª interação), em minutos, das sessões com ao menos 3 interações; leads filtrados por created_at no período.",
+    description: "Mediana do tempo até a 1ª resposta do vendedor: da 1ª mensagem do cliente até a 1ª resposta do agente. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
+    fonte: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook), cruzadas com leads do lead_db (subconjunto de chat da Kommo). Usa o sender_type para distinguir cliente de agente.",
+    calculo: "Mediana (PERCENTILE_CONT 0.5) de (1ª mensagem do agente − 1ª mensagem do cliente), em minutos, por sessão; leads filtrados por created_at no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -399,7 +399,7 @@ export function LeadsKPICards({
                     value={formatResponseTime(medianFirstResponseTime)}
                     icon={Timer}
                     variant={medianFirstResponseTime > 0 && medianFirstResponseTime <= threshold * 0.5 ? "success" : medianFirstResponseTime <= threshold ? "warning" : "destructive"}
-                    description={isAll ? "Entre 1ª e 3ª interação" : periodLabel}
+                    description={isAll ? "Cliente → 1ª resposta do agente" : periodLabel}
                     trend={getTrend(medianFirstResponseTimeVariation, false, true)}
                   />
                 </div>
