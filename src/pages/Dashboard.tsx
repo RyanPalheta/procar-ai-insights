@@ -267,7 +267,10 @@ export default function Dashboard() {
         ? quotedLeads.reduce((sum, l) => sum + (l.lead_price || 0), 0) / quotedLeads.length
         : 0;
 
-      const walkingLeads = globalFilteredLeads.filter(l => l.is_walking === true).length;
+      // Walk-in vem do ShopMonkey (loja), não do lead_db: é um total da loja por
+      // data de agendamento e não responde aos filtros de canal/status/idioma (que
+      // filtram leads de chat). Usa o valor do RPC para ficar coerente com a fonte.
+      const walkingLeads = kpisData?.walking_leads ?? 0;
       const upsellLeads = globalFilteredLeads.filter(l => (l as any).has_upsell === true).length;
       const upsellTotalValue = globalFilteredLeads
         .filter(l => (l as any).has_upsell === true && (l as any).upsell_value_estimate)

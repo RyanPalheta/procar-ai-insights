@@ -129,9 +129,9 @@ const kpiTooltips = {
   },
   walkingLeads: {
     title: "Leads Presenciais",
-    description: "Quantos clientes foram à loja pessoalmente (visita presencial).",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA marcados como visita presencial.`,
-    calculo: "conta os clientes do período marcados como visita presencial à loja.",
+    description: "Quantos clientes vieram à loja pessoalmente (walk-in).",
+    fonte: "vem dos agendamentos do ShopMonkey (a fonte real da loja): a nota do agendamento marca quando foi um walk-in. Não depende do chat/IA.",
+    calculo: "conta os agendamentos do ShopMonkey marcados como walk-in (presencial) cuja data do agendamento cai no período selecionado.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -425,7 +425,7 @@ export function LeadsKPICards({
                     value={walkingLeads}
                     icon={Footprints}
                     variant={walkingLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Visita presencial (WhatsApp/chat)" : periodLabel}
+                    description={isAll ? "Walk-in (ShopMonkey)" : periodLabel}
                     trend={getTrend(walkingLeadsVariation)}
                   />
                 </div>
