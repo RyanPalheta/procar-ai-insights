@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
 import { SellersRankingTable, SellerKPI } from "@/components/sellers/SellersRankingTable";
+import { SellersShopmonkeyKPIs } from "@/components/sellers/SellersShopmonkeyKPIs";
 import { GoalData } from "@/components/sellers/SellerGoalStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -116,6 +117,17 @@ export default function Sellers() {
           </p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
+      </div>
+
+      {/* Números REAIS por vendedor (ShopMonkey): cadastra TODOS os vendedores e
+          separa agendamento × venda — o que a auditoria pede e o painel de chat/IA
+          abaixo (auditados) não cobre. */}
+      <SellersShopmonkeyKPIs dateFrom={range.fromIso} dateTo={range.toIso} />
+
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground">
+          Performance no atendimento (leads auditados por IA)
+        </h3>
       </div>
 
       {loadingSellers ? (
