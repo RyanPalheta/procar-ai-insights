@@ -10,6 +10,7 @@
 // GET /v3/order/?where={"fullyPaidDate":{"gte","lte"}}  — operadores gte/lte (sem $).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { parseNote } from '../_shared/parse-note.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,16 +85,23 @@ Deno.serve(async (req) => {
       return [...m.values()];
     };
 
-    const apptRows = dedupe(appts.map((a) => ({
-      id: a.id,
-      start_date: a.startDate ?? null,
-      end_date: a.endDate ?? null,
-      color: a.color ?? null,
-      customer_id: a.customerId ?? null,
-      order_id: a.orderId ?? null,
-      created_date: a.createdDate ?? null,
-      synced_at: nowIso,
-    })));
+    const apptRows = dedupe(appts.map((a) => {
+      const p = parseNote(a.note);
+      return {
+        id: a.id,
+        start_date: a.startDate ?? null,
+        end_date: a.endDate ?? null,
+        color: a.color ?? null,
+        customer_id: a.customerId ?? null,
+        order_id: a.orderId ?? null,
+        created_date: a.createdDate ?? null,
+        note: a.note ?? null,
+        walk_in: p.walkIn,
+        source: p.source,
+        seller: p.seller,
+        synced_at: nowIso,
+      };
+    }));
     const saleRows = dedupe(orders
       .filter((o) => o.paid)
       .map((o) => ({
@@ -124,6 +132,7 @@ Deno.serve(async (req) => {
       since,
       appointments_synced: apptRows.length,
       agendamentos_green: green,
+      walk_ins: apptRows.filter((a) => a.walk_in).length,
       sales_synced: saleRows.length,
       revenue_usd: revenue,
     });
