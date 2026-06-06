@@ -48,9 +48,9 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
             <ClipboardCheck className="h-4 w-4 text-primary" />
             Distribuição de Compliance
             <ChartInfoTooltip
-              description="Distribui os leads por faixa de aderência ao playbook (Excelente/Bom/Regular/Baixo); cada fatia = quantidade de leads na faixa e o centro mostra a nota média."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com nota de compliance da IA (campo playbook_compliance_score preenchido), respeitando os filtros ativos."
-              calculation="Classifica playbook_compliance_score em faixas (>=80 Excelente, 60-79 Bom, 40-59 Regular, <40 Baixo) e conta os leads de cada faixa; o número central é a média de playbook_compliance_score."
+              description="Separa os clientes por nível de atendimento (Excelente, Bom, Regular ou Baixo). Cada fatia mostra quantos clientes ficaram em cada nível e o número no centro é a nota média de atendimento."
+              source="conta os clientes que a IA já analisou e deu uma nota de atendimento, dentro do período e dos filtros que você escolheu."
+              calculation="cada cliente recebe uma nota de atendimento de 0 a 100 e é colocado em um nível: 80 ou mais é Excelente, de 60 a 79 é Bom, de 40 a 59 é Regular e abaixo de 40 é Baixo. Contamos quantos clientes ficaram em cada nível, e o número do centro é a média de todas essas notas."
             />
           </CardTitle>
         </CardHeader>
@@ -107,7 +107,7 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
               </div>
 
               <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground text-center">
-                {totalAudited} leads auditados
+                {totalAudited} clientes analisados pela IA
               </div>
             </>
           ) : (

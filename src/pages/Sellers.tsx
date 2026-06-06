@@ -126,7 +126,7 @@ export default function Sellers() {
 
       <div>
         <h3 className="text-sm font-medium text-muted-foreground">
-          Performance no atendimento (leads auditados por IA)
+          Performance no atendimento (clientes que a IA ja analisou)
         </h3>
       </div>
 

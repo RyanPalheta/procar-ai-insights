@@ -32,6 +32,7 @@ import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
 import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
 import { LeadsConversionByResponseTimeChart } from "@/components/leads/LeadsConversionByResponseTimeChart";
 import { LeadsConversionByQuoteChart } from "@/components/leads/LeadsConversionByQuoteChart";
+import { GoogleReviewsCard } from "@/components/dashboard/GoogleReviewsCard";
 
 // Objection category colors
 const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
@@ -771,6 +772,9 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
       />
 
+      {/* Avaliações Google — reputação ao vivo no Google Maps */}
+      <GoogleReviewsCard />
+
       {/* Timeline Chart - Full Width */}
       <LeadsTimelineChart
         data={chartData.timelineData}
@@ -829,9 +833,9 @@ export default function Dashboard() {
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 Taxa de Objeções Contornadas
                 <ChartInfoTooltip
-                  description="Mostra quantas objeções dos leads foram contornadas pelo agente, confrontando contornadas x não contornadas sobre o total de leads com objeção."
-                  source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com objeção registrada (has_objection = true)."
-                  calculation="Taxa = leads com objection_overcome = true ÷ total de leads com objeção × 100."
+                  description="Mostra quantas objeções dos clientes o agente conseguiu contornar, comparando as que foram contornadas com as que não foram, sobre o total de clientes que levantaram alguma objeção."
+                  source="conta só os clientes que levantaram alguma objeção durante a conversa. A IA analisa cada caso e o resultado é enviado para o Kommo (não é uma leitura ao vivo do Kommo)."
+                  calculation="objeções que foram contornadas divididas pelo total de clientes com objeção, vezes 100."
                 />
               </CardTitle>
             </CardHeader>
@@ -882,9 +886,9 @@ export default function Dashboard() {
                 <TrendingUp className="h-5 w-5 text-primary" />
                 Uso de Estratégias de Venda
                 <ChartInfoTooltip
-                  description="Mostra com que frequência o agente usou ofertas/promoções e ancoragem de preço, confrontando os leads em que cada estratégia foi usada x não usada."
-                  source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com mensagens do agente analisadas (used_offer ou used_anchoring preenchidos)."
-                  calculation="Ofertas = leads com used_offer = true ÷ total analisado × 100; Ancoragem = leads com used_anchoring = true ÷ total analisado × 100."
+                  description="Mostra com que frequência o agente usou ofertas/promoções e ancoragem de preço, comparando os clientes em que cada estratégia foi usada com aqueles em que não foi."
+                  source="conta só os clientes cujas mensagens do agente a IA já analisou. A IA faz a análise e o resultado é enviado para o Kommo (não é uma leitura ao vivo do Kommo)."
+                  calculation="Ofertas: clientes que receberam uma oferta divididos pelo total analisado, vezes 100. Ancoragem: clientes em que o agente usou ancoragem de preço divididos pelo total analisado, vezes 100."
                 />
               </CardTitle>
             </CardHeader>

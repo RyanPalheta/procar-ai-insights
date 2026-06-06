@@ -16,8 +16,8 @@ export function LeadsTopProductsChart({ data }: LeadsTopProductsChartProps) {
             Top 5 Produtos Desejados
             <ChartInfoTooltip
               description="Ranqueia os 5 serviços/produtos mais desejados; eixo X = produto, barra = quantidade de leads que pediram cada produto."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA (analyze-lead) é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com service_desired preenchido."
-              calculation="Conta os leads por service_desired, ordena do maior para o menor e mantém apenas os 5 produtos com mais leads."
+              source="conta os clientes que disseram qual serviço ou produto querem; só entram clientes que informaram o produto desejado. A análise feita pela IA é depois devolvida ao Kommo (não é uma leitura ao vivo do Kommo)."
+              calculation="conta quantos clientes pediram cada produto, ordena do mais pedido para o menos pedido e mostra só os 5 produtos mais pedidos."
             />
           </CardTitle>
         </CardHeader>

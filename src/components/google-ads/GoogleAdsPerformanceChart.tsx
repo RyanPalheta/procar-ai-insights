@@ -37,8 +37,8 @@ export function GoogleAdsPerformanceChart({ data }: GoogleAdsPerformanceChartPro
             Cliques e Conversoes
             <ChartInfoTooltip
               description="Compara cliques e conversoes diarios do Google Ads; Eixo X = dia (dd/MM), barra amarela = cliques e barra verde = conversoes no mesmo dia."
-              source="Metricas reportadas pela API do Google Ads para o periodo selecionado. Nao passa pela Kommo."
-              calculation="Cada par de barras plota o total de cliques (clicks) e de conversoes (conversions) reportados pela API naquele dia, agrupados por data."
+              source="os numeros vem direto do Google Ads, no periodo selecionado."
+              calculation="cada par de barras mostra o total de cliques e de conversoes daquele dia, juntando tudo por data."
             />
           </CardTitle>
         </CardHeader>

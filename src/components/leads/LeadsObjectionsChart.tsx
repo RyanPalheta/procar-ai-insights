@@ -26,9 +26,9 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
               <AlertTriangle className="h-5 w-5 text-destructive" />
               Ranking de Objeções
               <ChartInfoTooltip
-                description="Ranqueia as categorias de objeção mais frequentes; cada barra = uma categoria, o valor = quantas vezes ela apareceu nos leads."
-                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com categorias de objeção detectadas pela IA (campo objection_categories preenchido), respeitando os filtros ativos."
-                calculation="Conta a ocorrência de cada categoria em objection_categories (um lead pode contar em várias categorias); a % é a participação da categoria sobre o total de ocorrências."
+                description="Mostra os tipos de objeção que mais aparecem. Cada barra é um tipo de objeção e o número é quantas vezes ela apareceu nas conversas com os clientes."
+                source="usa só os clientes em que a IA já analisou a conversa e identificou alguma objeção. Considera apenas o período e os filtros que você selecionou."
+                calculation="contamos quantas vezes cada tipo de objeção apareceu (um mesmo cliente pode ter levantado vários tipos). A porcentagem mostra o peso de cada tipo dentro do total de objeções."
               />
             </CardTitle>
           </CardHeader>
@@ -54,9 +54,9 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Ranking de Objeções
             <ChartInfoTooltip
-              description="Ranqueia as categorias de objeção mais frequentes; cada barra = uma categoria, o valor = quantas vezes ela apareceu nos leads."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com categorias de objeção detectadas pela IA (campo objection_categories preenchido), respeitando os filtros ativos."
-              calculation="Conta a ocorrência de cada categoria em objection_categories (um lead pode contar em várias categorias); a % é a participação da categoria sobre o total de ocorrências."
+              description="Mostra os tipos de objeção que mais aparecem. Cada barra é um tipo de objeção e o número é quantas vezes ela apareceu nas conversas com os clientes."
+              source="usa só os clientes em que a IA já analisou a conversa e identificou alguma objeção. Considera apenas o período e os filtros que você selecionou."
+              calculation="contamos quantas vezes cada tipo de objeção apareceu (um mesmo cliente pode ter levantado vários tipos). A porcentagem mostra o peso de cada tipo dentro do total de objeções."
             />
           </CardTitle>
         </CardHeader>

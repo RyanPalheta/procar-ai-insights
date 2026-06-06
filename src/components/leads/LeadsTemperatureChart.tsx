@@ -67,8 +67,8 @@ export function LeadsTemperatureChart({ data }: LeadsTemperatureChartProps) {
             Temperatura dos Leads
             <ChartInfoTooltip
               description="Resume a temperatura média dos leads (Quente, Morno, Frio) num termômetro e lista a contagem de leads em cada faixa."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com lead_temperature preenchido (normalizado)."
-              calculation="Cada lead recebe peso (Quente=3, Morno=2, Frio=1); o score médio = soma ponderada ÷ total define a faixa e o preenchimento do termômetro."
+              source="usa os clientes que a IA já analisou e classificou em Quente, Morno ou Frio. Considera só quem tem essa classificação de temperatura definida."
+              calculation="cada cliente vale um peso conforme a temperatura (Quente vale 3, Morno vale 2, Frio vale 1). A média desses pesos define se o termômetro fica mais para Quente, Morno ou Frio."
             />
           </CardTitle>
         </CardHeader>

@@ -489,14 +489,14 @@ export default function LeadDetails() {
             <div>
               <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                 <Footprints className="h-3 w-3" />
-                Lead Presencial (Walking)
+                Visita presencial na loja
               </label>
               <div className="flex items-center gap-2 mt-1">
                 <Badge 
                   variant={(lead as any).is_walking ? "default" : "outline"}
                   className={(lead as any).is_walking ? "bg-green-500 text-white" : ""}
                 >
-                  {(lead as any).is_walking ? "Sim - Walking" : "Não"}
+                  {(lead as any).is_walking ? "Sim - veio à loja" : "Não"}
                 </Badge>
               </div>
             </div>

@@ -61,9 +61,9 @@ export default function Interactions() {
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 Total de Interações
                 <ChartInfoTooltip
-                  description="Número de mensagens/interações carregadas no período selecionado."
-                  source="Mensagens do interaction_db (WhatsApp/Instagram/Facebook). Não vem da Kommo."
-                  calculation="Conta as linhas do interaction_db dentro do período (filtro por timestamp, limite de 5000 registros mais recentes)."
+                  description="Quantas mensagens foram trocadas com clientes no período selecionado."
+                  source="as mensagens trocadas no WhatsApp/Instagram/Facebook. Não vem do Kommo."
+                  calculation="conta cada mensagem trocada no período (mostra as 5000 mais recentes)."
                 />
               </CardTitle>
             </CardHeader>
@@ -78,9 +78,9 @@ export default function Interactions() {
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 Processadas
                 <ChartInfoTooltip
-                  description="Interações cujo lead já foi marcado como processado."
-                  source="Mensagens do interaction_db (WhatsApp/Instagram/Facebook), unidas ao lead_db pela sessão. Não vem da Kommo."
-                  calculation="Conta as interações do período em que o lead vinculado (lead_db) tem processed = true."
+                  description="Mensagens de clientes que a IA já analisou."
+                  source="as mensagens trocadas no WhatsApp/Instagram/Facebook, ligadas ao cliente da conversa. Não vem do Kommo."
+                  calculation="conta as mensagens do período em que o cliente da conversa já foi analisado pela IA."
                 />
               </CardTitle>
             </CardHeader>

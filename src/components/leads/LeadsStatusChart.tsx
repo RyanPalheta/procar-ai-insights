@@ -36,9 +36,9 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
           <CardTitle className="flex items-center gap-2">
             Leads por Status
             <ChartInfoTooltip
-              description="Mostra os 5 status de venda mais frequentes; cada barra confronta a quantidade de leads naquele status e seu % sobre o total."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sales_status preenchido (campo normalizado)."
-              calculation="Conta os leads por status (sales_status normalizado), mantém os 5 maiores e exibe valor e % = leads do status ÷ total dos status × 100."
+              description="Mostra os 5 status de venda mais comuns. Cada barra mostra quantos clientes estão naquele status e quanto isso representa do total."
+              source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. A análise feita pela IA é enviada de volta ao Kommo. Aqui: só os clientes que já têm um status de venda definido."
+              calculation="agrupa os clientes pelo status de venda, mostra os 5 status com mais clientes e, para cada um, quantos clientes têm aquele status dividido pelo total, vezes 100."
             />
           </CardTitle>
         </CardHeader>

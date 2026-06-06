@@ -104,8 +104,8 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
               Conversão por Cotação
               <ChartInfoTooltip
                 description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
-                calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+                source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
+                calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam (marcados como venda fechada ou agendamento confirmado) dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -128,8 +128,8 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
               Conversão por Cotação
               <ChartInfoTooltip
                 description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-                source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
-                calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+                source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
+                calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam (marcados como venda fechada ou agendamento confirmado) dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -152,8 +152,8 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             Conversão por Cotação
             <ChartInfoTooltip
               description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Via RPC get_conversion_by_quote_bracket, considera apenas leads auditados pela IA (last_ai_update preenchido) no período."
-              calculation="Agrupa os leads por faixa de lead_price (Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
+              calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam (marcados como venda fechada ou agendamento confirmado) dividido pelo total de clientes da faixa, vezes 100."
             />
           </CardTitle>
         </CardHeader>

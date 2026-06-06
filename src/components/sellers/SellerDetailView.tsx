@@ -121,77 +121,77 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
           title="Taxa de Conversão"
           value={`${seller.conversion_rate.toFixed(1)}%`}
           icon={TrendingUp}
-          description={`${seller.won_leads}/${seller.total_audited} · só chat auditado`}
+          description={`${seller.won_leads}/${seller.total_audited} · só clientes de chat que a IA analisou`}
           info={{
-            description: "Percentual dos leads deste vendedor que foram ganhos.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido); ganhos = sales_status com 'ganha'/'won'/'agendamento confirmado'.",
-            calculation: "won_leads ÷ total_audited × 100 (leads ganhos sobre leads auditados deste vendedor no período).",
+            description: "De cada 100 clientes deste vendedor, quantos viraram venda fechada.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou; venda fechada = marcados como venda fechada (ganha) ou agendamento confirmado.",
+            calculation: "clientes marcados como venda fechada divididos pelo total de clientes deste vendedor que a IA analisou no período, vezes 100.",
           }}
         />
         <KPICard
-          title="Leads Auditados"
+          title="Clientes Analisados pela IA"
           value={seller.total_audited}
           icon={Users}
-          description="Só chat auditado · ≠ total Kommo"
+          description="Só clientes de chat que a IA analisou · menor que o Kommo"
           info={{
-            description: "Quantidade de leads deste vendedor já analisados pela IA no período.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido).",
-            calculation: "Conta os leads deste vendedor com last_ai_update preenchido criados no intervalo selecionado.",
+            description: "Quantos clientes deste vendedor a IA já analisou no período.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou.",
+            calculation: "conta quantos clientes deste vendedor a IA já analisou e que chegaram no período selecionado.",
           }}
         />
         <KPICard
           title="C/ Cotação"
           value={seller.leads_with_quote}
           icon={Target}
-          description="Só chat auditado · ≠ total Kommo"
+          description="Só clientes de chat que a IA analisou · menor que o Kommo"
           info={{
-            description: "Leads deste vendedor que receberam uma cotação de preço.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com cotação (lead_price preenchido).",
-            calculation: "Conta os leads deste vendedor (auditados) que têm lead_price preenchido no intervalo.",
+            description: "Clientes deste vendedor que já receberam um valor de orçamento (cotação).",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que já receberam um valor de orçamento (cotação).",
+            calculation: "conta os clientes deste vendedor que a IA analisou e que já receberam um valor de orçamento no período.",
           }}
         />
         <KPICard
           title="Valor Médio"
           value={formatUSD(seller.avg_quoted_price, 0)}
           icon={DollarSign}
-          description="Só chat auditado · ≠ total Kommo"
+          description="Só clientes de chat que a IA analisou · menor que o Kommo"
           info={{
-            description: "Valor médio cotado nos leads deste vendedor que têm cotação.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com cotação (lead_price preenchido).",
-            calculation: "Média de lead_price entre os leads deste vendedor que têm lead_price preenchido no intervalo.",
+            description: "Valor médio dos orçamentos dos clientes deste vendedor que já receberam uma cotação.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que já receberam um valor de orçamento (cotação).",
+            calculation: "a média do valor de orçamento entre os clientes deste vendedor que já receberam uma cotação no período.",
           }}
         />
         <KPICard
           title="Score Médio"
           value={seller.avg_score.toFixed(1)}
           icon={TrendingUp}
-          description="Só chat auditado · ≠ total Kommo"
+          description="Só clientes de chat que a IA analisou · menor que o Kommo"
           info={{
-            description: "Score de qualidade médio atribuído pela IA aos leads deste vendedor.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) e com lead_score preenchido.",
-            calculation: "Média de lead_score entre os leads deste vendedor com score preenchido no intervalo.",
+            description: "A nota de qualidade média que a IA dá aos clientes deste vendedor.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que já receberam uma nota de qualidade.",
+            calculation: "a média das notas de qualidade entre os clientes deste vendedor que já receberam uma nota no período.",
           }}
         />
         <KPICard
           title="Presenciais"
           value={seller.walking_leads}
           icon={Footprints}
-          description="Só chat auditado · ≠ total Kommo"
+          description="Só clientes de chat que a IA analisou · menor que o Kommo"
           info={{
-            description: "Leads deste vendedor identificados como atendimento presencial (walk-in).",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido); presenciais = is_walking verdadeiro.",
-            calculation: "Conta os leads deste vendedor (auditados) com is_walking = verdadeiro no intervalo.",
+            description: "Clientes deste vendedor marcados como visita presencial à loja.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que foram marcados como visita presencial à loja.",
+            calculation: "conta os clientes deste vendedor que a IA analisou e foram marcados como visita presencial à loja no período.",
           }}
         />
         <KPICard
           title="Objeções Superadas"
           value={`${objectionOvercomeRate.toFixed(1)}%`}
           icon={Shield}
-          description={`${seller.objections_overcome}/${seller.total_with_objection} · só chat auditado`}
+          description={`${seller.objections_overcome}/${seller.total_with_objection} · só clientes de chat que a IA analisou`}
           info={{
-            description: "Percentual de leads com objeção em que o vendedor conseguiu superá-la.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido) com objeção detectada (has_objection verdadeiro).",
-            calculation: "objections_overcome ÷ total_with_objection × 100 (leads com objeção superada sobre leads com objeção deste vendedor).",
+            description: "De cada 100 clientes que levantaram alguma objeção, em quantos o vendedor conseguiu contornar.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que levantaram alguma objeção.",
+            calculation: "clientes deste vendedor com objeção contornada divididos pelos clientes deste vendedor que levantaram objeção, vezes 100.",
           }}
         />
         <KPICard
@@ -200,9 +200,9 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
           icon={Percent}
           description="Janela móvel 24h · ignora o filtro de período"
           info={{
-            description: "Leads auditados deste vendedor criados nas últimas 24 horas.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido).",
-            calculation: "Conta os leads deste vendedor (auditados) com created_at nas últimas 24h — janela móvel, independente do intervalo selecionado.",
+            description: "Clientes deste vendedor que a IA analisou e que chegaram nas últimas 24 horas.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou.",
+            calculation: "conta os clientes deste vendedor que a IA analisou e que chegaram nas últimas 24 horas. É sempre 24h e não muda com o filtro de período.",
           }}
         />
       </div>
@@ -229,7 +229,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
             <CardTitle className="text-sm flex items-center gap-2">
               Timeline de Leads
               <span className="text-xs font-normal text-muted-foreground">({seller.total_audited} no período)</span>
-              <ChartInfoTooltip description="Eixo X = dias (dd/MM); a linha mostra quantos leads deste vendedor foram criados em cada dia do período selecionado. A soma das barras é o total de leads auditados do período (mostrado ao lado do título)." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido), dentro do intervalo de datas." calculation="Agrupa os leads por dia de created_at e conta quantos há em cada dia; a soma bate com 'Leads Auditados'." /></CardTitle>
+              <ChartInfoTooltip description="A linha mostra quantos clientes deste vendedor chegaram em cada dia do período selecionado. A soma de todos os dias é o total de clientes que a IA analisou no período (mostrado ao lado do título)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou no período." calculation="agrupa os clientes por dia de chegada e conta quantos há em cada dia; a soma bate com 'Clientes Analisados pela IA'." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -247,7 +247,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Status Distribution */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">Status de Venda <ChartInfoTooltip description="Distribui os leads deste vendedor pelas etapas do funil de venda, agrupando status equivalentes (ex.: variações de 'ganha' viram uma única etapa 'Ganha / Agendada')." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com sales_status preenchido, dentro do intervalo de datas." calculation="Normaliza o sales_status (mesma regra de 'ganho' do card de Conversão), conta os leads em cada etapa, ordena do maior para o menor e exibe as 6 principais como barras. Passe o mouse na barra para o nome completo." /></CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Status de Venda <ChartInfoTooltip description="Mostra em que etapa da venda estão os clientes deste vendedor, juntando etapas parecidas (ex.: variações de 'ganha' viram uma única etapa 'Ganha / Agendada')." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que já têm uma etapa de venda definida." calculation="junta as etapas parecidas (mesma regra de venda fechada do cartão de Conversão), conta os clientes em cada etapa, ordena da maior para a menor e mostra as 6 principais. Passe o mouse na barra para ver o nome completo." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -268,7 +268,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Objection Categories */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">Top Objeções <ChartInfoTooltip description="Eixo Y = categorias de objeção; as barras comparam quantas vezes cada objeção apareceu nos leads deste vendedor." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com objection_categories preenchido, dentro do intervalo de datas." calculation="Soma quantas vezes cada categoria aparece nas listas objection_categories dos leads, ordena do maior para o menor e exibe as 6 principais." /></CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Top Objeções <ChartInfoTooltip description="As barras comparam quantas vezes cada tipo de objeção apareceu nas conversas dos clientes deste vendedor." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste vendedor que a IA já analisou e que levantaram alguma objeção." calculation="soma quantas vezes cada tipo de objeção aparece nas conversas, ordena do maior para o menor e mostra os 6 principais." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>

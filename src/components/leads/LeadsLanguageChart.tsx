@@ -45,9 +45,9 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
           <CardTitle className="flex items-center gap-2">
             Leads por Língua
             <ChartInfoTooltip
-              description="Distribui os leads pela língua identificada (ex.: PT-BR, EN-USA, ES); o tamanho da bandeira e a barra confrontam a quantidade e o % de cada idioma."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com lead_language preenchido (exclui 'N/A' e 'NDA')."
-              calculation="Conta os leads por idioma (lead_language) e calcula o % = leads do idioma ÷ total de leads com idioma × 100."
+              description="Separa os clientes pelo idioma identificado na conversa (ex.: PT-BR, EN-USA, ES). O tamanho da bandeira e a barra mostram a quantidade e o percentual de cada idioma."
+              source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. A IA identifica o idioma na conversa. Considera só os clientes que já têm um idioma identificado (deixa de fora quem ficou sem idioma)."
+              calculation="conta quantos clientes têm cada idioma e calcula o percentual: clientes daquele idioma dividido pelo total de clientes com idioma, vezes 100."
             />
           </CardTitle>
         </CardHeader>

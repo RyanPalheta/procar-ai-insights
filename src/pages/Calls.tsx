@@ -455,7 +455,7 @@ export default function Calls() {
       <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5" glowColor="59, 130, 246">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Total de Chamadas <ChartInfoTooltip description="Quantidade total de chamadas no período e filtros selecionados, com a variação % vs. o período anterior." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Conta todas as chamadas (analisadas ou não)." calculation="Conta todas as chamadas que passam pelos filtros ativos. A variação compara esse total com o nº de chamadas do período imediatamente anterior." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Total de Chamadas <ChartInfoTooltip description="Quantas chamadas aconteceram no período e nos filtros escolhidos, com a variação em % em relação ao período anterior." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Conta todas as chamadas, tendo sido analisadas pela IA ou não." calculation="conta todas as chamadas que passam pelos filtros ativos. A variação compara esse total com o número de chamadas do período logo antes." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
               {stats.totalDelta !== null && (
@@ -473,7 +473,7 @@ export default function Calls() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />Direção
-                <ChartInfoTooltip description="Divide as chamadas entre ativas (vendedor ligou) e passivas (cliente ligou), com o nº de cada uma e o % do total." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Direção definida comparando os números de origem/destino com o telefone da empresa." calculation="Para cada chamada, compara from_number/to_number com o número da empresa: se a origem é a empresa = ativa; se o destino é a empresa = passiva; senão, sem id. O % é cada grupo sobre o total." />
+                <ChartInfoTooltip description="Separa as chamadas entre ativas (a loja ligou para o cliente) e passivas (o cliente ligou para a loja), mostrando quantas são de cada tipo e o % do total." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. O tipo é definido olhando se quem ligou ou quem recebeu é o telefone da loja." calculation="em cada chamada, vê quem ligou e quem recebeu: se quem ligou é a loja, é ativa; se quem recebeu é a loja, é passiva; se não dá para saber, fica sem identificação. O % é cada grupo dividido pelo total, vezes 100." />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -503,7 +503,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Score Médio <ChartInfoTooltip description="Nota média de qualidade (0–100) das chamadas analisadas pela IA no período." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com ai_call_analysis.quality_score numérico preenchido." calculation="Média aritmética dos quality_score das chamadas analisadas, arredondada. O subtítulo mostra quantas chamadas têm análise." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Score Médio <ChartInfoTooltip description="A nota média de qualidade (de 0 a 100) das chamadas que a IA já analisou no período." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e deu uma nota de qualidade." calculation="a média das notas de qualidade das chamadas analisadas, arredondada. Embaixo aparece quantas chamadas já foram analisadas." /></CardTitle></CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${scoreColor(stats.avgScore)}`}>{stats.avgScore || "—"}</div>
               <div className="text-xs text-muted-foreground">{stats.analyzedCount} analisadas</div>
@@ -513,7 +513,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo <ChartInfoTooltip description="Percentual das chamadas analisadas cujo sentimento foi classificado como Positivo pela IA." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com ai_call_analysis.sentiment preenchido." calculation="(chamadas com sentiment = Positivo ÷ total de chamadas analisadas) × 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA achou que o clima da conversa foi Positivo." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que a IA já avaliou o clima da conversa." calculation="chamadas com clima Positivo divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctPositive}%</div>
               <div className="text-xs text-muted-foreground">{stats.sentimentCounts.Positivo} chamadas positivas</div>
@@ -523,7 +523,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Duração Média <ChartInfoTooltip description="Tempo médio de duração das chamadas do período, em segundos (e aproximado em minutos)." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Usa o campo call_duration de todas as chamadas do período (não só as analisadas)." calculation="Média do call_duration de todas as chamadas filtradas, arredondada. O subtítulo converte para minutos (segundos ÷ 60)." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Duração Média <ChartInfoTooltip description="Quanto tempo durou, em média, cada chamada do período, em segundos (e o valor aproximado em minutos)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Usa o tempo de todas as chamadas do período, não só as analisadas pela IA." calculation="a média do tempo de todas as chamadas filtradas, arredondada. Embaixo, o valor é convertido em minutos (segundos divididos por 60)." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.avgDuration}s</div>
               <div className="text-xs text-muted-foreground">≈ {Math.round(stats.avgDuration / 60)}min</div>
@@ -533,7 +533,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-orange-500" />Com Objeção <ChartInfoTooltip description="Percentual das chamadas analisadas em que a IA identificou alguma objeção do cliente." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com ai_call_analysis e o campo has_objection." calculation="(chamadas com has_objection = true ÷ total de chamadas analisadas) × 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-orange-500" />Com Objeção <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA percebeu que o cliente levantou alguma objeção." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve objeção." calculation="chamadas em que o cliente levantou alguma objeção divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctObjection}%</div>
               <Progress value={stats.pctObjection} className="h-1 mt-1" />
@@ -543,7 +543,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-3 w-3 text-green-500" />Contornadas <ChartInfoTooltip description="Das chamadas que tiveram objeção, o percentual em que o vendedor conseguiu contorná-la." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com has_objection = true." calculation="(chamadas com has_objection e objection_overcome = true ÷ chamadas com objeção) × 100. A base é só as chamadas com objeção, não o total." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-3 w-3 text-green-500" />Contornadas <ChartInfoTooltip description="Entre as chamadas em que o cliente levantou objeção, o percentual em que o vendedor conseguiu contornar." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que o cliente levantou alguma objeção." calculation="objeções que foram contornadas divididas pelas chamadas com objeção, vezes 100. A conta usa só as chamadas com objeção, não o total." /></CardTitle></CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${scoreColor(stats.pctOvercome)}`}>{stats.pctOvercome}%</div>
               <Progress value={stats.pctOvercome} className="h-1 mt-1" />
@@ -553,19 +553,19 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Compliance Médio <ChartInfoTooltip description="Nota média de aderência ao playbook (0–100) das chamadas analisadas pela IA." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com ai_call_analysis.compliance_score numérico preenchido." calculation="Média aritmética dos compliance_score das chamadas analisadas, arredondada. Mostra — quando nenhuma chamada tem o campo." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Compliance Médio <ChartInfoTooltip description="A nota média (de 0 a 100) de quanto o vendedor seguiu o roteiro de vendas, segundo a análise da IA." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e deu essa nota de roteiro." calculation="a média das notas de roteiro das chamadas analisadas, arredondada. Mostra um traço quando nenhuma chamada tem essa nota." /></CardTitle></CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${scoreColor(stats.avgCompliance ?? undefined)}`}>
                 {stats.avgCompliance ?? "—"}
               </div>
-              <div className="text-xs text-muted-foreground">aderência ao playbook</div>
+              <div className="text-xs text-muted-foreground">quanto seguiu o roteiro de vendas</div>
             </CardContent>
           </Card>
         </MagicBentoCard>
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Sparkles className="h-3 w-3 text-purple-500" />Usou Oferta <ChartInfoTooltip description="Percentual das chamadas analisadas em que o vendedor apresentou uma oferta; o subtítulo traz o % que usou ancoragem de preço." source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo. Considera apenas chamadas com ai_call_analysis (campos used_offer e used_anchoring)." calculation="Oferta = (chamadas com used_offer = true ÷ analisadas) × 100. Ancoragem = (chamadas com used_anchoring = true ÷ analisadas) × 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Sparkles className="h-3 w-3 text-purple-500" />Usou Oferta <ChartInfoTooltip description="O percentual das chamadas analisadas em que o vendedor apresentou uma oferta; embaixo aparece o % em que ele usou ancoragem de preço." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve oferta e ancoragem." calculation="Oferta = chamadas em que o vendedor apresentou oferta divididas pelas analisadas, vezes 100. Ancoragem = chamadas com ancoragem de preço divididas pelas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctOffer}%</div>
               <div className="text-xs text-muted-foreground">{stats.pctAnchoring}% com ancoragem</div>
@@ -578,7 +578,7 @@ export default function Calls() {
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Sentimentos <ChartInfoTooltip description="Mostra a divisão das chamadas analisadas entre os sentimentos Positivo, Neutro e Negativo." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com análise concluída e com o campo sentiment preenchido." calculation="Conta quantas chamadas há em cada sentimento (ai_call_analysis.sentiment) e mostra a fatia de cada um no total." /></CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Sentimentos <ChartInfoTooltip description="Mostra como as chamadas analisadas se dividem entre clima Positivo, Neutro e Negativo." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas que a IA já analisou e classificou o clima da conversa." calculation="conta quantas chamadas tiveram cada tipo de clima e mostra a fatia de cada um no total." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               {sentimentChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -601,7 +601,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Scores <ChartInfoTooltip description="Eixo X = faixas de score de qualidade (0–20 até 80–100); barra = nº de chamadas em cada faixa." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com quality_score numérico preenchido." calculation="Cada chamada é alocada na faixa do seu quality_score (ai_call_analysis.quality_score) e conta-se quantas caem em cada faixa." /></CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Scores <ChartInfoTooltip description="No eixo horizontal estão as faixas de nota de qualidade (de 0–20 até 80–100); cada barra mostra quantas chamadas ficaram em cada faixa." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas que a IA já analisou e deu uma nota de qualidade." calculation="cada chamada entra na faixa da sua nota de qualidade e contamos quantas caem em cada faixa." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={scoreHistogram}>
@@ -622,7 +622,7 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2">Volume & Score por Dia <ChartInfoTooltip description="Eixo X = dias; linha azul = volume de chamadas no dia; linha verde = score médio do dia (escala 0–100)." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Agrupa todas as chamadas do período por dia de created_at; o score só usa chamadas com quality_score preenchido." calculation="Por dia: volume = nº de chamadas; score médio = média dos quality_score das chamadas analisadas daquele dia." /></CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2">Volume & Score por Dia <ChartInfoTooltip description="No eixo horizontal estão os dias; a linha azul mostra quantas chamadas houve no dia; a linha verde mostra a nota média de qualidade do dia (de 0 a 100)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Junta todas as chamadas do período por dia em que aconteceram; a nota usa só as chamadas que já têm nota de qualidade." calculation="por dia: o volume é quantas chamadas houve; a nota média é a média das notas de qualidade das chamadas analisadas daquele dia." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyData}>
@@ -644,7 +644,7 @@ export default function Calls() {
       {/* Chamadas por hora */}
       <MagicBentoCard glowColor="139, 92, 246">
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="flex items-center gap-2">Chamadas por hora <ChartInfoTooltip description="Eixo X = horas do dia (0h–23h); a barra mostra quantas chamadas aconteceram em cada hora, revelando os horários de pico de ligação." source="Chamadas registradas via Twilio (tabela call_db); não vem da Kommo. Agrupa todas as chamadas do período pela hora do created_at." calculation="Para cada hora do dia, conta as chamadas cujo created_at cai naquela hora (somando todos os dias do período)." /></CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2">Chamadas por hora <ChartInfoTooltip description="No eixo horizontal estão as horas do dia (de 0h a 23h); cada barra mostra quantas chamadas aconteceram naquela hora, revelando os horários de pico de ligação." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Junta todas as chamadas do período pela hora em que aconteceram." calculation="para cada hora do dia, conta as chamadas que aconteceram naquela hora, somando todos os dias do período." /></CardTitle></CardHeader>
           <CardContent className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyData}>
@@ -664,7 +664,7 @@ export default function Calls() {
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border lg:col-span-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">Categorias de Objeção <ChartInfoTooltip description="Barras horizontais por tipo de objeção (preço, tempo, etc.), divididas entre objeções contornadas (verde) e não contornadas (vermelho)." source="Chamadas registradas via Twilio e analisadas por IA (campo ai_call_analysis). Não vem da Kommo. Considera apenas chamadas com has_objection e com objection_categories preenchido." calculation="Para cada categoria em ai_call_analysis.objection_categories, conta o total e quantas tiveram objection_overcome = true (contornadas); o restante é não contornadas." /></CardTitle>
+              <CardTitle className="flex items-center gap-2">Categorias de Objeção <ChartInfoTooltip description="Barras por tipo de objeção (preço, tempo, etc.), separadas entre as que foram contornadas (verde) e as que não foram contornadas (vermelho)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas em que o cliente levantou objeção e a IA identificou o tipo dela." calculation="para cada tipo de objeção, conta o total de chamadas e quantas foram contornadas; o que sobra são as não contornadas." /></CardTitle>
               <p className="text-xs text-muted-foreground">% de contorno por tipo — identifique onde o time precisa treinar</p>
             </CardHeader>
             <CardContent className="h-[320px]">
@@ -726,9 +726,9 @@ export default function Calls() {
               <ArrowRightLeft className="h-4 w-4 text-cyan-500" />
               Ativas vs Passivas
               <ChartInfoTooltip
-                description="Compara a performance de chamadas ativas (saída — vendedor liga) vs passivas (entrada — cliente liga): score médio, % do total, pediu permissão, tentou fechar, abertura média e adaptação à direção da chamada."
-                source="Chamadas do call_db (Twilio + análise de IA). Independe da Kommo."
-                calculation="Direção inferida de cada chamada (ativa/passiva); para cada grupo calcula score médio, participação no total, % que pediu permissão / tentou fechar, e nas métricas gerais a abertura média e a adaptação à direção (notas 0–10 da IA), tudo sobre as chamadas analisadas do período."
+                description="Compara o desempenho das chamadas ativas (a loja liga para o cliente) e passivas (o cliente liga para a loja): nota média, % do total, se pediu permissão, se tentou fechar, qualidade da abertura e quanto o vendedor adaptou a conversa ao tipo de chamada."
+                source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo."
+                calculation="cada chamada é classificada como ativa ou passiva; para cada grupo calculamos a nota média, a participação no total e o % que pediu permissão e que tentou fechar. Nas medidas gerais, a abertura média e a adaptação ao tipo de chamada são notas de 0 a 10 dadas pela IA, sempre sobre as chamadas analisadas do período."
               />
             </CardTitle>
             <p className="text-xs text-muted-foreground">

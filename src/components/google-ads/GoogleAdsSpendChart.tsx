@@ -33,8 +33,8 @@ export function GoogleAdsSpendChart({ data }: GoogleAdsSpendChartProps) {
             Gasto Diario
             <ChartInfoTooltip
               description="Mostra a evolucao do investimento diario em anuncios do Google Ads; Eixo X = dia (dd/MM) e Eixo Y = valor gasto na moeda da conta ($)."
-              source="Metricas reportadas pela API do Google Ads para o periodo selecionado. Nao passa pela Kommo."
-              calculation="Cada ponto da area plota o total gasto (campo spend) reportado pela API naquele dia, sem media ou acumulado."
+              source="os numeros vem direto do Google Ads, no periodo selecionado. Nao passam pela Kommo."
+              calculation="cada ponto mostra o total gasto naquele dia, sem media e sem somar com os dias anteriores."
             />
           </CardTitle>
         </CardHeader>
