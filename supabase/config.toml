@@ -48,5 +48,5 @@ verify_jwt = false
 [functions.sync-seller-to-kommo]
 verify_jwt = false
 
-[functions.shopmonkey-webhook]
+[functions.sync-google-reviews]
 verify_jwt = false

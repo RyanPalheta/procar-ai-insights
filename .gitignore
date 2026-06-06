@@ -29,3 +29,7 @@ dist-ssr
 n8n-backups/
 migrate-n8n-urls.cjs
 retrigger-calls.ps1
+
+# Local snapshots & Supabase CLI temp
+.server-snapshot/
+supabase/.temp/
