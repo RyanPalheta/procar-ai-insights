@@ -97,9 +97,17 @@ Deno.serve(async (req) => {
     //      paginação p/ não estourar memória no backfill: with=contacts engorda cada
     //      lead, então NÃO guardamos o objeto cru, só {id,status,price,seller,contato}. ----
     const fromUnix = Math.floor((Date.now() - days * 86400000) / 1000);
+    // CURSOR: start_page + max_pages limitam o lote por chamada. Backfill de janelas
+    // grandes não cabe numa invocação só (limite de compute/tempo do edge function);
+    // chame em sequência avançando start_page até has_more=false. Default = run completo
+    // (max_pages=60), então o cron (days=2) segue inalterado.
+    const startPage = Math.max(1, Number(body.start_page ?? 1));
+    const maxPages = Math.max(1, Math.min(60, Number(body.max_pages ?? 60)));
     const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null }[] = [];
-    let page = 1;
-    while (page <= 60) {
+    let page = startPage;
+    let pagesRead = 0;
+    let nextStartPage: number | null = null;
+    while (pagesRead < maxPages) {
       const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts&limit=250&page=${page}`);
       const batch = d?._embedded?.leads ?? [];
       if (!batch.length) break;
@@ -115,8 +123,10 @@ Deno.serve(async (req) => {
           contactId: main?.id ?? null,
         });
       }
+      pagesRead++;
       if (!d?._links?.next) break;
       page++;
+      if (pagesRead >= maxPages) nextStartPage = page; // ainda há páginas além deste lote
     }
 
     // ---- telefone: resolve os contatos (is_main já capturado em contactId) -> CF PHONE.
@@ -231,6 +241,10 @@ Deno.serve(async (req) => {
 
     return json({
       window_days: days,
+      start_page: startPage,
+      pages_read: pagesRead,
+      has_more: nextStartPage != null,
+      next_start_page: nextStartPage,
       kommo_leads: leads.length,
       inserted_missing: inserted,
       already_present: leads.length - inserted,
@@ -238,7 +252,7 @@ Deno.serve(async (req) => {
       espelhos_normalizados: sellersSet,
       leads_com_telefone: rows.filter((r) => r.phone_normalized).length,
       telefones_gravados: phonesSet,
-      note: 'Insert-only dos ausentes + normalização de vendedor + backfill de telefone nos espelhos (kommo_sync). Leads de chat/IA não foram alterados.',
+      note: 'Insert-only + normalização de vendedor + backfill de telefone (kommo_sync). Use start_page/max_pages p/ backfill em lotes. Leads de chat/IA não alterados.',
     });
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);
