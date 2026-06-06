@@ -226,7 +226,10 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Timeline */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">Timeline de Leads <ChartInfoTooltip description="Eixo X = dias (dd/MM); a linha mostra quantos leads deste vendedor foram criados em cada dia do período selecionado." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido), dentro do intervalo de datas." calculation="Agrupa os leads por dia de created_at e conta quantos há em cada dia." /></CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              Timeline de Leads
+              <span className="text-xs font-normal text-muted-foreground">({seller.total_audited} no período)</span>
+              <ChartInfoTooltip description="Eixo X = dias (dd/MM); a linha mostra quantos leads deste vendedor foram criados em cada dia do período selecionado. A soma das barras é o total de leads auditados do período (mostrado ao lado do título)." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido), dentro do intervalo de datas." calculation="Agrupa os leads por dia de created_at e conta quantos há em cada dia; a soma bate com 'Leads Auditados'." /></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>

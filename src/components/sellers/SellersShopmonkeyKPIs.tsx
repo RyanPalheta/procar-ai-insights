@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
-import { CalendarCheck, Footprints, ShoppingBag, DollarSign, Store } from "lucide-react";
+import { CalendarCheck, Footprints, ShoppingBag, DollarSign, Store, FileText } from "lucide-react";
 
 export interface SellerShopmonkeyKPI {
   seller: string;
   agendamentos: number;
   walk_ins: number;
+  orcamentos: number;
   vendas: number;
   receita_usd: number;
 }
@@ -44,10 +45,11 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
     (a, r) => ({
       agendamentos: a.agendamentos + Number(r.agendamentos),
       walk_ins: a.walk_ins + Number(r.walk_ins),
+      orcamentos: a.orcamentos + Number(r.orcamentos),
       vendas: a.vendas + Number(r.vendas),
       receita_usd: a.receita_usd + Number(r.receita_usd),
     }),
-    { agendamentos: 0, walk_ins: 0, vendas: 0, receita_usd: 0 },
+    { agendamentos: 0, walk_ins: 0, orcamentos: 0, vendas: 0, receita_usd: 0 },
   );
 
   return (
@@ -60,9 +62,9 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
               <h3 className="font-semibold leading-tight flex items-center gap-1.5">
                 Vendas &amp; agendamentos por vendedor (ShopMonkey)
                 <ChartInfoTooltip
-                  description="Agendamentos, presenciais (walk-in), vendas pagas e receita de CADA vendedor, vindos do ShopMonkey — a fonte real da loja, não do chat."
-                  source="ShopMonkey: agendamento = appointment confirmado (verde); venda = order pago (receita em USD). O VENDEDOR é extraído do texto do agendamento por código puro (parseNote), com ~93% de cobertura; a venda é atribuída ao vendedor pelo cliente (customer_id) do agendamento (~91%)."
-                  calculation="Agendamentos/walk-ins: nº de appointments do vendedor no período (por data do agendamento). Vendas/receita: orders pagos no período (por data de pagamento); receita = soma do valor pago, atribuída ao vendedor do agendamento do mesmo cliente."
+                  description="Orçamentos, agendamentos, presenciais (walk-in), vendas pagas e receita de CADA vendedor, vindos do ShopMonkey — a fonte real da loja, não do chat."
+                  source="ShopMonkey: orçamento = order criado (toda cotação vira um order); agendamento = appointment confirmado (verde); venda = order pago (receita em USD). O VENDEDOR é extraído do texto do agendamento por código puro (parseNote), com ~93% de cobertura; orçamento/venda são atribuídos ao vendedor pelo cliente (customer_id) do agendamento (~91%)."
+                  calculation="Orçamentos: nº de orders criados no período (por data de criação). Agendamentos/walk-ins: nº de appointments do vendedor no período. Vendas/receita: orders pagos no período (por data de pagamento); receita = soma do valor pago. Tudo atribuído ao vendedor do agendamento do mesmo cliente."
                 />
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -90,6 +92,7 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                     <p className="font-semibold">{r.seller}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
+                    <Metric icon={<FileText className="h-3.5 w-3.5" />} label="Orçamentos" value={r.orcamentos} />
                     <Metric icon={<CalendarCheck className="h-3.5 w-3.5" />} label="Agendamentos" value={r.agendamentos} />
                     <Metric icon={<Footprints className="h-3.5 w-3.5" />} label="Presenciais" value={r.walk_ins} />
                     <Metric icon={<ShoppingBag className="h-3.5 w-3.5" />} label="Vendas" value={r.vendas} />
@@ -105,7 +108,8 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t pt-3 text-sm text-muted-foreground">
-              <span>Total: <b className="text-foreground">{totals.agendamentos}</b> agendamentos</span>
+              <span>Total: <b className="text-foreground">{totals.orcamentos}</b> orçamentos</span>
+              <span><b className="text-foreground">{totals.agendamentos}</b> agendamentos</span>
               <span><b className="text-foreground">{totals.walk_ins}</b> presenciais</span>
               <span><b className="text-foreground">{totals.vendas}</b> vendas</span>
               <span>Receita <b className="text-foreground">{formatUSD(totals.receita_usd, 0)}</b></span>
