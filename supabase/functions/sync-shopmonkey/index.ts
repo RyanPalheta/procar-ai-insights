@@ -19,6 +19,10 @@ const corsHeaders = {
 const SM = 'https://api.shopmonkey.cloud';
 const PAGE = 100;
 const MAX = 6000; // trava de segurança
+// A paginação por skip da API do ShopMonkey é INSTÁVEL: cada chamada devolve um
+// subconjunto parcial/aleatório (1 passe pega ~70-90% do total). Repetimos a varredura
+// PASSES vezes e deduplicamos por id — a união aproxima o total real (cobertura ~100%).
+const PASSES = 4;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,6 +48,7 @@ Deno.serve(async (req) => {
 
     // --- Agendamentos: POST /v3/appointment/search (por startDate) ---
     const appts: any[] = [];
+    for (let pass = 0; pass < PASSES; pass++)
     for (let skip = 0; skip < MAX; skip += PAGE) {
       const r = await fetch(`${SM}/v3/appointment/search`, {
         method: 'POST',
@@ -61,6 +66,7 @@ Deno.serve(async (req) => {
     // --- Vendas: GET /v3/order/?where=fullyPaidDate (pagos, por data de pagamento) ---
     const orders: any[] = [];
     const where = encodeURIComponent(JSON.stringify({ fullyPaidDate: { gte: since, lte: nowIso } }));
+    for (let pass = 0; pass < PASSES; pass++)
     for (let skip = 0; skip < MAX; skip += PAGE) {
       const r = await fetch(`${SM}/v3/order/?where=${where}&limit=${PAGE}&skip=${skip}`, { headers: smHeaders });
       if (!r.ok) return json({ error: `ShopMonkey order ${r.status}`, detail: await r.text() }, 502);
@@ -76,6 +82,7 @@ Deno.serve(async (req) => {
     //     real (o chat capta pouquíssimas) — contado por vendedor na aba Vendedores. ---
     const allOrders: any[] = [];
     const whereCreated = encodeURIComponent(JSON.stringify({ createdDate: { gte: since, lte: nowIso } }));
+    for (let pass = 0; pass < PASSES; pass++)
     for (let skip = 0; skip < MAX; skip += PAGE) {
       const r = await fetch(`${SM}/v3/order/?where=${whereCreated}&limit=${PAGE}&skip=${skip}`, { headers: smHeaders });
       if (!r.ok) return json({ error: `ShopMonkey order(all) ${r.status}`, detail: await r.text() }, 502);
