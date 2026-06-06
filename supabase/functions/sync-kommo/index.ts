@@ -47,6 +47,25 @@ function cfValue(l: any, fieldId: number): string | null {
   return null;
 }
 
+// Telefone do CONTATO (campo padrão da Kommo, field_code='PHONE').
+function contactPhone(contact: any): string | null {
+  for (const c of (contact?.custom_fields_values ?? [])) {
+    if (c.field_code === 'PHONE') {
+      const v = (c.values ?? [])[0]?.value;
+      if (v != null) return String(v);
+    }
+  }
+  return null;
+}
+
+// Normaliza p/ chave de dedup: só dígitos, tira DDI '1' (US) quando 11 díg., últimos 10.
+function normPhone(s: string | null): string | null {
+  const d = (s ?? '').replace(/\D/g, '');
+  if (d.length < 10) return null;
+  const ten = d.length === 11 && d.startsWith('1') ? d.slice(1) : d.slice(-10);
+  return ten.slice(-10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -79,7 +98,7 @@ Deno.serve(async (req) => {
     const leads: any[] = [];
     let page = 1;
     while (page <= 60) {
-      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&limit=250&page=${page}`);
+      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts&limit=250&page=${page}`);
       const batch = d?._embedded?.leads ?? [];
       if (!batch.length) break;
       leads.push(...batch);
@@ -87,10 +106,41 @@ Deno.serve(async (req) => {
       page++;
     }
 
+    // ---- telefone: resolve o contato is_main de cada lead -> CF PHONE. DEFENSIVO:
+    //      qualquer falha aqui NUNCA quebra o sync de leads; só deixa o telefone nulo. ----
+    const phoneByLead = new Map<number, { raw: string; norm: string | null }>();
+    try {
+      const contactIdByLead = new Map<number, number>();
+      const contactIds = new Set<number>();
+      for (const l of leads) {
+        const cs = l?._embedded?.contacts ?? [];
+        if (!cs.length) continue;
+        const main = cs.find((c: any) => c.is_main) ?? cs[0];
+        if (main?.id) { contactIdByLead.set(l.id, main.id); contactIds.add(main.id); }
+      }
+      const phoneByContact = new Map<number, { raw: string; norm: string | null }>();
+      const idList = [...contactIds];
+      for (let i = 0; i < idList.length; i += 250) {
+        const qs = idList.slice(i, i + 250).map((id) => `filter[id][]=${id}`).join('&');
+        const cd = await kget(`/contacts?${qs}&limit=250`);
+        for (const c of cd?._embedded?.contacts ?? []) {
+          const raw = contactPhone(c);
+          if (raw) phoneByContact.set(c.id, { raw, norm: normPhone(raw) });
+        }
+      }
+      for (const [leadId, contactId] of contactIdByLead) {
+        const ph = phoneByContact.get(contactId);
+        if (ph) phoneByLead.set(leadId, ph);
+      }
+    } catch (e) {
+      console.error('phone enrichment falhou (segue sem telefone):', e instanceof Error ? e.message : e);
+    }
+
     const rows = leads.map((l) => {
       const st = statusMap.get(l.status_id);
       const statusName = st?.status ?? null;
       const channel = channelFromPipeline(st?.pipeline ?? '');
+      const ph = phoneByLead.get(l.id);
       return {
         session_id: l.id,
         channel,
@@ -100,6 +150,8 @@ Deno.serve(async (req) => {
         is_walking: (statusName ?? '').toLowerCase().includes('loja'),
         created_at: new Date((l.created_at ?? 0) * 1000).toISOString(),
         source_system: 'kommo_sync',
+        phone: ph?.raw ?? null,
+        phone_normalized: ph?.norm ?? null,
       };
     });
 
@@ -143,6 +195,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 3) Backfill do TELEFONE nos espelhos kommo_sync (idempotente; restrito a
+    //    source_system='kommo_sync', nunca toca chat/IA). Agrupa por phone_normalized
+    //    p/ poucas queries. DEFENSIVO: falha aqui não derruba o sync de leads.
+    let phonesSet = 0;
+    try {
+      const byPhone = new Map<string, { raw: string | null; ids: number[] }>();
+      for (const r of rows) {
+        if (!r.phone_normalized) continue;
+        const e = byPhone.get(r.phone_normalized) ?? { raw: r.phone, ids: [] };
+        e.ids.push(r.session_id);
+        byPhone.set(r.phone_normalized, e);
+      }
+      for (const [norm, { raw, ids }] of byPhone) {
+        for (let i = 0; i < ids.length; i += 300) {
+          const slice = ids.slice(i, i + 300);
+          const { data, error } = await supabase
+            .from('lead_db')
+            .update({ phone: raw, phone_normalized: norm })
+            .eq('source_system', 'kommo_sync')
+            .in('session_id', slice)
+            .select('session_id');
+          if (error) throw new Error('update phone: ' + error.message);
+          phonesSet += data?.length ?? 0;
+        }
+      }
+    } catch (e) {
+      console.error('phone backfill falhou (segue):', e instanceof Error ? e.message : e);
+    }
+
     return json({
       window_days: days,
       kommo_leads: leads.length,
@@ -150,7 +231,9 @@ Deno.serve(async (req) => {
       already_present: leads.length - inserted,
       leads_com_vendedor: rows.filter((r) => r.sales_person_id).length,
       espelhos_normalizados: sellersSet,
-      note: 'Insert-only dos ausentes + normalização de vendedor nos espelhos (kommo_sync). Leads de chat/IA não foram alterados.',
+      leads_com_telefone: rows.filter((r) => r.phone_normalized).length,
+      telefones_gravados: phonesSet,
+      note: 'Insert-only dos ausentes + normalização de vendedor + backfill de telefone nos espelhos (kommo_sync). Leads de chat/IA não foram alterados.',
     });
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);
