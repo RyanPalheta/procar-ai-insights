@@ -110,10 +110,13 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
           const isBronze = index === 2;
           const isTop3 = index < 3;
 
-          // Conversion rate determines tier colors
+          // Conversion rate determines tier colors — usa a META configurada do
+          // vendedor (não um corte fixo de 15%), pra bater com a seção "Metas"
+          // do detalhe e acabar com o paradoxo "15% com meta 10%".
+          const convTarget = sellerGoals.find(g => g.metric === "conversion_rate")?.target ?? 10;
           const convRate = seller.conversion_rate;
-          const isBelowPerf = convRate < 15;
-          const isOkPerf = convRate >= 15 && !isTop3;
+          const isBelowPerf = convRate < convTarget;
+          const isOkPerf = convRate >= convTarget && !isTop3;
 
           // Card border/accent color based on performance
           const cardAccent = isGold
@@ -136,7 +139,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
               : "text-emerald-600 dark:text-emerald-400";
 
           // Performance gradient bar
-          const perfWidth = Math.min(100, convRate * 2.5);
+          const perfWidth = Math.min(100, (convRate / Math.max(convTarget, 1)) * 100);
           const barColor = isTop3
             ? "bg-amber-500"
             : isBelowPerf

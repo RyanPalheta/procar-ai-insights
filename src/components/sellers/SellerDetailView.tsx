@@ -7,10 +7,24 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
 import { SellerGoalStatus, GoalData } from "./SellerGoalStatus";
 import { SellerKPI } from "./SellersRankingTable";
+import { canonSalesStatus } from "@/lib/leadStatus";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid } from "recharts";
 import { TrendingUp, Users, Target, DollarSign, Clock, Footprints, Shield, Percent } from "lucide-react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const truncateLabel = (s: string, n = 18) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+
+// Tick do eixo de categorias que TRUNCA rótulos longos (sales_status da Kommo são
+// frases) — evita o corte/sobreposição que deixava o gráfico ilegível. Nome
+// completo continua no tooltip.
+function StatusTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload?: { value?: string } }) {
+  return (
+    <text x={x} y={y} dy={3} textAnchor="end" fontSize={11} fill="hsl(var(--muted-foreground))">
+      {truncateLabel(String(payload?.value ?? ""))}
+    </text>
+  );
+}
 
 const CHART_COLORS = [
   "hsl(215, 58%, 39%)",
@@ -60,12 +74,17 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
     return Array.from(counts.entries()).map(([date, count]) => ({ date, count }));
   }, [sellerLeads]);
 
-  // Status distribution
+  // Status distribution — normaliza sales_status (texto livre da Kommo) em etapas
+  // canônicas, então variações da MESMA etapa somam na mesma barra (proporções
+  // reais) e a fatia "Ganha / Agendada" bate com won_leads do card (mesma regra).
   const statusData = useMemo(() => {
     if (!sellerLeads) return [];
     const counts = new Map<string, number>();
     sellerLeads.forEach(l => {
-      if (l.sales_status) counts.set(l.sales_status, (counts.get(l.sales_status) || 0) + 1);
+      if (l.sales_status) {
+        const key = canonSalesStatus(l.sales_status);
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
     });
     return Array.from(counts.entries())
       .map(([name, value]) => ({ name, value }))
@@ -179,7 +198,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
           title="Novos (24h)"
           value={seller.new_audited_24h}
           icon={Percent}
-          description="Só chat auditado · últimas 24h"
+          description="Janela móvel 24h · ignora o filtro de período"
           info={{
             description: "Leads auditados deste vendedor criados nas últimas 24 horas.",
             source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Aqui filtra leads deste vendedor (sales_person_id) auditados pela IA (last_ai_update preenchido).",
@@ -225,14 +244,14 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
         {/* Status Distribution */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">Status de Venda <ChartInfoTooltip description="Distribui os leads deste vendedor pelo status de venda (sales_status) para mostrar em que etapa do funil eles estão." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com sales_status preenchido, dentro do intervalo de datas." calculation="Conta os leads em cada sales_status, ordena do maior para o menor e exibe os 6 principais como fatias da pizza." /></CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">Status de Venda <ChartInfoTooltip description="Distribui os leads deste vendedor pelas etapas do funil de venda, agrupando status equivalentes (ex.: variações de 'ganha' viram uma única etapa 'Ganha / Agendada')." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads deste vendedor (sales_person_id) já auditados pela IA (last_ai_update preenchido) e com sales_status preenchido, dentro do intervalo de datas." calculation="Normaliza o sales_status (mesma regra de 'ganho' do card de Conversão), conta os leads em cada etapa, ordena do maior para o menor e exibe as 6 principais como barras. Passe o mouse na barra para o nome completo." /></CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={statusData} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                 <XAxis type="number" allowDecimals={false} hide />
-                <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} interval={0} />
-                <Tooltip />
+                <YAxis type="category" dataKey="name" width={150} interval={0} tick={<StatusTick />} />
+                <Tooltip formatter={(v: number) => [v, "Leads"]} labelFormatter={(label: string) => label} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {statusData.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
