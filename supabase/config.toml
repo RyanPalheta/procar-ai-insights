@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.sync-kommo]
 verify_jwt = false
+
+[functions.sync-seller-to-kommo]
+verify_jwt = false
