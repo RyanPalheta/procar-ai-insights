@@ -18,14 +18,14 @@ Atualizado em 2026-06-06.
 - ✅ **Tooltips em todos os gráficos** (PR #4) + **Fonte/racional em todos os KPIs** (PR #5).
 - ✅ **Filtro de período + atalho "Hoje"/"Ontem" + custom range** em todas as abas, incl. Canais/Chamadas (PR #3).
 - ✅🔧 **Confiabilidade dos dados** — diagnóstico (PR #5) + reconciliação Kommo (PR #6) + **sync ShopMonkey** (PR #8) + **sync Kommo→lead_db** (PR #11, insert-only, +1.086 leads ausentes em 30d, incl. 568 vendas) + **cron horário** `sync-kommo`/`sync-shopmonkey` (PR #13, rumo a aposentar o n8n). Gap de volume fechado (7d passou de 508→710 ≥ Kommo). Falta: enriquecer os espelhos com IA (opcional) e migrar a ingestão de chat para código puro.
-- 🆕 **Destrinchar** (segmentação por produto, etnia, idioma, geografia/zip) — eixo transversal; será incorporado nas features novas.
+- 🆕 **Destrinchar** (segmentação por produto e idioma) — eixo transversal; será incorporado nas features novas.
 
 ## 2. Visão Geral
 - 🧱 Leads por Língua · Leads novos 24h (por canal) · Leads com cotação · Leads novos por período — divergem por volume (pipeline) + revisão de normalização.
 - ❓🧱 **Taxa de conversão** — depende de definir "conversão = venda ganha **ou** agendamento" (ver Agendamento vs Venda) + base completa.
 - ✅🧱 Valor médio cotado — moeda corrigida; cálculo/dados a revisar.
 - 🔧 Tempo mediano 1ª resposta — revisar cálculo contra dado real.
-- 🔧 **Walk-in (presenciais)** — hoje subcontado; **detector por texto** (cheguei/estou na loja/ya llegué) a implementar no analyze-lead + backfill.
+- ✅ **Walk-in (presenciais)** — religado à fonte real: o KPI da Visão Geral agora conta `shopmonkey_appointment.walk_in` (do *note* do agendamento, via `parseNote`) por `start_date` (migração `20260606260000`). 7d passou de **0 → 18** (inclui o sábado 30/05 com 7). Detector por texto no chat (cheguei/ya llegué) fica como reforço opcional futuro.
 - ✅ Valor de upsell (USD). · ❓ Oportunidade de upsell (qtd) — definir critério.
 - ✅ Leads por status · ✅ Ranking de objeções (validados).
 - 🆕 Temperatura · Sentimento · **Top 5 Produtos → inteligência de produtos** (ranking global + share + segmentação).
@@ -52,7 +52,7 @@ Atualizado em 2026-06-06.
 
 ## 6. Canais
 - 🧱 Leads recebidos por canal · Volumes por canal (telefone OK; demais divergem) — melhora com o backfill Kommo (PR #11).
-- ⛔ Destrinchar **etnias/zip/geo** — dado **não existe** em `lead_db` (precisa captura nova). · ⛔ **vendedor × grupo** — bloqueado (atribuição genérica). · 🔧 idioma/canal SEM vendedor é viável (lead_language 52%, channel 100%).
+- ⛔ **idioma × vendedor** — bloqueado (atribuição de vendedor genérica). · 🔧 idioma/canal SEM vendedor é viável (lead_language 52%, channel 100%).
 
 ## 7. Chamadas
 - ✅ Volume · Duração · Objeções/contornadas/oferta · Categorias · Volume&score (validados).
@@ -67,4 +67,4 @@ Atualizado em 2026-06-06.
 - ⛔ **Ligações por vendedor** — bloqueado (ver Descoberta-chave). · 🆕 Orgânico vs Pago · Canal E-mail/Indicação (já mapeados na sync-kommo) · Inteligência de produtos/serviços (`services_detected` 70%, viável) · Cancelamentos · Leads perdidos · Financiamentos (Snap) · Reviews.
 
 ---
-**Próximas fases (ordem sugerida):** (1) **Desbloquear vendedor** — capturar o vendedor individual na origem (Kommo) ou linkar lead↔ShopMonkey por telefone — destrava conversão/objeções/chamadas/cruzamentos por vendedor de uma vez; (2) **Inteligência de produtos** (`services_detected`/`upsell_products`, dados existem); (3) walk-in por texto no analyze-lead; (4) agregados de chamadas (sem vendedor) via `ai_call_analysis`; (5) features novas priorizadas com a equipe.
+**Próximas fases (ordem sugerida):** (1) **Desbloquear vendedor** — capturar o vendedor individual na origem (Kommo) ou linkar lead↔ShopMonkey por telefone — destrava conversão/objeções/chamadas/cruzamentos por vendedor de uma vez; (2) **Inteligência de produtos** (`services_detected`/`upsell_products`, dados existem); (3) walk-in por texto no chat (reforço opcional — a fonte ShopMonkey já cobre o KPI); (4) agregados de chamadas (sem vendedor) via `ai_call_analysis`; (5) features novas priorizadas com a equipe.
