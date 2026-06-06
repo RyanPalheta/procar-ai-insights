@@ -16,8 +16,12 @@ export interface ParsedNote {
   seller: string | null;
 }
 
-// Cobre: "walk in", "walk-in", "walkin", "walk - in", "walking".
-const WALK_RE = /\bwalk\s*-?\s*in\b|\bwalkin\b|\bwalking\b/i;
+// Cobre: "walk in", "walk-in", "walkin", "walk - in", "walking", o plural
+// "walk-ins/walkins", "walked in"/"walks in" e o rótulo ABREVIADO "WALK:"
+// (campo do note escrito sem o "-IN", ex.: "... COPIA DE CHAVE WALK: CLIENTE ANTIGO").
+// "walk" só dispara quando é palavra inteira (\b) seguida de in/ins/":" — não pega
+// sidewalk/boardwalk/walkway/walk-up.
+const WALK_RE = /\bwalk(?:ed|s)?\s*-?\s*ins?\b|\bwalkins?\b|\bwalking\b|\bwalk\s*-?\s*:/i;
 
 // Vendedores conhecidos (ajustável conforme o time cresce).
 const SELLERS = ["henrique", "jp", "gabriel", "ricardo", "matheus", "maestro"];
@@ -51,9 +55,10 @@ export function parseNote(raw: string | null | undefined): ParsedNote {
   let source: string | null = null;
   if (walkIn) {
     const m =
-      lower.match(/walk\s*-?\s*in\s*[:\-]?\s*([^/.\n]+)/) ||
-      lower.match(/walkin\s*[:\-]?\s*([^/.\n]+)/) ||
-      lower.match(/walking\s*[:\-]?\s*([^/.\n]+)/);
+      lower.match(/walk(?:ed|s)?\s*-?\s*ins?\s*[:\-]?\s*([^/.\n]+)/) ||
+      lower.match(/walkins?\s*[:\-]?\s*([^/.\n]+)/) ||
+      lower.match(/walking\s*[:\-]?\s*([^/.\n]+)/) ||
+      lower.match(/\bwalk\s*-?\s*:\s*([^/.\n]+)/);
     if (m) source = normalizeSource(m[1]);
   }
 
