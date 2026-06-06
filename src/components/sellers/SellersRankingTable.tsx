@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 export interface SellerKPI {
   seller_id: string;
   total_audited: number;
+  total_leads: number;
   won_leads: number;
   avg_score: number;
   new_audited_24h: number;
@@ -35,9 +36,9 @@ type SortKey = "seller_id" | "conversion_rate" | "leads_with_quote" | "objection
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "total_audited", label: "Mais Leads" },
-  { value: "conversion_rate", label: "Maior Conversão" },
-  { value: "leads_with_quote", label: "Mais Cotações" },
-  { value: "objections_rate", label: "Mais Objeções Sup." },
+  { value: "conversion_rate", label: "Maior ConversÃ£o" },
+  { value: "leads_with_quote", label: "Mais CotaÃ§Ãµes" },
+  { value: "objections_rate", label: "Mais ObjeÃ§Ãµes Sup." },
   { value: "walking_leads", label: "Mais Presenciais" },
   { value: "seller_id", label: "Nome (A-Z)" },
 ];
@@ -110,8 +111,8 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
           const isBronze = index === 2;
           const isTop3 = index < 3;
 
-          // Conversion rate determines tier colors — usa a META configurada do
-          // vendedor (não um corte fixo de 15%), pra bater com a seção "Metas"
+          // Conversion rate determines tier colors â€” usa a META configurada do
+          // vendedor (nÃ£o um corte fixo de 15%), pra bater com a seÃ§Ã£o "Metas"
           // do detalhe e acabar com o paradoxo "15% com meta 10%".
           const convTarget = sellerGoals.find(g => g.metric === "conversion_rate")?.target ?? 10;
           const convRate = seller.conversion_rate;
@@ -200,17 +201,17 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                   {isGold ? (
                     <div className="flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2 py-0.5">
                       <Trophy className="h-3.5 w-3.5" />
-                      <span className="text-xs font-bold">1º</span>
+                      <span className="text-xs font-bold">1Âº</span>
                     </div>
                   ) : isSilver ? (
                     <div className="flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 px-2 py-0.5">
                       <Medal className="h-3.5 w-3.5" />
-                      <span className="text-xs font-bold">2º</span>
+                      <span className="text-xs font-bold">2Âº</span>
                     </div>
                   ) : isBronze ? (
                     <div className="flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5">
                       <Award className="h-3.5 w-3.5" />
-                      <span className="text-xs font-bold">3º</span>
+                      <span className="text-xs font-bold">3Âº</span>
                     </div>
                   ) : (
                     <Badge variant={isBelowPerf ? "destructive" : isOkPerf ? "success" : "outline"} className="text-xs font-mono">
@@ -230,7 +231,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold truncate">{seller.seller_id}</p>
-                      <p className="text-xs text-muted-foreground">{seller.total_audited} leads de chat auditados</p>
+                      <p className="text-xs text-muted-foreground">{seller.total_audited} de {seller.total_leads} leads de chat auditados</p>
                     </div>
                   </div>
 
@@ -255,7 +256,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <TrendingUp className="h-3 w-3" />
-                        <span className="text-[11px]">Conversão</span>
+                        <span className="text-[11px]">ConversÃ£o</span>
                       </div>
                       <p className={cn("text-sm font-semibold", convColor)}>{seller.conversion_rate.toFixed(1)}%</p>
                     </div>
@@ -263,7 +264,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Target className="h-3 w-3" />
-                        <span className="text-[11px]">Cotações</span>
+                        <span className="text-[11px]">CotaÃ§Ãµes</span>
                       </div>
                       <p className="text-sm font-semibold">{seller.leads_with_quote}</p>
                     </div>
@@ -271,7 +272,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Shield className="h-3 w-3" />
-                        <span className="text-[11px]">Objeções Sup.</span>
+                        <span className="text-[11px]">ObjeÃ§Ãµes Sup.</span>
                       </div>
                       <p className="text-sm font-semibold">
                         {objectionRate.toFixed(0)}%
