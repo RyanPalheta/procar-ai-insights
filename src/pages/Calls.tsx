@@ -336,6 +336,16 @@ export default function Calls() {
       });
   }, [filteredCalls]);
 
+  /* chamadas por hora do dia (hora de pico) */
+  const hourlyData = useMemo(() => {
+    const buckets = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}h`, chamadas: 0 }));
+    filteredCalls.forEach((c: any) => {
+      const h = new Date(c.created_at).getHours();
+      if (h >= 0 && h < 24) buckets[h].chamadas++;
+    });
+    return buckets;
+  }, [filteredCalls]);
+
   /* objection categories */
   const objectionStats = useMemo(() => {
     const counts: Record<string, { total: number; overcome: number }> = {};
@@ -630,6 +640,24 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
       </div>
+
+      {/* Chamadas por hora */}
+      <MagicBentoCard glowColor="139, 92, 246">
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="flex items-center gap-2">Chamadas por hora <ChartInfoTooltip description="Eixo X = horas do dia (0h–23h); a barra mostra quantas chamadas aconteceram em cada hora, revelando os horários de pico de ligação." source="Chamadas registradas via Twilio (tabela call_db); não vem da Kommo. Agrupa todas as chamadas do período pela hora do created_at." calculation="Para cada hora do dia, conta as chamadas cujo created_at cai naquela hora (somando todos os dias do período)." /></CardTitle></CardHeader>
+          <CardContent className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourlyData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={1} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="chamadas" name="Chamadas" fill="rgb(139, 92, 246)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </MagicBentoCard>
 
       {/* Objeções */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">

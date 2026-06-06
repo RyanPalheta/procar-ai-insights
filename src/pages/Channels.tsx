@@ -71,7 +71,7 @@ export default function Channels() {
     queryFn: async () => {
       let q = supabase
         .from("lead_db")
-        .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, has_objection, objection_overcome, created_at, last_interaction_at");
+        .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, has_objection, objection_overcome, lead_language, created_at, last_interaction_at");
       if (range.fromIso) q = q.gte("created_at", range.fromIso);
       if (range.toIso) q = q.lte("created_at", range.toIso);
       const { data, error } = await q;
@@ -240,6 +240,28 @@ export default function Channels() {
       };
     }).sort((a, b) => b.totalLeads - a.totalLeads);
   }, [channelStats, responseTimeStats]);
+
+  /* --------- idioma × canal --------- */
+  const languageByChannel = useMemo(() => {
+    const norm = (l: string | null): string | null => {
+      const v = (l || "").toUpperCase();
+      if (v.startsWith("EN")) return "Inglês";
+      if (v.startsWith("ES")) return "Espanhol";
+      if (v.startsWith("PT")) return "Português";
+      if (!v || v === "NDA" || v === "N/A") return null;
+      return "Outro";
+    };
+    return ["whatsapp", "instagram", "facebook", "phone", "email", "indicação"].map((ch) => {
+      const meta = CHANNEL_META[ch];
+      const row: Record<string, number | string> = { channel: meta?.label ?? ch, "Inglês": 0, "Espanhol": 0, "Português": 0, "Outro": 0 };
+      leads.forEach((l: any) => {
+        if (normalizeChannelKey(l.channel) !== ch) return;
+        const k = norm(l.lead_language);
+        if (k) (row[k] as number)++;
+      });
+      return row;
+    }).filter((r) => (r["Inglês"] as number) + (r["Espanhol"] as number) + (r["Português"] as number) + (r["Outro"] as number) > 0);
+  }, [leads]);
 
   const loading = loadingLeads || loadingInteractions;
 
@@ -438,6 +460,40 @@ export default function Channels() {
                   </CardContent>
                 </Card>
               </MagicBentoCard>
+
+              {/* Idioma × Canal */}
+              {languageByChannel.length > 0 && (
+                <MagicBentoCard glowColor="59, 130, 246">
+                  <Card className="bg-card border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        Idiomas por canal
+                        <ChartInfoTooltip
+                          description="Mostra a composição de idiomas (Inglês, Espanhol, Português) dentro de cada canal — quem fala o quê em cada origem."
+                          source="lead_db (Supabase): leads de chat com canal e lead_language preenchidos no período. O idioma é detectado na ingestão; cobertura parcial (~52%), então é uma amostra, não o total."
+                          calculation="Para cada canal, conta os leads por idioma (EN/ES/PT, demais = Outro) e empilha as barras."
+                        />
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">Composição de idiomas por canal · chat com idioma detectado (amostra)</p>
+                    </CardHeader>
+                    <CardContent className="h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={languageByChannel}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                          <XAxis dataKey="channel" tick={{ fontSize: 12 }} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="Inglês" stackId="lang" fill="#3b82f6" />
+                          <Bar dataKey="Espanhol" stackId="lang" fill="#f59e0b" />
+                          <Bar dataKey="Português" stackId="lang" fill="#10b981" />
+                          <Bar dataKey="Outro" stackId="lang" fill="#9ca3af" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </MagicBentoCard>
+              )}
             </>
           )}
         </TabsContent>

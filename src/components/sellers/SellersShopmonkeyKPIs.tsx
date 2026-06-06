@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatUSD } from "@/lib/utils";
-import { CalendarCheck, Footprints, ShoppingBag, DollarSign, Store, FileText } from "lucide-react";
+import { CalendarCheck, Footprints, ShoppingBag, DollarSign, Store, FileText, Receipt } from "lucide-react";
 
 export interface SellerShopmonkeyKPI {
   seller: string;
@@ -101,6 +101,11 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                       label="Receita"
                       value={formatUSD(Number(r.receita_usd), 0)}
                       highlight
+                    />
+                    <Metric
+                      icon={<Receipt className="h-3.5 w-3.5" />}
+                      label="Ticket médio"
+                      value={Number(r.vendas) > 0 ? formatUSD(Number(r.receita_usd) / Number(r.vendas), 0) : "—"}
                     />
                   </div>
                 </div>
