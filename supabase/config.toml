@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.sync-shopmonkey]
 verify_jwt = false
+
+[functions.sync-kommo]
+verify_jwt = false
