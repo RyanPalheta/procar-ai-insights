@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { differenceInHours } from "date-fns";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
+import { ProductIntelligence } from "@/components/leads/ProductIntelligence";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -547,6 +548,9 @@ export default function Leads() {
           </div>
         );
       })()}
+
+      {/* Inteligência de Produtos — ranking + share + upsell (dado real: services_detected). */}
+      <ProductIntelligence dateFrom={range.fromIso} dateTo={range.toIso} />
 
       <Card>
         <CardHeader>
