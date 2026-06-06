@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, TrendingUp } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const PIE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#9ca3af"];
 
 export interface ProductIntel {
   product: string;
@@ -36,8 +39,12 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
     },
   });
 
-  const rows = (data || []).slice(0, 12);
+  const all = data || [];
+  const rows = all.slice(0, 12);
   const max = Math.max(1, ...rows.map((r) => Number(r.leads)));
+  const pieData = all.slice(0, 6).map((r) => ({ name: r.product, value: Number(r.leads) }));
+  const restLeads = all.slice(6).reduce((a, r) => a + Number(r.leads), 0);
+  if (restLeads > 0) pieData.push({ name: "Outros", value: restLeads });
 
   return (
     <Card>
@@ -62,7 +69,21 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
         ) : rows.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Sem produtos detectados no período.</p>
         ) : (
-          <div className="space-y-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div className="h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={42} outerRadius={82} paddingAngle={2}>
+                    {pieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number, n: string) => [`${v} leads`, n]} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2.5">
             {rows.map((r) => (
               <div key={r.product} className="space-y-1">
                 <div className="flex items-center justify-between gap-2 text-sm">
@@ -87,6 +108,7 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
       </CardContent>
