@@ -22,10 +22,10 @@ const DEFAULT_THRESHOLD = 60;
 const TooltipProvenance = ({ fonte, calculo }: { fonte: string; calculo: string }) => (
   <div className="mt-1 pt-1 border-t border-border space-y-0.5">
     <p className="text-[11px] leading-snug text-muted-foreground">
-      <span className="font-medium text-foreground">Fonte:</span> {fonte}
+      <span className="font-medium text-foreground">De onde vem:</span> {fonte}
     </p>
     <p className="text-[11px] leading-snug text-muted-foreground">
-      <span className="font-medium text-foreground">Como é calculado:</span> {calculo}
+      <span className="font-medium text-foreground">Como contamos:</span> {calculo}
     </p>
   </div>
 );
@@ -72,84 +72,84 @@ const formatResponseTime = (minutes: number): string => {
 // ativo de todos os leads da Kommo, então NÃO inclui agendamentos Shopmonkey,
 // pagamentos, telefone nem entrada manual -> é um SUBCONJUNTO da Kommo.
 const LEAD_DB_SOURCE =
-  "Lead_db: alimentado só por conversas de WhatsApp/chat (sem sync de toda a Kommo) — é um subconjunto da Kommo, não o total.";
+  "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo.";
 
 const kpiTooltips = {
   conversionRate: {
     title: "Taxa de Conversão",
-    description: "Percentual de leads que foram convertidos em vendas ganhas.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: leads auditados pela IA (last_ai_update preenchido).`,
-    calculo: "won_leads ÷ total_audited × 100. Ganhos = sales_status contém 'ganha', 'won' ou 'agendamento confirmado'; total = leads auditados (last_ai_update preenchido) no período.",
+    description: "De cada 100 clientes atendidos, quantos fecharam negócio (viraram venda).",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: só os clientes que a IA já analisou.`,
+    calculo: "clientes que fecharam negócio divididos pelo total de clientes analisados, vezes 100. Conta como fechado quem está marcado como venda ganha ou agendamento confirmado.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   avgScore: {
     title: "Score Médio",
-    description: "Média dos scores de qualificação atribuídos pela IA aos leads.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: leads auditados pela IA (last_ai_update preenchido).`,
-    calculo: "AVG(lead_score) dos leads auditados (last_ai_update preenchido) com lead_score definido no período, arredondado a 1 casa.",
+    description: "A nota média de qualidade que a IA dá aos clientes (de 0 a 10). Quanto maior, mais quente é o cliente.",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: só os clientes que a IA já analisou e deu nota.`,
+    calculo: "a média das notas que a IA deu aos clientes analisados no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   newLeads24h: {
     title: "Leads Novos (24h)",
-    description: "Quantidade de novos leads auditados nas últimas 24 horas.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: todos os leads criados no lead_db (created_at).`,
-    calculo: "COUNT de leads com created_at nas últimas 24h. Comparação: COUNT das 24h anteriores (48h a 24h atrás). Janela fixa, ignora o filtro de período.",
+    description: "Quantos clientes novos chegaram nas últimas 24 horas.",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: todos os clientes novos que chegaram por WhatsApp/chat.`,
+    calculo: "todos os clientes novos das últimas 24 horas, comparados com as 24 horas anteriores. É sempre das últimas 24 horas e não muda quando você troca o filtro de período.",
     comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com as 24 horas anteriores"
   },
   leadsWithQuote: {
     title: "Leads com Cotação",
-    description: "Quantidade de leads que possuem um valor de cotação definido.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com cotação (lead_price preenchido).`,
-    calculo: "COUNT de leads auditados (last_ai_update preenchido) com lead_price preenchido (não nulo) no período.",
+    description: "Quantos clientes já receberam um valor de orçamento (cotação).",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA que receberam um valor de cotação.`,
+    calculo: "conta os clientes do período que já têm um valor de cotação registrado.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   avgQuotedPrice: {
     title: "Valor Médio Cotado",
-    description: "Ticket médio das cotações realizadas.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com cotação (lead_price preenchido).`,
-    calculo: "AVG(lead_price) dos leads auditados (last_ai_update preenchido) com lead_price preenchido no período, arredondado a 2 casas.",
+    description: "O valor médio dos orçamentos passados aos clientes (ticket médio).",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA que receberam um valor de cotação.`,
+    calculo: "a média dos valores de cotação dos clientes que receberam orçamento no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   medianFirstResponseTime: {
     title: "Tempo Mediano 1ª Resposta",
-    description: "Mediana do tempo até a 1ª resposta do vendedor: da 1ª mensagem do cliente até a 1ª resposta do agente. A mediana é mais representativa que a média pois não é afetada por casos extremos.",
-    fonte: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook), cruzadas com leads do lead_db (subconjunto de chat da Kommo). Usa o sender_type para distinguir cliente de agente.",
-    calculo: "Mediana (PERCENTILE_CONT 0.5) de (1ª mensagem do agente − 1ª mensagem do cliente), em minutos, por sessão; leads filtrados por created_at no período.",
+    description: "Quanto tempo o cliente costuma esperar pela primeira resposta — da primeira mensagem dele até a primeira resposta da equipe. Usamos o valor do meio (mediana), que não é distorcido por casos muito fora da curva.",
+    fonte: "vem das mensagens trocadas no WhatsApp, Instagram e Facebook, ligadas aos clientes que chegaram por conversa. A gente identifica nas mensagens quem é o cliente e quem é a equipe.",
+    calculo: "para cada conversa, medimos o tempo entre a primeira mensagem do cliente e a primeira resposta da equipe; mostramos o valor do meio (mediana) de todos esses tempos, em minutos.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   walkingLeads: {
     title: "Leads Presenciais",
-    description: "Quantidade de leads marcados como presenciais (walking), ou seja, clientes que visitaram a loja fisicamente.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA marcados como presenciais (is_walking = true).`,
-    calculo: "COUNT de leads auditados (last_ai_update preenchido) com is_walking = true no período.",
+    description: "Quantos clientes foram à loja pessoalmente (visita presencial).",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA marcados como visita presencial.`,
+    calculo: "conta os clientes do período marcados como visita presencial à loja.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   upsellLeads: {
     title: "Oportunidades de Upsell",
-    description: "Quantidade de leads onde a IA identificou oportunidade de vender produtos/serviços adicionais.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com upsell detectado (has_upsell = true).`,
-    calculo: "COUNT de leads auditados (last_ai_update preenchido) com has_upsell = true no período.",
+    description: "Quantos clientes têm chance de comprar algo a mais: a IA identificou oportunidade de vender produtos ou serviços extras.",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA em que apareceu chance de venda extra.`,
+    calculo: "conta os clientes do período em que a IA viu oportunidade de vender algo a mais.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   upsellTotalValue: {
     title: "Valor Potencial Upsell",
-    description: "Soma dos valores estimados de upsell identificados pela IA nos leads do período.",
-    fonte: `${LEAD_DB_SOURCE} Aqui: auditados pela IA com upsell detectado (has_upsell = true).`,
-    calculo: "SUM(upsell_value_estimate) dos leads auditados (last_ai_update preenchido) com has_upsell = true no período.",
+    description: "A soma do valor estimado de tudo que dá para vender a mais para esses clientes.",
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA em que apareceu chance de venda extra.`,
+    calculo: "soma do valor estimado de venda extra de todos os clientes do período com essa oportunidade.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -276,7 +276,7 @@ export function LeadsKPICards({
                     value={`${conversionRate.toFixed(1)}%`}
                     icon={TrendingUp}
                     variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
-                    description="Ganhos vs auditados (chat) · ≠ Kommo"
+                    description="Vendas vs. clientes analisados (WhatsApp/chat)"
                     trend={getTrend(conversionRateVariation)}
                   />
                 </div>
@@ -299,7 +299,7 @@ export function LeadsKPICards({
                     value={avgScore.toFixed(1)}
                     icon={Award}
                     variant={avgScore >= 7 ? "success" : avgScore >= 5 ? "warning" : "destructive"}
-                    description={isAll ? "Auditados (chat) · ≠ Kommo" : periodLabel}
+                    description={isAll ? "Analisados pela IA (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(scoreVariation)}
                   />
                 </div>
@@ -322,7 +322,7 @@ export function LeadsKPICards({
                     value={newLeads24h}
                     icon={Clock}
                     variant="default"
-                    description="Chat (lead_db) · ≠ Kommo"
+                    description="Só WhatsApp/chat · menor que o Kommo"
                     trend={getTrend(newLeads24hVariation, true)}
                   />
                 </div>
@@ -345,7 +345,7 @@ export function LeadsKPICards({
                     value={leadsWithQuote}
                     icon={Receipt}
                     variant="default"
-                    description={isAll ? "Auditados c/ preço · ≠ Kommo" : periodLabel}
+                    description={isAll ? "Com cotação (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(leadsWithQuoteVariation)}
                   />
                 </div>
@@ -368,7 +368,7 @@ export function LeadsKPICards({
                     value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
                     icon={DollarSign}
                     variant="success"
-                    description={isAll ? "Ticket médio · auditados (chat)" : periodLabel}
+                    description={isAll ? "Ticket médio (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(avgQuotedPriceVariation)}
                   />
                 </div>
@@ -399,7 +399,7 @@ export function LeadsKPICards({
                     value={formatResponseTime(medianFirstResponseTime)}
                     icon={Timer}
                     variant={medianFirstResponseTime > 0 && medianFirstResponseTime <= threshold * 0.5 ? "success" : medianFirstResponseTime <= threshold ? "warning" : "destructive"}
-                    description={isAll ? "Cliente → 1ª resposta do agente" : periodLabel}
+                    description={isAll ? "Do cliente até a 1ª resposta da equipe" : periodLabel}
                     trend={getTrend(medianFirstResponseTimeVariation, false, true)}
                   />
                 </div>
@@ -425,7 +425,7 @@ export function LeadsKPICards({
                     value={walkingLeads}
                     icon={Footprints}
                     variant={walkingLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Walking · auditados (chat)" : periodLabel}
+                    description={isAll ? "Visita presencial (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(walkingLeadsVariation)}
                   />
                 </div>
@@ -448,7 +448,7 @@ export function LeadsKPICards({
                     value={upsellLeads}
                     icon={PackagePlus}
                     variant={upsellLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Upsell · auditados (chat)" : periodLabel}
+                    description={isAll ? "Chance de venda extra (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(upsellLeadsVariation)}
                   />
                 </div>
@@ -471,7 +471,7 @@ export function LeadsKPICards({
                     value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
                     icon={BadgeDollarSign}
                     variant={upsellTotalValue > 0 ? "success" : "default"}
-                    description={isAll ? "Estimado · auditados (chat)" : periodLabel}
+                    description={isAll ? "Valor estimado (WhatsApp/chat)" : periodLabel}
                     trend={getTrend(upsellTotalValueVariation)}
                   />
                 </div>

@@ -61,8 +61,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.spend, previousData?.spend)}
           info={{
             description: "Total investido nos anuncios da Meta no periodo selecionado.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Soma do campo spend retornado pela API da Meta para a conta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "a soma de tudo que voce gastou com anuncios na conta da Meta.",
           }}
         />
         <KPICard
@@ -74,8 +74,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.impressions, previousData?.impressions)}
           info={{
             description: "Numero de vezes que os anuncios foram exibidos no periodo.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo impressions retornado pela API da Meta para a conta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "quantas vezes os anuncios apareceram na tela das pessoas.",
           }}
         />
         <KPICard
@@ -87,8 +87,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.clicks, previousData?.clicks)}
           info={{
             description: "Total de cliques recebidos pelos anuncios no periodo.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo clicks retornado pela API da Meta para a conta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "quantas vezes as pessoas clicaram nos anuncios.",
           }}
         />
         <KPICard
@@ -100,8 +100,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.reach, previousData?.reach)}
           info={{
             description: "Pessoas unicas que viram os anuncios pelo menos uma vez.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo reach retornado pela API da Meta para a conta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "quantas pessoas diferentes viram os anuncios (cada pessoa conta uma vez).",
           }}
         />
         <KPICard
@@ -112,9 +112,9 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           description="Custo por mil impressoes"
           trend={calcVariation(data.cpm, previousData?.cpm)}
           info={{
-            description: "Custo medio para alcancar mil impressoes.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo cpm calculado pela Meta (gasto / impressoes x 1000).",
+            description: "Custo medio para o anuncio aparecer mil vezes na tela das pessoas.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "o gasto dividido pelo numero de vezes que o anuncio apareceu, vezes 1000.",
           }}
         />
         <KPICard
@@ -126,8 +126,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.cpc, previousData?.cpc)}
           info={{
             description: "Custo medio por clique no anuncio.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo cpc calculado pela Meta (gasto / cliques).",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "o gasto dividido pelo numero de cliques.",
           }}
         />
         <KPICard
@@ -139,8 +139,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.ctr, previousData?.ctr)}
           info={{
             description: "Percentual de impressoes que geraram cliques.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo ctr calculado pela Meta (cliques / impressoes x 100).",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "o numero de cliques dividido pelo numero de vezes que o anuncio apareceu, vezes 100.",
           }}
         />
         <KPICard
@@ -152,8 +152,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.cpl, previousData?.cpl)}
           info={{
             description: "Custo medio por lead gerado pelos anuncios.",
-            source: "Metricas da API da Meta Ads no periodo selecionado (acao lead). Nao passa pela Kommo.",
-            calculation: "gasto / leads, onde leads = acao 'lead' retornada pela Meta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado. Conta os leads que a Meta registrou.",
+            calculation: "o gasto dividido pelo numero de leads que a Meta registrou.",
           }}
         />
         <KPICard
@@ -165,8 +165,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.costPerPurchase, previousData?.costPerPurchase)}
           info={{
             description: "Quanto custou, em media, cada compra atribuida aos anuncios.",
-            source: "Metricas da API da Meta Ads no periodo selecionado (acao purchase). Nao passa pela Kommo.",
-            calculation: "gasto / compras, onde compras = acao 'purchase' retornada pela Meta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado. Conta as compras atribuidas aos anuncios.",
+            calculation: "o gasto dividido pelo numero de compras atribuidas aos anuncios.",
           }}
         />
         <KPICard
@@ -178,8 +178,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.roas, previousData?.roas)}
           info={{
             description: "Retorno sobre o investimento: receita atribuida por dolar gasto.",
-            source: "Metricas da API da Meta Ads no periodo selecionado (valor da acao purchase). Nao passa pela Kommo.",
-            calculation: "receita de compras (action_values 'purchase') / gasto.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado. Usa a receita das compras atribuidas aos anuncios.",
+            calculation: "a receita das compras atribuidas aos anuncios dividida pelo gasto.",
           }}
         />
         <KPICard
@@ -191,8 +191,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.purchases, previousData?.purchases)}
           info={{
             description: "Total de compras atribuidas aos anuncios no periodo.",
-            source: "Metricas da API da Meta Ads no periodo selecionado (acao purchase). Nao passa pela Kommo.",
-            calculation: "Valor da acao 'purchase' retornada pela API da Meta.",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado. Conta as compras atribuidas aos anuncios.",
+            calculation: "quantas compras a Meta atribuiu aos anuncios.",
           }}
         />
         <KPICard
@@ -204,8 +204,8 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           trend={calcVariation(data.frequency, previousData?.frequency)}
           info={{
             description: "Media de vezes que cada pessoa viu os anuncios.",
-            source: "Metricas da API da Meta Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campo frequency calculado pela Meta (impressoes / alcance).",
+            source: "os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado.",
+            calculation: "o numero de vezes que os anuncios apareceram dividido pelo numero de pessoas diferentes que os viram.",
           }}
         />
         <KPICard
@@ -213,11 +213,11 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           value={formatNumber(confirmedAppointments)}
           icon={CalendarCheck}
           variant={confirmedAppointments > 0 ? "success" : "default"}
-          description="Chat auditado · ≠ total Kommo"
+          description="So conversas de chat · menor que o Kommo"
           info={{
-            description: "Leads de chat com agendamento confirmado no periodo. Cruza lead_db com o gasto de anuncios.",
-            source: "lead_db (Supabase), alimentado SO por conversas de WhatsApp/chat (Evolution -> n8n). NAO inclui Shopmonkey, pagamentos, telefone nem entrada manual: e um SUBCONJUNTO da Kommo. Filtro: sales_status contem 'agendamento confirmado'.",
-            calculation: "Contagem de leads do lead_db (por created_at no periodo) cujo sales_status contem 'agendamento confirmado'.",
+            description: "Clientes que chegaram por conversa de WhatsApp/chat e tiveram agendamento confirmado no periodo, comparados com o gasto de anuncios.",
+            source: "conta so os clientes que chegaram por conversa de WhatsApp/chat. Por isso o numero e menor que o total no Kommo. Aqui: os que estao marcados como agendamento confirmado.",
+            calculation: "quantos clientes de WhatsApp/chat que chegaram no periodo estao marcados como agendamento confirmado.",
           }}
         />
         <KPICard
@@ -225,11 +225,11 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           value={costPerAppointment > 0 ? formatUSD(costPerAppointment) : "N/A"}
           icon={Receipt}
           variant={costPerAppointment > 0 ? "default" : "default"}
-          description="Chat auditado · ≠ total Kommo"
+          description="So conversas de chat · menor que o Kommo"
           info={{
-            description: "Quanto custou, em media, cada agendamento confirmado (gasto Meta / agendamentos do chat).",
-            source: "Gasto vem da API da Meta; agendamentos vem do lead_db (Supabase), alimentado SO por WhatsApp/chat - SUBCONJUNTO da Kommo, sem Shopmonkey/telefone/manual. Filtro: sales_status contem 'agendamento confirmado'.",
-            calculation: "gasto (Meta) / agendamentos confirmados (lead_db no periodo).",
+            description: "Quanto custou, em media, cada agendamento confirmado (gasto da Meta dividido pelos agendamentos vindos do chat).",
+            source: "o gasto vem direto da Meta; os agendamentos contam so os clientes que chegaram por conversa de WhatsApp/chat. Por isso o numero e menor que o total no Kommo. Aqui: os que estao marcados como agendamento confirmado.",
+            calculation: "o gasto na Meta dividido pelo numero de clientes de WhatsApp/chat marcados como agendamento confirmado no periodo.",
           }}
         />
         <KPICard
@@ -237,11 +237,11 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
           value={costPerFinancial > 0 ? formatUSD(costPerFinancial) : "N/A"}
           icon={CreditCard}
           variant={costPerFinancial > 0 ? "default" : "default"}
-          description="Chat auditado · ≠ total Kommo"
+          description="So conversas de chat · menor que o Kommo"
           info={{
-            description: "Quanto custou, em media, cada financeira apresentada (gasto Meta / financeiras do chat).",
-            source: "Gasto vem da API da Meta; financeiras vem do lead_db (Supabase), alimentado SO por WhatsApp/chat - SUBCONJUNTO da Kommo, sem Shopmonkey/telefone/manual. Filtro: used_offer preenchido.",
-            calculation: "gasto (Meta) / leads do lead_db (no periodo) com used_offer preenchido.",
+            description: "Quanto custou, em media, cada proposta de financiamento apresentada (gasto da Meta dividido pelas propostas vindas do chat).",
+            source: "o gasto vem direto da Meta; as propostas contam so os clientes que chegaram por conversa de WhatsApp/chat. Por isso o numero e menor que o total no Kommo. Aqui: os que receberam proposta de financiamento.",
+            calculation: "o gasto na Meta dividido pelo numero de clientes de WhatsApp/chat que receberam proposta de financiamento no periodo.",
           }}
         />
       </div>

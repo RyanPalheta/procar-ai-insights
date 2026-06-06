@@ -121,7 +121,7 @@ export function SellerGoalsManager() {
           Metas de Vendedores
         </CardTitle>
         <CardDescription>
-          Configure metas individuais ou globais (aplicadas como fallback) para vendedores
+          Defina metas para cada vendedor. A meta global vale para todos que não tiverem uma meta própria.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

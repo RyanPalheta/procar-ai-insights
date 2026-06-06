@@ -449,15 +449,15 @@ export default function Leads() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="cursor-pointer" onClick={() => { setColdAuditFilter("cold"); resetPage(); }}>
               <KPICard
-                title="Leads Frios Auditados"
+                title="Leads Frios Analisados pela IA"
                 value={coldKpis.total_cold}
                 icon={Snowflake}
                 variant="warning"
-                description="Total com auditoria fria · chat ≠ Kommo"
+                description="Total de leads frios já analisados · menor que o Kommo"
                 info={{
-                  description: "Quantidade de leads que passaram pela auditoria de leads frios (sem avanço/parados).",
-                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido.",
-                  calculation: "RPC get_cold_audit_kpis → total_cold: COUNT(*) do lead_db onde cold_audit_at IS NOT NULL.",
+                  description: "Quantos clientes parados (sem avanço) a IA já analisou na auditoria de leads frios.",
+                  source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes que a IA já analisou como frios.",
+                  calculation: "conta quantos clientes frios já foram analisados pela IA.",
                 }}
               />
             </div>
@@ -467,11 +467,11 @@ export default function Leads() {
                 value={coldKpis.without_followup}
                 icon={UserX}
                 variant="destructive"
-                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios · chat ≠ Kommo`}
+                description={`${coldKpis.total_cold > 0 ? Math.round((coldKpis.without_followup / coldKpis.total_cold) * 100) : 0}% dos leads frios · menor que o Kommo`}
                 info={{
-                  description: "Leads frios cuja auditoria apontou follow-up inadequado pelo vendedor.",
-                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido e cold_audit_followup_ok = false.",
-                  calculation: "RPC get_cold_audit_kpis → without_followup (cold_audit_followup_ok = false). O % exibido = without_followup ÷ total_cold × 100.",
+                  description: "Clientes frios em que a IA viu que o vendedor não fez um bom acompanhamento (follow-up).",
+                  source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes frios em que o acompanhamento ficou ruim.",
+                  calculation: "conta os clientes frios com acompanhamento ruim, divididos pelo total de clientes frios analisados, vezes 100.",
                 }}
               />
             </div>
@@ -481,11 +481,11 @@ export default function Leads() {
                 value={coldKpis.reactivatable}
                 icon={RotateCcw}
                 variant="success"
-                description="Chance alta ou média · chat ≠ Kommo"
+                description="Chance alta ou média · menor que o Kommo"
                 info={{
-                  description: "Leads frios com chance de reativação considerada alta ou média pela IA.",
-                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido e cold_audit_reactivation_chance in ('alta','media').",
-                  calculation: "RPC get_cold_audit_kpis → reactivatable: COUNT(*) com cold_audit_reactivation_chance em ('alta','media').",
+                  description: "Clientes frios que a IA acha que ainda têm chance alta ou média de voltar a comprar.",
+                  source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes frios com boa chance de retomar.",
+                  calculation: "conta os clientes frios em que a IA marcou a chance de voltar como alta ou média.",
                 }}
               />
             </div>
@@ -494,11 +494,11 @@ export default function Leads() {
               value={`${coldKpis.followup_ok_rate}%`}
               icon={CheckCircle2}
               variant="default"
-              description="Follow-up adequado · chat ≠ Kommo"
+              description="Acompanhamento adequado · menor que o Kommo"
               info={{
-                description: "Percentual dos leads frios auditados em que o follow-up foi considerado adequado.",
-                source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: cold_audit_at preenchido.",
-                calculation: "RPC get_cold_audit_kpis → followup_ok_rate: COUNT(cold_audit_followup_ok = true) × 100 ÷ total de leads frios auditados, arredondado a 1 casa.",
+                description: "De todos os clientes frios analisados, quantos tiveram um bom acompanhamento (follow-up), em porcentagem.",
+                source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes frios que a IA já analisou.",
+                calculation: "conta os clientes frios com bom acompanhamento, vezes 100, divididos pelo total de clientes frios analisados (com uma casa decimal).",
               }}
             />
           </div>
@@ -524,11 +524,11 @@ export default function Leads() {
                   value={upsellCount}
                   icon={TrendingUp}
                   variant="success"
-                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos leads auditados · chat ≠ Kommo`}
+                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos clientes analisados · menor que o Kommo`}
                   info={{
-                    description: "Leads auditados em que a IA identificou oportunidade de upsell.",
-                    source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: has_upsell = true (e last_ai_update preenchido).",
-                    calculation: "Conta os leads carregados com has_upsell e last_ai_update. O % = esses leads ÷ total de leads auditados (last_ai_update preenchido) × 100.",
+                    description: "Clientes já analisados em que a IA viu chance de vender algo a mais (upsell).",
+                    source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes com chance de venda extra que a IA já analisou.",
+                    calculation: "conta os clientes já analisados com chance de venda extra, divididos pelo total de clientes que a IA já analisou, vezes 100.",
                   }}
                 />
               </div>
@@ -537,11 +537,11 @@ export default function Leads() {
                 value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue) : "N/A"}
                 icon={DollarSign}
                 variant="success"
-                description="Estimativa total · chat ≠ Kommo"
+                description="Estimativa total · menor que o Kommo"
                 info={{
-                  description: "Soma estimada do valor das oportunidades de upsell identificadas.",
-                  source: "Leads do lead_db (Supabase self-hosted), alimentado SÓ por conversas de WhatsApp/chat (Evolution API → n8n); NÃO inclui Shopmonkey/pagamentos/telefone/manual → subconjunto da Kommo. Filtro: has_upsell = true (e last_ai_update preenchido).",
-                  calculation: "SUM(upsell_value_estimate) dos leads com has_upsell e last_ai_update, somado no cliente e formatado em USD.",
+                  description: "Valor estimado, somado, de todas as vendas extras (upsell) que a IA identificou.",
+                  source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes com chance de venda extra que a IA já analisou.",
+                  calculation: "a soma do valor estimado das vendas extras dos clientes com essa oportunidade, mostrada em dólar.",
                 }}
               />
             </div>
@@ -733,7 +733,7 @@ export default function Leads() {
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
                       <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="cold">Fria (auditada)</SelectItem>
+                      <SelectItem value="cold">Fria (analisada pela IA)</SelectItem>
                       <SelectItem value="normal">Normal</SelectItem>
                     </SelectContent>
                   </Select>

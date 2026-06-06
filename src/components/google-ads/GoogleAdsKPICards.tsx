@@ -36,8 +36,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Investimento no periodo"
           info={{
             description: "Total investido nas campanhas do Google Ads no periodo selecionado.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Soma de cost_micros das linhas do periodo, dividida por 1.000.000.",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "a soma de tudo que voce gastou com os anuncios no periodo.",
           }}
         />
         <KPICard
@@ -48,8 +48,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Vezes que os anuncios foram vistos"
           info={{
             description: "Numero de vezes que os anuncios foram exibidos no periodo.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Soma do campo impressions das linhas do periodo.",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "a soma de quantas vezes seus anuncios apareceram na tela no periodo.",
           }}
         />
         <KPICard
@@ -60,8 +60,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Cliques nos anuncios"
           info={{
             description: "Total de cliques recebidos pelos anuncios no periodo.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Soma do campo clicks das linhas do periodo.",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "a soma de quantos cliques seus anuncios receberam no periodo.",
           }}
         />
         <KPICard
@@ -72,8 +72,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Taxa de cliques"
           info={{
             description: "Percentual de impressoes que geraram cliques.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "cliques / impressoes x 100 (somados no periodo).",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "os cliques dividido pelas vezes que o anuncio apareceu, vezes 100, no periodo.",
           }}
         />
         <KPICard
@@ -84,8 +84,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Custo por clique"
           info={{
             description: "Custo medio por clique no anuncio.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "gasto / cliques (somados no periodo).",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "o total gasto dividido pelo numero de cliques, no periodo.",
           }}
         />
         <KPICard
@@ -96,8 +96,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Total de conversoes"
           info={{
             description: "Total de conversoes atribuidas aos anuncios no periodo.",
-            source: "Metricas da API do Google Ads (conversoes configuradas na conta). Nao passa pela Kommo.",
-            calculation: "Soma do campo conversions das linhas do periodo.",
+            source: "os numeros vem direto do Google Ads (as conversoes que voce configurou na sua conta), no periodo selecionado.",
+            calculation: "a soma das conversoes registradas pelos anuncios no periodo.",
           }}
         />
         <KPICard
@@ -108,8 +108,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Retorno sobre gasto"
           info={{
             description: "Retorno sobre o investimento: valor de conversao por dolar gasto.",
-            source: "Metricas da API do Google Ads (valor das conversoes na conta). Nao passa pela Kommo.",
-            calculation: "valor de conversoes (conversions_value) / gasto, somados no periodo.",
+            source: "os numeros vem direto do Google Ads (o valor das conversoes na sua conta), no periodo selecionado.",
+            calculation: "o valor gerado pelas conversoes dividido pelo total gasto, no periodo.",
           }}
         />
         <KPICard
@@ -120,8 +120,8 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           description="Campanhas com status ativo"
           info={{
             description: "Quantidade de campanhas habilitadas no periodo.",
-            source: "Metricas da API do Google Ads no periodo selecionado. Nao passa pela Kommo.",
-            calculation: "Campaign_id unicos com campaign_status = ENABLED nas linhas do periodo.",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "quantas campanhas diferentes estavam ligadas (ativas) no periodo.",
           }}
         />
       </div>

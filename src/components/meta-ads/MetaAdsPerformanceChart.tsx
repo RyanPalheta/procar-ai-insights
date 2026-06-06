@@ -36,9 +36,9 @@ export function MetaAdsPerformanceChart({ data }: MetaAdsPerformanceChartProps) 
             <MousePointerClick className="h-4 w-4 text-primary" />
             Impressoes & Cliques
             <ChartInfoTooltip
-              description="Compara a evolucao diaria de impressoes e cliques no Meta Ads; Eixo X = dia (dd/MM), linha esquerda = impressoes (eixo Y esquerdo) e linha verde = cliques (eixo Y direito)."
-              source="Metricas reportadas pela API da Meta Ads para o periodo selecionado. Nao passa pela Kommo."
-              calculation="Cada ponto plota o total de impressoes e de cliques (clicks) reportados pela API naquele dia; sem agregacao adicional alem do agrupamento diario."
+              description="Mostra, dia a dia, quantas vezes os anuncios apareceram (impressoes) e quantos cliques receberam. No grafico: embaixo voce ve o dia (dia/mes), a linha de baixo e quantas vezes apareceu e a linha verde e quantos cliques teve."
+              source="os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado."
+              calculation="cada ponto mostra o total de vezes que o anuncio apareceu e o total de cliques daquele dia, somados por dia."
             />
           </CardTitle>
         </CardHeader>

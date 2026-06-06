@@ -55,12 +55,12 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
             <h3 className="font-semibold leading-tight flex items-center gap-1.5">
               Inteligência de Produtos
               <ChartInfoTooltip
-                description="Ranking dos serviços/produtos mais detectados pela IA nas conversas, com participação (%) e quantas vezes cada um aparece como oportunidade de upsell."
-                source="lead_db (Supabase): só leads de chat auditados pela IA (last_ai_update) no período — é um SUBCONJUNTO da Kommo. Demanda = services_detected; upsell = upsell_products."
-                calculation="Conta leads distintos por produto em services_detected; share % = leads do produto ÷ leads com algum produto detectado. 'Upsell' = leads distintos em que o produto aparece em upsell_products."
+                description="Ranking dos serviços e produtos que a IA mais identificou nas conversas, com a fatia (%) de cada um e quantas vezes apareceu como chance de vender algo a mais (upsell)."
+                source="conta só os clientes que chegaram por conversa de WhatsApp/chat e que a IA já analisou. Por isso o número é menor que o total no Kommo. A IA lê cada conversa e anota quais produtos o cliente quis e em quais havia chance de vender algo a mais."
+                calculation="conta quantos clientes diferentes pediram cada produto; a fatia (%) é os clientes daquele produto divididos pelo total de clientes que pediram algum produto, vezes 100. O 'upsell' conta quantos clientes diferentes em que aquele produto apareceu como chance de venda extra."
               />
             </h3>
-            <p className="text-xs text-muted-foreground">Demanda · share · oportunidade de upsell (chat auditado)</p>
+            <p className="text-xs text-muted-foreground">Procura · fatia · chance de venda extra (conversas já analisadas pela IA)</p>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
                     {Number(r.as_upsell) > 0 && (
                       <span
                         className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400"
-                        title="Leads em que apareceu como oportunidade de upsell"
+                        title="Clientes em que este produto apareceu como chance de vender algo a mais"
                       >
                         <TrendingUp className="h-3 w-3" />
                         {r.as_upsell}

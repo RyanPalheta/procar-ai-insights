@@ -39,9 +39,9 @@ export function LeadsSentimentChart({ data }: LeadsSentimentChartProps) {
           <CardTitle className="flex items-center gap-2">
             Distribuição de Sentimento
             <ChartInfoTooltip
-              description="Distribui os leads pelo sentimento detectado (Positivo, Neutro, Negativo); o tamanho do emoji e a barra confrontam a quantidade e o % de cada sentimento."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA (analyze-lead) é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sentiment preenchido (exclui 'N/A')."
-              calculation="Conta os leads por sentimento (sentiment normalizado em Positivo/Neutro/Negativo) e calcula o % = leads do sentimento ÷ total com sentimento × 100."
+              description="Separa os clientes pelo clima da conversa que a IA percebeu (Positivo, Neutro, Negativo). O tamanho do emoji e a barra mostram quantos clientes e qual a porcentagem de cada clima."
+              source="conta os clientes que a IA já analisou e para os quais conseguiu identificar o clima da conversa (quem ficou sem clima identificado não entra na conta)."
+              calculation="conta quantos clientes ficaram em cada clima (Positivo, Neutro ou Negativo). A porcentagem é os clientes daquele clima divididos pelo total de clientes com clima identificado, vezes 100."
             />
           </CardTitle>
         </CardHeader>

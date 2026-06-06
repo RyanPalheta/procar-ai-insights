@@ -60,9 +60,10 @@ export function KommoReconciliation() {
           <ArrowDownUp className="h-5 w-5" /> Reconciliação Kommo × Dashboard
         </CardTitle>
         <CardDescription>
-          Para o período escolhido, compara quantos leads foram criados na Kommo (fonte real) com quantos
-          existem no dashboard (<code>lead_db</code>). O <strong>gap</strong> mede exatamente quantos leads o BI
-          está deixando de fora. Somente leitura — não altera nada na Kommo nem no banco.
+          Para o período escolhido, compara quantos clientes foram criados na Kommo (o total de verdade) com
+          quantos aparecem no painel (só os que chegaram por conversa de WhatsApp/chat). O <strong>gap</strong>{" "}
+          mostra exatamente quantos clientes o painel está deixando de fora. Apenas consulta — não altera nada na
+          Kommo nem nos dados.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -87,11 +88,11 @@ export function KommoReconciliation() {
         {result && !loading && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Stat label="Kommo (real)" value={result.kommo.total} />
-              <Stat label="Dashboard (lead_db)" value={result.dashboard.total} />
-              <Stat label="Auditados (IA)" value={result.dashboard.audited} muted />
+              <Stat label="Kommo (total real)" value={result.kommo.total} />
+              <Stat label="Painel (só WhatsApp/chat)" value={result.dashboard.total} />
+              <Stat label="Analisados pela IA" value={result.dashboard.audited} muted />
               <Stat
-                label="Gap (faltando no BI)"
+                label="Gap (faltando no painel)"
                 value={`${result.gap}${result.gap_pct !== null ? ` (${result.gap_pct}%)` : ""}`}
                 danger={result.gap > 0}
               />

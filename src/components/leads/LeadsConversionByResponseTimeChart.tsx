@@ -89,8 +89,8 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
               Conversão por Tempo de Resposta
               <ChartInfoTooltip
                 description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
-                source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
-                calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+                source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
+                calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -113,8 +113,8 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
               Conversão por Tempo de Resposta
               <ChartInfoTooltip
                 description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
-                source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
-                calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+                source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
+                calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -137,8 +137,8 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
             Conversão por Tempo de Resposta
             <ChartInfoTooltip
               description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
-              source="Cruza leads do banco do dashboard (Supabase, vinculados à Kommo pelo lead_id; não é leitura ao vivo da Kommo) com as mensagens dos canais digitais (interaction_db). Via RPC get_conversion_by_response_time, considera apenas leads auditados pela IA (last_ai_update preenchido) com pelo menos 3 interações na mesma sessão."
-              calculation="Tempo de resposta = minutos entre a 1ª e a 3ª interação da sessão, agrupado em faixas (0-15, 15-30, 30-60, 60+ min); taxa = leads ganhos ÷ total da faixa × 100 (ganho = sales_status com 'ganha'/'won'/'agendamento confirmado')."
+              source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
+              calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
             />
           </CardTitle>
         </CardHeader>

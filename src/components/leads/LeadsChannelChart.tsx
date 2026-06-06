@@ -42,18 +42,18 @@ export function LeadsChannelChart({ data, closedData, mode, onModeChange }: Lead
             <ChartInfoTooltip
               description={
                 mode === "all"
-                  ? "Distribui o volume de leads por canal de origem (WhatsApp, Facebook, Instagram); cada fatia mostra a contagem e o % do total."
-                  : "Distribui apenas as vendas ganhas por canal de origem; cada fatia mostra a contagem de fechamentos e a taxa de conversão do canal."
+                  ? "Mostra de onde vieram seus clientes (WhatsApp, Facebook ou Instagram); cada fatia mostra quantos clientes e a porcentagem do total."
+                  : "Mostra apenas as vendas fechadas separadas por onde o cliente veio; cada fatia mostra quantas vendas e a taxa de conversão daquele canal."
               }
               source={
                 mode === "all"
-                  ? "Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera todos os leads do filtro, agrupando o campo channel (normalizado)."
-                  : "Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads com sales_status 'ganha' e channel diferente de 'N/A'."
+                  ? "conta so os clientes que chegaram por conversa de WhatsApp/chat. Por isso o numero e menor que o total no Kommo. Aqui: todos os clientes do periodo, separados pelo canal de onde vieram."
+                  : "conta so os clientes que chegaram por conversa de WhatsApp/chat. Por isso o numero e menor que o total no Kommo. Aqui: so os clientes marcados como venda fechada (ganha), separados pelo canal de onde vieram."
               }
               calculation={
                 mode === "all"
-                  ? "Conta os leads por canal (channel normalizado) e calcula a fatia como contagem do canal ÷ total de leads × 100."
-                  : "Para cada canal: vendas ganhas no canal como valor; conversão = ganhas do canal ÷ total de leads do canal × 100."
+                  ? "conta quantos clientes vieram de cada canal e calcula a fatia como os clientes do canal divididos pelo total de clientes, vezes 100."
+                  : "para cada canal: o numero de vendas fechadas naquele canal; a conversao e as vendas fechadas do canal divididas pelo total de clientes do canal, vezes 100."
               }
             />
           </CardTitle>

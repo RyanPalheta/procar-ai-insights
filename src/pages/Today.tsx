@@ -398,14 +398,14 @@ export default function Today() {
           icon={Users}
           glowColor="16, 185, 129"
           info={{
-            description: "Leads de chat criados hoje, comparados com ontem.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo.",
-            calculation: "Conta os leads com created_at entre o início e o fim de hoje; a variação compara com a contagem de ontem.",
+            description: "Quantos clientes novos chegaram hoje, comparado com ontem. Conta só conversas de WhatsApp/chat, então é menor que o total no Kommo.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo.",
+            calculation: "quantos clientes chegaram hoje; a comparação é com a quantidade de ontem.",
           }}
           footer={
             <span className="flex items-center gap-1">
               <TrendIcon trend={leadsVariation.trend} />
-              {leadsVariation.label} · só chat
+              {leadsVariation.label} · só WhatsApp/chat, menor que o Kommo
             </span>
           }
         />
@@ -416,8 +416,8 @@ export default function Today() {
           glowColor="59, 130, 246"
           info={{
             description: "Total de mensagens trocadas hoje (recebidas e enviadas).",
-            source: "Mensagens do interaction_db (WhatsApp/Instagram/Facebook).",
-            calculation: "Conta as interações com timestamp dentro de hoje (limitado às 500 mais recentes do dia).",
+            source: "as mensagens trocadas no WhatsApp/Instagram/Facebook.",
+            calculation: "quantas mensagens foram trocadas hoje (mostra até as 500 mais recentes do dia).",
           }}
           footer="recebidas e enviadas"
         />
@@ -428,8 +428,8 @@ export default function Today() {
           glowColor="139, 92, 246"
           info={{
             description: "Chamadas telefônicas registradas hoje, separadas em ativas (saída) e passivas (entrada).",
-            source: "Chamadas do call_db (Twilio + análise de IA). Independe da Kommo.",
-            calculation: "Conta as chamadas com created_at dentro de hoje; a direção (ativa/passiva) é deduzida dos números de origem/destino.",
+            source: "as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo.",
+            calculation: "quantas ligações houve hoje; se foi de saída (ativa) ou de entrada (passiva) é identificado pelos números de quem ligou e de quem recebeu.",
           }}
           footer={
             loadingCalls ? null : (
@@ -453,9 +453,9 @@ export default function Today() {
           icon={DollarSign}
           glowColor="245, 158, 11"
           info={{
-            description: "Vendas REAIS da loja fechadas hoje (ShopMonkey) e a receita do dia — a fonte certa de 'vendas', não o chat.",
-            source: "shopmonkey_sale (orders pagos por fully_paid_date de hoje), sincronizado do ShopMonkey de hora em hora pelo cron. O número do chat (sales_status='ganha') vira referência secundária, pois é subconjunto.",
-            calculation: "Conta os orders pagos hoje e soma paid_cost_cents/100 = receita. O comparativo 'no chat' usa leads de hoje com sales_status 'ganha'.",
+            description: "Vendas reais da loja fechadas hoje e quanto entrou em dinheiro no dia — esse é o número certo de vendas, não o do chat.",
+            source: "os pagamentos do sistema da loja (Shopmonkey) que foram quitados hoje, atualizados de hora em hora. O número do chat (clientes marcados como venda fechada) é só uma referência, pois conta menos que o total.",
+            calculation: "quantos pagamentos foram quitados hoje e a soma dos valores recebidos. O comparativo 'no chat' usa os clientes de hoje marcados como venda fechada (ganha).",
           }}
           footer={
             <span className="flex items-center gap-1">
@@ -469,9 +469,9 @@ export default function Today() {
           icon={Gauge}
           glowColor="14, 165, 233"
           info={{
-            description: "Score de qualidade médio (IA) dos leads de chat criados hoje.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo; considera só leads com lead_score preenchido.",
-            calculation: "Média de lead_score entre os leads de hoje que têm score preenchido, arredondada para inteiro.",
+            description: "A nota média de qualidade que a IA dá aos clientes que chegaram hoje por conversa de WhatsApp/chat.",
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera só os clientes que já receberam uma nota da IA.",
+            calculation: "a média das notas de qualidade que a IA deu aos clientes de hoje, arredondada para número inteiro.",
           }}
           footer={metrics.avgScore >= 70 ? "alta qualidade" : metrics.avgScore >= 40 ? "moderado" : "baixo"}
         />
@@ -481,9 +481,9 @@ export default function Today() {
           icon={AlertTriangle}
           glowColor="239, 68, 68"
           info={{
-            description: `Leads de chat quentes (score ≥ ${HOT_LEAD_SCORE_THRESHOLD}) ainda abertos e sem interação há ${HOT_LEAD_THRESHOLD_MINUTES}+ minutos.`,
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo. Exclui status ganha/perdida/descartada. Não é limitado a hoje.",
-            calculation: `Entre os leads com lead_score ≥ ${HOT_LEAD_SCORE_THRESHOLD} e abertos, conta os sem last_interaction_at ou com a última interação há ${HOT_LEAD_THRESHOLD_MINUTES}+ minutos (máx. 10 exibidos).`,
+            description: `Clientes de chat com nota alta (${HOT_LEAD_SCORE_THRESHOLD} ou mais) que ainda estão em aberto e há ${HOT_LEAD_THRESHOLD_MINUTES} minutos ou mais ninguém responde.`,
+            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Não conta quem já fechou venda, perdeu ou foi descartado. Não é só de hoje.",
+            calculation: `entre os clientes com nota ${HOT_LEAD_SCORE_THRESHOLD} ou mais e ainda em aberto, conta os que nunca tiveram resposta ou cuja última conversa foi há ${HOT_LEAD_THRESHOLD_MINUTES} minutos ou mais (mostra no máximo 10).`,
           }}
           footer={`hot leads sem resposta há ${HOT_LEAD_THRESHOLD_MINUTES}min+`}
         />
@@ -550,7 +550,7 @@ export default function Today() {
         <div className="space-y-4">
           <MagicBentoCard glowColor="16, 185, 129">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Canais de hoje <ChartInfoTooltip description="Distribui os leads criados hoje por canal de origem (WhatsApp, Instagram, Facebook, Telefone) para mostrar de onde vêm os contatos do dia." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads criados hoje (created_at entre o início e o fim do dia)." calculation="Conta quantos leads de hoje há em cada canal normalizado e exibe cada barra com esse total." /></CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Canais de hoje <ChartInfoTooltip description="Mostra por onde os clientes de hoje chegaram (WhatsApp, Instagram, Facebook, Telefone), para você ver de onde vêm os contatos do dia." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera apenas os clientes que chegaram hoje." calculation="para cada canal, conta quantos clientes chegaram hoje e mostra esse total na barra." /></CardTitle></CardHeader>
               <CardContent>
                 {metrics.channelData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem dados</p>
@@ -572,7 +572,7 @@ export default function Today() {
 
           <MagicBentoCard glowColor="245, 158, 11">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Sentimento de hoje <ChartInfoTooltip description="Distribui os leads criados hoje pelo sentimento detectado pela IA (Positivo, Neutro, Negativo) para mostrar o clima dos contatos do dia." source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera apenas leads criados hoje com o campo sentiment preenchido pela IA." calculation="Conta quantos leads de hoje há em cada categoria de sentimento e exibe cada barra com esse total." /></CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2">Sentimento de hoje <ChartInfoTooltip description="Mostra o clima dos contatos de hoje pelo sentimento que a IA identificou na conversa (Positivo, Neutro, Negativo)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera apenas os clientes de hoje cujo sentimento a IA já analisou." calculation="para cada sentimento, conta quantos clientes de hoje se encaixam e mostra esse total na barra." /></CardTitle></CardHeader>
               <CardContent>
                 {metrics.sentimentData.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-6">Sem leads analisados</p>
@@ -597,7 +597,7 @@ export default function Today() {
       {/* Hourly distribution */}
       <MagicBentoCard glowColor="139, 92, 246">
         <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="flex items-center gap-2">Distribuição por hora <ChartInfoTooltip description="Eixo X = horas do dia (0h a 23h); as barras comparam o volume de leads novos e de chamadas em cada hora de hoje." source="Leads do banco do dashboard (Supabase, tabela lead_db) e chamadas registradas via Twilio (tabela call_db); ambos criados hoje. Não é leitura ao vivo da Kommo." calculation="Para cada hora, conta os leads e as chamadas cujo created_at cai naquela hora e plota duas barras (Leads e Chamadas)." /></CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2">Distribuição por hora <ChartInfoTooltip description="Mostra cada hora do dia (0h às 23h); as barras comparam quantos clientes novos e quantas ligações entraram em cada hora de hoje." source="os clientes que chegaram por conversa de WhatsApp/chat e as ligações telefônicas registradas, ambos de hoje. Não passa pelo Kommo." calculation="para cada hora, conta os clientes novos e as ligações que aconteceram naquela hora e mostra duas barras (Leads e Chamadas)." /></CardTitle></CardHeader>
           <CardContent className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics.hourly}>

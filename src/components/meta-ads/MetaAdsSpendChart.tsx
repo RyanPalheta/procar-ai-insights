@@ -32,9 +32,9 @@ export function MetaAdsSpendChart({ data }: MetaAdsSpendChartProps) {
             <DollarSign className="h-4 w-4 text-primary" />
             Gasto Diario
             <ChartInfoTooltip
-              description="Mostra a evolucao do investimento diario em anuncios do Meta Ads; Eixo X = dia (dd/MM) e Eixo Y = valor gasto na moeda da conta ($)."
-              source="Metricas reportadas pela API da Meta Ads para o periodo selecionado. Nao passa pela Kommo."
-              calculation="Cada ponto da area plota o total gasto (campo spend) reportado pela API naquele dia, sem media ou acumulado."
+              description="Mostra quanto voce gastou em anuncios dia a dia. Na linha de baixo aparece o dia (dd/MM) e na lateral o valor gasto em dolar ($)."
+              source="os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado."
+              calculation="cada ponto mostra o total gasto naquele dia, sem media nem soma acumulada."
             />
           </CardTitle>
         </CardHeader>

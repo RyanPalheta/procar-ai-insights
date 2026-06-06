@@ -40,9 +40,9 @@ export function MetaAdsFunnelChart({ data }: MetaAdsFunnelChartProps) {
             <Filter className="h-4 w-4 text-primary" />
             Funil de Conversao
             <ChartInfoTooltip
-              description="Mostra o funil de conversao do Meta Ads com 4 etapas (Impressoes, Cliques, Leads e Compras); cada barra representa o volume total da etapa no periodo selecionado."
-              source="Metricas reportadas pela API da Meta Ads para o periodo selecionado. Nao passa pela Kommo."
-              calculation="Cada etapa soma o total agregado do periodo: impressoes, cliques (clicks), leads (action lead) e compras (action purchase) reportados pela API."
+              description="Mostra o caminho do anuncio ate a venda em 4 etapas (Impressoes, Cliques, Leads e Compras). Cada barra mostra o total daquela etapa no periodo escolhido."
+              source="os numeros vem direto da Meta (Facebook/Instagram), no periodo selecionado."
+              calculation="cada etapa soma o total do periodo: quantas vezes o anuncio apareceu (impressoes), quantos cliques teve, quantos leads a Meta registrou e quantas compras foram atribuidas aos anuncios."
             />
           </CardTitle>
         </CardHeader>

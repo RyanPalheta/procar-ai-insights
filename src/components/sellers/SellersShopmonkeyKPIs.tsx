@@ -62,13 +62,13 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
               <h3 className="font-semibold leading-tight flex items-center gap-1.5">
                 Vendas &amp; agendamentos por vendedor (ShopMonkey)
                 <ChartInfoTooltip
-                  description="Orçamentos, agendamentos, presenciais (walk-in), vendas pagas e receita de CADA vendedor, vindos do ShopMonkey — a fonte real da loja, não do chat."
-                  source="ShopMonkey: orçamento = order criado (toda cotação vira um order); agendamento = appointment confirmado (verde); venda = order pago (receita em USD). O VENDEDOR é extraído do texto do agendamento por código puro (parseNote), com ~93% de cobertura; orçamento/venda são atribuídos ao vendedor pelo cliente (customer_id) do agendamento (~91%)."
-                  calculation="Orçamentos: nº de orders criados no período (por data de criação). Agendamentos/walk-ins: nº de appointments do vendedor no período. Vendas/receita: orders pagos no período (por data de pagamento); receita = soma do valor pago. Tudo atribuído ao vendedor do agendamento do mesmo cliente."
+                  description="Orçamentos, agendamentos, visitas presenciais, vendas fechadas e receita de CADA vendedor. Os dados vêm dos agendamentos e pagamentos do sistema da loja (Shopmonkey), não das conversas de chat."
+                  source="agendamentos e pagamentos do sistema da loja (Shopmonkey). Cada cotação vira um orçamento; o agendamento confirmado aparece em verde; a venda é o pagamento concluído (valor em dólar). O nome do vendedor é lido do texto escrito no agendamento (funciona em cerca de 93% dos casos); orçamento e venda são ligados ao vendedor pelo mesmo cliente do agendamento (cerca de 91%)."
+                  calculation="Orçamentos: quantas cotações foram criadas no período. Agendamentos e visitas presenciais: quantos o vendedor teve no período. Vendas e receita: pagamentos concluídos no período (pela data do pagamento); a receita é a soma de tudo que foi pago. Cada número é ligado ao vendedor do agendamento daquele mesmo cliente."
                 />
               </h3>
               <p className="text-xs text-muted-foreground">
-                Fonte real da loja · vendedor recuperado dos notes (~93% de cobertura)
+                Dados do sistema da loja · vendedor lido do texto do agendamento (cerca de 93% dos casos)
               </p>
             </div>
           </div>
@@ -78,7 +78,7 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
           <Skeleton className="h-40 w-full" />
         ) : rows.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            Sem agendamentos/vendas do ShopMonkey no período.
+            Sem agendamentos ou vendas no sistema da loja (Shopmonkey) neste período.
           </p>
         ) : (
           <>

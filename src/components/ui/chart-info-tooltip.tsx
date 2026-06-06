@@ -53,13 +53,13 @@ export function ChartInfoTooltip({
           <p className="text-popover-foreground">{description}</p>
           {source && (
             <p className="text-muted-foreground">
-              <span className="font-semibold text-popover-foreground">Fonte: </span>
+              <span className="font-semibold text-popover-foreground">De onde vem: </span>
               {source}
             </p>
           )}
           {calculation && (
             <p className="text-muted-foreground">
-              <span className="font-semibold text-popover-foreground">Como é calculado: </span>
+              <span className="font-semibold text-popover-foreground">Como contamos: </span>
               {calculation}
             </p>
           )}

@@ -17,9 +17,9 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
             <TrendingUp className="h-4 w-4 text-primary" />
             Leads Novos por Período
             <ChartInfoTooltip
-              description="Mostra a evolução diária do volume de leads novos; eixo X = cada dia do período, linha = quantidade de leads criados naquele dia."
-              source="Leads do banco do dashboard (Supabase), vinculados à Kommo pelo lead_id; a análise de IA é enviada de volta à Kommo (não é leitura ao vivo da Kommo). Considera todos os leads do período (campo created_at), respeitando os filtros de canal/status/idioma ativos."
-              calculation="Conta os leads agrupados pela data de criação (created_at), gerando um ponto por dia dentro do intervalo selecionado."
+              description="Mostra como o número de clientes novos varia a cada dia. Na linha de baixo aparece cada dia do período e a linha mostra quantos clientes novos chegaram naquele dia."
+              source="conta os clientes novos que chegaram no período selecionado, respeitando os filtros de canal, situação e idioma que você ativou. A análise feita pela IA é gravada de volta no Kommo (não é uma leitura ao vivo do Kommo)."
+              calculation="agrupamos os clientes pelo dia em que chegaram e contamos quantos foram em cada dia, criando um ponto por dia dentro do período escolhido."
             />
           </CardTitle>
         </CardHeader>
