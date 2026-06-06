@@ -231,7 +231,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold truncate">{seller.seller_id}</p>
-                      <p className="text-xs text-muted-foreground">{seller.total_audited} de {seller.total_leads} leads de chat auditados</p>
+                      <p className="text-xs text-muted-foreground">{seller.total_audited} de {seller.total_leads} leads · auditados pela IA</p>
                     </div>
                   </div>
 
