@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.reconcile-kommo]
 verify_jwt = false
+
+[functions.sync-shopmonkey]
+verify_jwt = false
