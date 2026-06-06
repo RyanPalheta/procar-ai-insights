@@ -76,7 +76,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const apptRows = appts.map((a) => ({
+    // ShopMonkey pode repetir ids no resultado paginado (recorrência/overlap);
+    // deduplica por id, senão o upsert falha ("cannot affect row a second time").
+    const dedupe = <T extends { id: string }>(rows: T[]): T[] => {
+      const m = new Map<string, T>();
+      for (const r of rows) if (r.id) m.set(r.id, r);
+      return [...m.values()];
+    };
+
+    const apptRows = dedupe(appts.map((a) => ({
       id: a.id,
       start_date: a.startDate ?? null,
       end_date: a.endDate ?? null,
@@ -85,8 +93,8 @@ Deno.serve(async (req) => {
       order_id: a.orderId ?? null,
       created_date: a.createdDate ?? null,
       synced_at: nowIso,
-    }));
-    const saleRows = orders
+    })));
+    const saleRows = dedupe(orders
       .filter((o) => o.paid)
       .map((o) => ({
         id: o.id,
@@ -97,7 +105,7 @@ Deno.serve(async (req) => {
         invoiced: o.invoiced ?? null,
         created_date: o.createdDate ?? null,
         synced_at: nowIso,
-      }));
+      })));
 
     if (apptRows.length) {
       const { error } = await supabase.from('shopmonkey_appointment').upsert(apptRows, { onConflict: 'id' });
