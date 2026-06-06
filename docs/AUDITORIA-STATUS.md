@@ -21,15 +21,15 @@ Atualizado em 2026-06-06.
 - 🆕 **Destrinchar** (segmentação por produto, etnia, idioma, geografia/zip) — eixo transversal; será incorporado nas features novas.
 
 ## 2. Visão Geral
-- 🧱 Leads por Língua · Leads novos 24h (por canal) · Leads com cotação · Leads novos por período — divergem por volume (pipeline) + revisão de normalização.
-- ❓🧱 **Taxa de conversão** — depende de definir "conversão = venda ganha **ou** agendamento" (ver Agendamento vs Venda) + base completa.
+- ✅ **Leads com cotação** (base completa: chat IA + preço Kommo, sem filtro de IA; 7d 37→156) · ✅ **Leads novos por período** (ancorado ao período + backfill 120d). · 🧱 **Leads por Língua** (idioma só ~1,9% — precisa ser derivado no `analyze-lead` e reprocessado) · 🔧 **Leads novos 24h por canal** (24h confere; os leads importados da Kommo caem em "Outros" — falta o campo/etapa de origem na Kommo).
+- ✅ **Conversão (venda + agendamento)** — separadas na Visão Geral e sobre a **base completa** (migração `20260606270000`): `total_leads`/`sale_leads`/`appointment_leads`. 7d: venda **21,6%** / agendamento **9,2%**. Fim do "soma venda+agendamento sobre só os 36,5% auditados".
 - ✅🧱 Valor médio cotado — moeda corrigida; cálculo/dados a revisar.
 - 🔧 Tempo mediano 1ª resposta — revisar cálculo contra dado real.
 - ✅ **Walk-in (presenciais)** — religado à fonte real: o KPI da Visão Geral agora conta `shopmonkey_appointment.walk_in` (do *note* do agendamento, via `parseNote`) por `start_date` (migração `20260606260000`, já aplicada no barssss). 7d passou de **0 → 18** (inclui o sábado 30/05 com 7). `parseNote` reforçado para cobrir o rótulo abreviado "WALK:" (1 walk-in que escapava); auditoria de leitura: **0 escapes** restantes. Detector por texto no chat (cheguei/ya llegué) fica como reforço opcional futuro.
 - ✅ Valor de upsell (USD). · ❓ Oportunidade de upsell (qtd) — definir critério.
 - ✅ Leads por status · ✅ Ranking de objeções (validados).
 - 🆕 Temperatura · Sentimento · **Top 5 Produtos → inteligência de produtos** (ranking global + share + segmentação).
-- 🧱 Compliance · Conversão por tempo de resposta · Conversão por cotação · Taxa de objeções contornadas (cobertura/amostra).
+- 🔧 Conversão por tempo de resposta / por cotação — definição = **venda** (alinhada à Visão Geral, migração `20260606270000`); seguem limitadas por amostra de chat (≥3 msgs) / volume de cotações. · 🧱 Compliance · Taxa de objeções contornadas (cobertura de IA).
 - ⏳ Uso de estratégia de venda (scripts).
 
 ## 3. Hoje

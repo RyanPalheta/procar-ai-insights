@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign, CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
@@ -31,8 +31,10 @@ const TooltipProvenance = ({ fonte, calculo }: { fonte: string; calculo: string 
 );
 
 interface LeadsKPICardsProps {
-  conversionRate: number;
-  conversionRateVariation: number | null;
+  saleConversionRate: number;
+  saleConversionRateVariation: number | null;
+  appointmentConversionRate: number;
+  appointmentConversionRateVariation: number | null;
   avgScore: number;
   scoreVariation: number | null;
   leadsWithQuoteVariation: number | null;
@@ -75,11 +77,20 @@ const LEAD_DB_SOURCE =
   "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo.";
 
 const kpiTooltips = {
-  conversionRate: {
-    title: "Taxa de Conversão",
-    description: "De cada 100 clientes atendidos, quantos fecharam negócio (viraram venda).",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: só os clientes que a IA já analisou.`,
-    calculo: "clientes que fecharam negócio divididos pelo total de clientes analisados, vezes 100. Conta como fechado quem está marcado como venda ganha ou agendamento confirmado.",
+  saleConversion: {
+    title: "Conversão de Venda",
+    description: "De cada 100 leads, quantos viraram VENDA (venda ganha / pedido pago).",
+    fonte: "base COMPLETA de leads (Kommo), não só os auditados pela IA — o status de venda existe para todos os leads.",
+    calculo: "leads com venda ganha divididos pelo total de leads do período, vezes 100.",
+    comparison: (periodLabel: string, isAll: boolean) => isAll
+      ? "Mostrando dados de todo o período"
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
+  },
+  appointmentConversion: {
+    title: "Conversão de Agendamento",
+    description: "De cada 100 leads, quantos viraram AGENDAMENTO confirmado.",
+    fonte: "base COMPLETA de leads (Kommo). Conta só 'Agendamento confirmado' — não inclui 'Faltou agendamento'.",
+    calculo: "leads com agendamento confirmado divididos pelo total de leads do período, vezes 100.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -103,8 +114,8 @@ const kpiTooltips = {
   leadsWithQuote: {
     title: "Leads com Cotação",
     description: "Quantos clientes já receberam um valor de orçamento (cotação).",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA que receberam um valor de cotação.`,
-    calculo: "conta os clientes do período que já têm um valor de cotação registrado.",
+    fonte: "vem da cotação que a IA extrai do chat E do preço registrado na Kommo — conta a base completa de leads, não só os auditados.",
+    calculo: "conta os leads do período que têm um valor de cotação registrado (do chat ou da Kommo).",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -157,8 +168,10 @@ const kpiTooltips = {
 };
 
 export function LeadsKPICards({
-  conversionRate,
-  conversionRateVariation,
+  saleConversionRate,
+  saleConversionRateVariation,
+  appointmentConversionRate,
+  appointmentConversionRateVariation,
   avgScore,
   scoreVariation,
   leadsWithQuoteVariation,
@@ -267,26 +280,49 @@ export function LeadsKPICards({
           spotlightRadius={300}
           glowColor="59, 130, 246"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-9 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-10 gap-2.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">
                   <KPICard
-                    title="Taxa de Conversão"
-                    value={`${conversionRate.toFixed(1)}%`}
+                    title="Conversão de Venda"
+                    value={`${saleConversionRate.toFixed(1)}%`}
                     icon={TrendingUp}
-                    variant={conversionRate >= 20 ? "success" : conversionRate >= 10 ? "warning" : "destructive"}
-                    description="Vendas vs. clientes analisados (WhatsApp/chat)"
-                    trend={getTrend(conversionRateVariation)}
+                    variant={saleConversionRate >= 20 ? "success" : saleConversionRate >= 10 ? "warning" : "destructive"}
+                    description="Vendas ganhas ÷ total de leads (base completa)"
+                    trend={getTrend(saleConversionRateVariation)}
                   />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs p-3">
                 <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.conversionRate.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.conversionRate.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.conversionRate.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.conversionRate.fonte} calculo={kpiTooltips.conversionRate.calculo} />
+                  <p className="font-medium">{kpiTooltips.saleConversion.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.saleConversion.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.saleConversion.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.saleConversion.fonte} calculo={kpiTooltips.saleConversion.calculo} />
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Conversão de Agendamento"
+                    value={`${appointmentConversionRate.toFixed(1)}%`}
+                    icon={CalendarCheck}
+                    variant={appointmentConversionRate >= 10 ? "success" : appointmentConversionRate >= 5 ? "warning" : "default"}
+                    description="Agendamentos confirmados ÷ total de leads"
+                    trend={getTrend(appointmentConversionRateVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.appointmentConversion.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.appointmentConversion.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.appointmentConversion.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.appointmentConversion.fonte} calculo={kpiTooltips.appointmentConversion.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>

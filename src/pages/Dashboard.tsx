@@ -119,6 +119,12 @@ export default function Dashboard() {
       return data as {
         total_audited: number;
         total_audited_previous: number | null;
+        total_leads: number;
+        total_leads_previous: number | null;
+        sale_leads: number;
+        sale_leads_previous: number | null;
+        appointment_leads: number;
+        appointment_leads_previous: number | null;
         won_leads: number;
         won_leads_previous: number | null;
         avg_score: number;
@@ -148,6 +154,11 @@ export default function Dashboard() {
     if (lower === 'whatsapp') return 'WhatsApp';
     if (lower === 'facebook') return 'Facebook';
     if (lower.includes('instagram')) return 'Instagram';
+    if (lower === 'phone') return 'Telefone';
+    if (lower === 'email' || lower === 'e-mail') return 'E-mail';
+    if (lower === 'meta ads' || lower === 'meta') return 'Meta Ads';
+    if (lower === 'indicação' || lower === 'indicacao') return 'Indicação';
+    if (lower === 'outros') return 'Outros';
     return channel;
   };
 
@@ -158,6 +169,15 @@ export default function Dashboard() {
     if (["nda", "test", "n/a", "teste"].includes(statusLower)) return null;
     return status;
   };
+
+  // Conversão (decisão Pro Car): VENDA e AGENDAMENTO contados separadamente, sobre a
+  // base COMPLETA (não só auditados). sales_status existe para todo lead da Kommo.
+  const isSale = (s: string | null): boolean => {
+    const t = (s ?? "").toLowerCase();
+    return t.includes("ganha") || t.includes("won");
+  };
+  const isAppointment = (s: string | null): boolean =>
+    (s ?? "").toLowerCase().includes("agendamento confirmado");
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -247,10 +267,10 @@ export default function Dashboard() {
   const kpiMetrics = useMemo(() => {
     if (hasActiveGlobalFilters) {
       const totalLeads = globalFilteredLeads.length;
-      const wonLeads = globalFilteredLeads.filter(l => 
-        normalizeStatus(l.sales_status)?.toLowerCase().includes('ganha')
-      ).length;
-      const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
+      const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
+      const appointmentLeads = globalFilteredLeads.filter(l => isAppointment(l.sales_status)).length;
+      const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
+      const appointmentConversionRate = totalLeads > 0 ? (appointmentLeads / totalLeads) * 100 : 0;
       
       const leadsWithScore = globalFilteredLeads.filter(l => l.lead_score !== null);
       const avgScore = leadsWithScore.length > 0 
@@ -278,8 +298,10 @@ export default function Dashboard() {
         .reduce((sum, l) => sum + ((l as any).upsell_value_estimate || 0), 0);
 
       return {
-        conversionRate,
-        conversionRateVariation: null,
+        saleConversionRate,
+        saleConversionRateVariation: null,
+        appointmentConversionRate,
+        appointmentConversionRateVariation: null,
         avgScore,
         scoreVariation: null,
         leadsWithQuoteVariation: null,
@@ -300,8 +322,10 @@ export default function Dashboard() {
     }
 
     if (!kpisData) return {
-      conversionRate: 0,
-      conversionRateVariation: null,
+      saleConversionRate: 0,
+      saleConversionRateVariation: null,
+      appointmentConversionRate: 0,
+      appointmentConversionRateVariation: null,
       avgScore: 0,
       scoreVariation: null,
       leadsWithQuoteVariation: null,
@@ -320,16 +344,23 @@ export default function Dashboard() {
       upsellTotalValueVariation: null
     };
 
-    const conversionRate = kpisData.total_audited > 0 
-      ? (kpisData.won_leads / kpisData.total_audited) * 100 
+    // Conversão sobre a BASE COMPLETA (total_leads), separada em VENDA e AGENDAMENTO.
+    const saleConversionRate = kpisData.total_leads > 0
+      ? (kpisData.sale_leads / kpisData.total_leads) * 100
+      : 0;
+    const appointmentConversionRate = kpisData.total_leads > 0
+      ? (kpisData.appointment_leads / kpisData.total_leads) * 100
       : 0;
 
-    let conversionRateVariation: number | null = null;
-    if (kpisData.total_audited_previous && kpisData.total_audited_previous > 0) {
-      const previousConversionRate = (kpisData.won_leads_previous || 0) / kpisData.total_audited_previous * 100;
-      if (previousConversionRate > 0) {
-        conversionRateVariation = ((conversionRate - previousConversionRate) / previousConversionRate) * 100;
-      }
+    let saleConversionRateVariation: number | null = null;
+    if (kpisData.total_leads_previous && kpisData.total_leads_previous > 0) {
+      const prev = (kpisData.sale_leads_previous || 0) / kpisData.total_leads_previous * 100;
+      if (prev > 0) saleConversionRateVariation = ((saleConversionRate - prev) / prev) * 100;
+    }
+    let appointmentConversionRateVariation: number | null = null;
+    if (kpisData.total_leads_previous && kpisData.total_leads_previous > 0) {
+      const prev = (kpisData.appointment_leads_previous || 0) / kpisData.total_leads_previous * 100;
+      if (prev > 0) appointmentConversionRateVariation = ((appointmentConversionRate - prev) / prev) * 100;
     }
 
     let scoreVariation: number | null = null;
@@ -373,8 +404,10 @@ export default function Dashboard() {
     }
 
     return {
-      conversionRate,
-      conversionRateVariation,
+      saleConversionRate,
+      saleConversionRateVariation,
+      appointmentConversionRate,
+      appointmentConversionRateVariation,
       avgScore: kpisData.avg_score,
       scoreVariation,
       leadsWithQuoteVariation,
@@ -435,7 +468,7 @@ export default function Dashboard() {
 
     // Channel distribution for closed sales
     const closedChannelCounts = new Map<string, number>();
-    globalFilteredLeads.filter(l => normalizeStatus(l.sales_status)?.toLowerCase().includes('ganha')).forEach(l => {
+    globalFilteredLeads.filter(l => isSale(l.sales_status)).forEach(l => {
       const channel = normalizeChannel(l.channel);
       if (channel !== "N/A") {
         closedChannelCounts.set(channel, (closedChannelCounts.get(channel) || 0) + 1);
