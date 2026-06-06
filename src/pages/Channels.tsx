@@ -18,7 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
   PieChart, Pie,
 } from "recharts";
-import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink, Instagram, Facebook, BarChart3 } from "lucide-react";
+import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink, Instagram, Facebook, BarChart3, Mail, UserPlus } from "lucide-react";
 
 /* ----------------- helpers ----------------- */
 import type { LucideIcon } from "lucide-react";
@@ -27,6 +27,8 @@ const CHANNEL_META: Record<string, { label: string; color: string; Icon: LucideI
   facebook: { label: "Facebook", color: "#1877F2", Icon: Facebook },
   instagram: { label: "Instagram", color: "#E4405F", Icon: Instagram },
   phone: { label: "Telefone", color: "#8b5cf6", Icon: Phone },
+  email: { label: "E-mail", color: "#0ea5e9", Icon: Mail },
+  "indicação": { label: "Indicação", color: "#f59e0b", Icon: UserPlus },
 };
 
 function normalizeChannelKey(raw: string | null): string | null {
@@ -36,6 +38,8 @@ function normalizeChannelKey(raw: string | null): string | null {
   if (lower.includes("instagram")) return "instagram";
   if (lower.includes("facebook")) return "facebook";
   if (lower === "phone" || lower === "telefone") return "phone";
+  if (lower.includes("mail")) return "email";                                   // 'email', 'e-mail'
+  if (lower.includes("indica") || lower.includes("referr") || lower.includes("parceria")) return "indicação";
   return null;
 }
 
@@ -107,7 +111,7 @@ export default function Channels() {
 
   /* --------- per-channel aggregates --------- */
   const channelStats = useMemo(() => {
-    const channels = ["whatsapp", "facebook", "instagram", "phone"] as const;
+    const channels = ["whatsapp", "facebook", "instagram", "phone", "email", "indicação"] as const;
     const result: Record<string, any> = {};
 
     for (const ch of channels) {
@@ -246,7 +250,7 @@ export default function Channels() {
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Análise por Canal</h2>
-          <p className="text-muted-foreground">Performance e comportamento separados por WhatsApp, Instagram, Facebook e Telefone</p>
+          <p className="text-muted-foreground">Performance e comportamento por canal: WhatsApp, Instagram, Facebook, Telefone, E-mail e Indicação</p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
       </div>

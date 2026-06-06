@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
+import { formatUSD } from "@/lib/utils";
 import { BarChart as TremorBarChart } from "@tremor/react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import {
@@ -205,6 +206,21 @@ export default function Today() {
     refetchInterval: REFRESH_INTERVAL_MS,
   });
 
+  // --- Vendas REAIS de hoje (ShopMonkey, order pago hoje) ---
+  const { data: salesToday = [] } = useQuery<{ id: string; paid_cost_cents: number | null }[]>({
+    queryKey: ["today-sm-sales", format(todayStart, "yyyy-MM-dd")],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from as any)("shopmonkey_sale")
+        .select("id, paid_cost_cents, fully_paid_date")
+        .gte("fully_paid_date", todayStart.toISOString())
+        .lte("fully_paid_date", todayEnd.toISOString());
+      if (error) throw error;
+      return (data as { id: string; paid_cost_cents: number | null }[]) || [];
+    },
+    refetchInterval: REFRESH_INTERVAL_MS,
+    retry: 1,
+  });
+
   // --- Métricas derivadas ---
   const metrics = useMemo(() => {
     const totalLeads = leadsToday.length;
@@ -227,6 +243,10 @@ export default function Today() {
     const closedYesterday = leadsYesterday.filter(
       (l) => l.sales_status?.toLowerCase().includes("ganha")
     ).length;
+
+    // Vendas reais do dia (ShopMonkey, sincronizado de hora em hora pelo cron)
+    const smSalesToday = salesToday.length;
+    const smRevenueToday = Math.round(salesToday.reduce((acc, s) => acc + (s.paid_cost_cents || 0), 0) / 100);
 
     const scoredLeads = leadsToday.filter((l) => typeof l.lead_score === "number");
     const avgScore = scoredLeads.length > 0
@@ -263,9 +283,10 @@ export default function Today() {
       totalLeads, totalLeadsYesterday, totalInteractions, totalCalls,
       activeCalls, passiveCalls,
       closedToday, closedYesterday, avgScore,
+      smSalesToday, smRevenueToday,
       channelData, sentimentData, hourly,
     };
-  }, [leadsToday, leadsYesterday, interactionsToday, callsToday]);
+  }, [leadsToday, leadsYesterday, interactionsToday, callsToday, salesToday]);
 
   // --- Hot leads sem resposta ---
   const { data: allHotLeads = [] } = useQuery<LeadRow[]>({
@@ -427,19 +448,18 @@ export default function Today() {
           }
         />
         <KPICard
-          title="Vendas"
-          value={metrics.closedToday}
+          title="Vendas (hoje)"
+          value={metrics.smSalesToday}
           icon={DollarSign}
           glowColor="245, 158, 11"
           info={{
-            description: "Leads de chat marcados como ganhos hoje, comparados com ontem.",
-            source: "lead_db (Supabase self-hosted) é alimentado SÓ por conversas de WhatsApp/chat; não inclui agendamentos Shopmonkey, pagamentos, telefone nem entrada manual, então é um SUBCONJUNTO da Kommo; ganhos = sales_status com 'ganha'.",
-            calculation: "Conta os leads criados hoje cujo sales_status contém 'ganha'; a variação compara com ontem.",
+            description: "Vendas REAIS da loja fechadas hoje (ShopMonkey) e a receita do dia — a fonte certa de 'vendas', não o chat.",
+            source: "shopmonkey_sale (orders pagos por fully_paid_date de hoje), sincronizado do ShopMonkey de hora em hora pelo cron. O número do chat (sales_status='ganha') vira referência secundária, pois é subconjunto.",
+            calculation: "Conta os orders pagos hoje e soma paid_cost_cents/100 = receita. O comparativo 'no chat' usa leads de hoje com sales_status 'ganha'.",
           }}
           footer={
             <span className="flex items-center gap-1">
-              <TrendIcon trend={closedVariation.trend} />
-              {closedVariation.label} · só chat
+              {formatUSD(metrics.smRevenueToday, 0)} · {metrics.closedToday} no chat <TrendIcon trend={closedVariation.trend} />
             </span>
           }
         />
