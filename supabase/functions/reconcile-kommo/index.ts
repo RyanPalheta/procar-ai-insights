@@ -26,10 +26,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { date_from, date_to } = await req.json().catch(() => ({}));
-    if (!date_from || !date_to) {
-      return json({ error: 'date_from e date_to (ISO) são obrigatórios' }, 400);
-    }
+    const body = await req.json().catch(() => ({}));
+    // Sem intervalo explícito (ex.: cron diário com body vazio): janela móvel —
+    // default 30 dias, sobrescritível por window_days. Mantém compat com chamadas
+    // que passam date_from/date_to ISO explícitos.
+    const winDays = Math.max(1, Math.min(120, Number(body.window_days ?? 30)));
+    const date_to = body.date_to ?? new Date().toISOString();
+    const date_from = body.date_from ?? new Date(Date.now() - winDays * 86400000).toISOString();
 
     const token = Deno.env.get('KOMMO_ACCESS_TOKEN');
     const subdomain = Deno.env.get('KOMMO_SUBDOMAIN');
@@ -104,6 +107,25 @@ Deno.serve(async (req) => {
     const dashboardAudited = await dbCount(true);
 
     const gap = kommoTotal - dashboardTotal;
+    const gap_pct = kommoTotal > 0 ? Math.round((gap / kommoTotal) * 1000) / 10 : null;
+
+    // Persiste 1 snapshot/dia (upsert por captured_day) para o card "Saúde da base"
+    // acompanhar a convergência ao longo do tempo. Best-effort: não quebra a resposta.
+    try {
+      await supabase.from('kommo_reconciliation_snapshot').upsert({
+        captured_day: new Date().toISOString().slice(0, 10),
+        captured_at: new Date().toISOString(),
+        window_days: Math.max(1, Math.round((new Date(date_to).getTime() - new Date(date_from).getTime()) / 86400000)),
+        date_from,
+        date_to,
+        kommo_total: kommoTotal,
+        dashboard_total: dashboardTotal,
+        dashboard_audited: dashboardAudited,
+        gap,
+        gap_pct,
+      }, { onConflict: 'captured_day' });
+    } catch (_) { /* snapshot é best-effort */ }
+
     const byStatusLabeled = Object.entries(byStatus)
       .map(([id, count]) => ({ status_id: Number(id), label: statusNames[id] ?? `status ${id}`, count }))
       .sort((a, b) => b.count - a.count);

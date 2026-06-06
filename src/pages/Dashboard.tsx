@@ -33,6 +33,7 @@ import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
 import { LeadsConversionByResponseTimeChart } from "@/components/leads/LeadsConversionByResponseTimeChart";
 import { LeadsConversionByQuoteChart } from "@/components/leads/LeadsConversionByQuoteChart";
 import { GoogleReviewsCard } from "@/components/dashboard/GoogleReviewsCard";
+import { KommoHealthCard } from "@/components/dashboard/KommoHealthCard";
 
 // Objection category colors
 const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
@@ -775,8 +776,11 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
       />
 
-      {/* Avaliações Google — reputação ao vivo no Google Maps */}
-      <GoogleReviewsCard />
+      {/* Confiança nos dados: reputação Google + convergência da base (Kommo × painel) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <GoogleReviewsCard />
+        <KommoHealthCard />
+      </div>
 
       {/* Timeline Chart - Full Width */}
       <LeadsTimelineChart
