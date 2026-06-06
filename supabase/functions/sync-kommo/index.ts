@@ -93,44 +93,49 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- leads criados na janela (a lista já traz custom_fields_values) ----
+    // ---- leads criados na janela. Extrai SÓ o necessário por lead (lean) durante a
+    //      paginação p/ não estourar memória no backfill: with=contacts engorda cada
+    //      lead, então NÃO guardamos o objeto cru, só {id,status,price,seller,contato}. ----
     const fromUnix = Math.floor((Date.now() - days * 86400000) / 1000);
-    const leads: any[] = [];
+    const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null }[] = [];
     let page = 1;
     while (page <= 60) {
       const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts&limit=250&page=${page}`);
       const batch = d?._embedded?.leads ?? [];
       if (!batch.length) break;
-      leads.push(...batch);
+      for (const l of batch) {
+        const cs = l?._embedded?.contacts ?? [];
+        const main = cs.find((c: any) => c.is_main) ?? cs[0];
+        leads.push({
+          id: l.id,
+          status_id: l.status_id,
+          price: l.price,
+          created_at: l.created_at,
+          sellerRaw: cfValue(l, VENDEDOR_SHOPMONKEY_CF),
+          contactId: main?.id ?? null,
+        });
+      }
       if (!d?._links?.next) break;
       page++;
     }
 
-    // ---- telefone: resolve o contato is_main de cada lead -> CF PHONE. DEFENSIVO:
-    //      qualquer falha aqui NUNCA quebra o sync de leads; só deixa o telefone nulo. ----
+    // ---- telefone: resolve os contatos (is_main já capturado em contactId) -> CF PHONE.
+    //      DEFENSIVO: qualquer falha aqui NUNCA quebra o sync; só deixa o telefone nulo. ----
     const phoneByLead = new Map<number, { raw: string; norm: string | null }>();
     try {
-      const contactIdByLead = new Map<number, number>();
-      const contactIds = new Set<number>();
-      for (const l of leads) {
-        const cs = l?._embedded?.contacts ?? [];
-        if (!cs.length) continue;
-        const main = cs.find((c: any) => c.is_main) ?? cs[0];
-        if (main?.id) { contactIdByLead.set(l.id, main.id); contactIds.add(main.id); }
-      }
+      const contactIds = [...new Set(leads.map((l) => l.contactId).filter((x): x is number => !!x))];
       const phoneByContact = new Map<number, { raw: string; norm: string | null }>();
-      const idList = [...contactIds];
-      for (let i = 0; i < idList.length; i += 250) {
-        const qs = idList.slice(i, i + 250).map((id) => `filter[id][]=${id}`).join('&');
+      for (let i = 0; i < contactIds.length; i += 250) {
+        const qs = contactIds.slice(i, i + 250).map((id) => `filter[id][]=${id}`).join('&');
         const cd = await kget(`/contacts?${qs}&limit=250`);
         for (const c of cd?._embedded?.contacts ?? []) {
           const raw = contactPhone(c);
           if (raw) phoneByContact.set(c.id, { raw, norm: normPhone(raw) });
         }
       }
-      for (const [leadId, contactId] of contactIdByLead) {
-        const ph = phoneByContact.get(contactId);
-        if (ph) phoneByLead.set(leadId, ph);
+      for (const l of leads) {
+        const ph = l.contactId != null ? phoneByContact.get(l.contactId) : undefined;
+        if (ph) phoneByLead.set(l.id, ph);
       }
     } catch (e) {
       console.error('phone enrichment falhou (segue sem telefone):', e instanceof Error ? e.message : e);
@@ -146,7 +151,7 @@ Deno.serve(async (req) => {
         channel,
         sales_status: statusName,
         lead_price: l.price ? Number(l.price) : null,
-        sales_person_id: canonicalSeller(cfValue(l, VENDEDOR_SHOPMONKEY_CF)),
+        sales_person_id: canonicalSeller(l.sellerRaw),
         is_walking: (statusName ?? '').toLowerCase().includes('loja'),
         created_at: new Date((l.created_at ?? 0) * 1000).toISOString(),
         source_system: 'kommo_sync',
