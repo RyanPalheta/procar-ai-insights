@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       if (!d?.meta?.hasMore) break;
     }
 
-    // --- Vendas: GET /v3/order/?where=fullyPaidDate (pagos) ---
+    // --- Vendas: GET /v3/order/?where=fullyPaidDate (pagos, por data de pagamento) ---
     const orders: any[] = [];
     const where = encodeURIComponent(JSON.stringify({ fullyPaidDate: { gte: since, lte: nowIso } }));
     for (let skip = 0; skip < MAX; skip += PAGE) {
@@ -68,6 +68,21 @@ Deno.serve(async (req) => {
       const batch = d?.data ?? [];
       if (!batch.length) break;
       orders.push(...batch);
+      if (!d?.meta?.hasMore) break;
+    }
+
+    // --- Orçamentos: GET /v3/order/?where=createdDate (TODOS os orders criados na
+    //     janela). Todo order nasce orçamento; vira venda quando pago. É a "cotação"
+    //     real (o chat capta pouquíssimas) — contado por vendedor na aba Vendedores. ---
+    const allOrders: any[] = [];
+    const whereCreated = encodeURIComponent(JSON.stringify({ createdDate: { gte: since, lte: nowIso } }));
+    for (let skip = 0; skip < MAX; skip += PAGE) {
+      const r = await fetch(`${SM}/v3/order/?where=${whereCreated}&limit=${PAGE}&skip=${skip}`, { headers: smHeaders });
+      if (!r.ok) return json({ error: `ShopMonkey order(all) ${r.status}`, detail: await r.text() }, 502);
+      const d = await r.json();
+      const batch = d?.data ?? [];
+      if (!batch.length) break;
+      allOrders.push(...batch);
       if (!d?.meta?.hasMore) break;
     }
 
@@ -124,6 +139,21 @@ Deno.serve(async (req) => {
       if (error) throw new Error('upsert sale: ' + error.message);
     }
 
+    const orderRows = dedupe(allOrders.map((o) => ({
+      id: o.id,
+      created_date: o.createdDate ?? null,
+      customer_id: o.customerId ?? null,
+      paid: !!o.fullyPaidDate || !!o.paid,
+      authorized: o.authorized ?? null,
+      archived: o.archived ?? null,
+      total_cost_cents: o.totalCostCents ?? null,
+      synced_at: nowIso,
+    })));
+    if (orderRows.length) {
+      const { error } = await supabase.from('shopmonkey_order').upsert(orderRows, { onConflict: 'id' });
+      if (error) throw new Error('upsert order: ' + error.message);
+    }
+
     const green = apptRows.filter((a) => a.color === 'green').length;
     const revenue = Math.round(saleRows.reduce((s, r) => s + (r.paid_cost_cents || 0), 0) / 100);
 
@@ -133,6 +163,7 @@ Deno.serve(async (req) => {
       appointments_synced: apptRows.length,
       agendamentos_green: green,
       walk_ins: apptRows.filter((a) => a.walk_in).length,
+      orcamentos_synced: orderRows.length,
       sales_synced: saleRows.length,
       revenue_usd: revenue,
     });
