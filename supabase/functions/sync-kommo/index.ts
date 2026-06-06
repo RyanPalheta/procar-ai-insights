@@ -35,6 +35,26 @@ function channelFromPipeline(name: string): string {
   return 'outros';
 }
 
+// source_id (Kommo) -> canal. A Kommo guarda o source_id em cada lead, mas o GET
+// /sources volta VAZIO (204) para este token (as fontes de chat pertencem às
+// integrações de WhatsApp/IG, não à nossa). Mapa das fontes observadas (10 ids
+// cobrem ~100% dos leads). WhatsApp confirmado por 100% de telefone nos contatos
+// (regra Pro Car: telefone => WhatsApp); Instagram por handles; Facebook inferido.
+// Ajustável: confirmar o nome de cada fonte no Kommo. Sem match, cai no canal do
+// pipeline (geralmente 'outros').
+const CHANNEL_BY_SOURCE: Record<number, string> = {
+  23036455: 'whatsapp',  // maior fonte (~3.7k); 100% telefone
+  23036209: 'whatsapp',  // 2ª maior (~2.7k); 100% telefone
+  19009411: 'whatsapp',
+  19009467: 'whatsapp',
+  23036387: 'whatsapp',
+  23036383: 'whatsapp',
+  23036243: 'whatsapp',  // nome do lead = número de telefone
+  19337407: 'instagram', // handles
+  19337411: 'instagram', // handles (djfariflow, mirandahereee...)
+  19009471: 'facebook',  // nomes reais (inferido; confirmar)
+};
+
 // CF "Vendedor shopmonkey" — único campo de vendedor da Kommo.
 const VENDEDOR_SHOPMONKEY_CF = 1823653;
 function cfValue(l: any, fieldId: number): string | null {
@@ -103,12 +123,12 @@ Deno.serve(async (req) => {
     // (max_pages=60), então o cron (days=2) segue inalterado.
     const startPage = Math.max(1, Number(body.start_page ?? 1));
     const maxPages = Math.max(1, Math.min(60, Number(body.max_pages ?? 60)));
-    const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null }[] = [];
+    const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null; source_id: number | null }[] = [];
     let page = startPage;
     let pagesRead = 0;
     let nextStartPage: number | null = null;
     while (pagesRead < maxPages) {
-      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts&limit=250&page=${page}`);
+      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts,source_id&limit=250&page=${page}`);
       const batch = d?._embedded?.leads ?? [];
       if (!batch.length) break;
       for (const l of batch) {
@@ -121,6 +141,7 @@ Deno.serve(async (req) => {
           created_at: l.created_at,
           sellerRaw: cfValue(l, VENDEDOR_SHOPMONKEY_CF),
           contactId: main?.id ?? null,
+          source_id: l.source_id ?? null,
         });
       }
       pagesRead++;
@@ -154,7 +175,7 @@ Deno.serve(async (req) => {
     const rows = leads.map((l) => {
       const st = statusMap.get(l.status_id);
       const statusName = st?.status ?? null;
-      const channel = channelFromPipeline(st?.pipeline ?? '');
+      const channel = (l.source_id != null ? CHANNEL_BY_SOURCE[l.source_id] : undefined) ?? channelFromPipeline(st?.pipeline ?? '');
       const ph = phoneByLead.get(l.id);
       return {
         session_id: l.id,
@@ -239,6 +260,29 @@ Deno.serve(async (req) => {
       console.error('phone backfill falhou (segue):', e instanceof Error ? e.message : e);
     }
 
+    // 4) Atualiza o CANAL dos espelhos kommo_sync existentes (por source_id da Kommo),
+    //    restrito a source_system='kommo_sync'. Re-channela o backfill (que saía 'outros').
+    const byChannel = new Map<string, number[]>();
+    for (const r of rows) {
+      const arr = byChannel.get(r.channel) ?? [];
+      arr.push(r.session_id);
+      byChannel.set(r.channel, arr);
+    }
+    let channelsSet = 0;
+    for (const [channel, ids] of byChannel) {
+      for (let i = 0; i < ids.length; i += 300) {
+        const slice = ids.slice(i, i + 300);
+        const { data, error } = await supabase
+          .from('lead_db')
+          .update({ channel })
+          .eq('source_system', 'kommo_sync')
+          .in('session_id', slice)
+          .select('session_id');
+        if (error) throw new Error('update channel: ' + error.message);
+        channelsSet += data?.length ?? 0;
+      }
+    }
+
     return json({
       window_days: days,
       start_page: startPage,
@@ -250,6 +294,7 @@ Deno.serve(async (req) => {
       already_present: leads.length - inserted,
       leads_com_vendedor: rows.filter((r) => r.sales_person_id).length,
       espelhos_normalizados: sellersSet,
+      canais_normalizados: channelsSet,
       leads_com_telefone: rows.filter((r) => r.phone_normalized).length,
       telefones_gravados: phonesSet,
       note: 'Insert-only + normalização de vendedor + backfill de telefone (kommo_sync). Use start_page/max_pages p/ backfill em lotes. Leads de chat/IA não alterados.',
