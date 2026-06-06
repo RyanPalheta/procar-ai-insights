@@ -25,7 +25,7 @@ import { LeadsChannelChart } from "@/components/leads/LeadsChannelChart";
 import { LeadsStatusChart } from "@/components/leads/LeadsStatusChart";
 import { LeadsLanguageChart } from "@/components/leads/LeadsLanguageChart";
 import { LeadsSentimentChart } from "@/components/leads/LeadsSentimentChart";
-import { LeadsTopProductsChart } from "@/components/leads/LeadsTopProductsChart";
+import { ProductIntelligence } from "@/components/leads/ProductIntelligence";
 import { LeadsTemperatureChart } from "@/components/leads/LeadsTemperatureChart";
 import { LeadsTimelineChart } from "@/components/leads/LeadsTimelineChart";
 import { LeadsObjectionsChart } from "@/components/leads/LeadsObjectionsChart";
@@ -788,12 +788,14 @@ export default function Dashboard() {
         <LeadsTemperatureChart data={chartData.temperatureData} />
       </div>
 
-      {/* Secondary Charts - 3 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Secondary Charts - 2 columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LeadsLanguageChart data={chartData.languageData} />
         <LeadsSentimentChart data={chartData.sentimentData} />
-        <LeadsTopProductsChart data={chartData.topProductsData} />
       </div>
+
+      {/* Inteligência de Produtos — ranking global + share (pizza) + upsell */}
+      <ProductIntelligence dateFrom={range.fromIso} dateTo={range.toIso} />
 
       {/* Operational Charts - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
