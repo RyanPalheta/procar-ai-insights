@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+import { detectLanguage } from "../_shared/detect-language.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -779,6 +780,13 @@ Analise e responda:
       // Mark this as AI analysis for history tracking
       change_source: 'ai_analysis'
     };
+
+    // Idioma (PT-BR/EN-USA/ES-ES) por código a partir das mensagens do cliente.
+    // Só preenche quando está faltando — nunca sobrescreve um idioma já definido.
+    const detectedLang = detectLanguage(clientMessages.map((i: any) => i.message_text));
+    if (detectedLang && (!lead.lead_language || ['NDA', 'N/A', 'n/a', ''].includes(lead.lead_language))) {
+      updatePayload.lead_language = detectedLang;
+    }
 
     // Call update-lead function
     const { data: updateData, error: updateError } = await supabase.functions.invoke('update-lead', {
