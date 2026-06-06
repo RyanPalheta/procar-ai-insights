@@ -21,7 +21,7 @@ Atualizado em 2026-06-06.
 - 🆕 **Destrinchar** (segmentação por produto, etnia, idioma, geografia/zip) — eixo transversal; será incorporado nas features novas.
 
 ## 2. Visão Geral
-- ✅ **Leads com cotação** (base completa: chat IA + preço Kommo, sem filtro de IA; 7d 37→156) · ✅ **Leads novos por período** (ancorado ao período + backfill 120d). · 🧱 **Leads por Língua** (idioma só ~1,9% — precisa ser derivado no `analyze-lead` e reprocessado) · ✅ **Leads novos 24h por canal** (canal real por `source_id` da Kommo, mapeado por fonte; fim do balde "Outros" — de ~3,7k para 5).
+- ✅ **Leads com cotação** (base completa: chat IA + preço Kommo, sem filtro de IA; 7d 37→156) · ✅ **Leads novos por período** (ancorado ao período + backfill 120d). · ✅ **Leads por Língua** (idioma detectado por código das mensagens — `analyze-lead` + backfill; ~77% dos leads de chat) · ✅ **Leads novos 24h por canal** (canal real por `source_id` da Kommo, mapeado por fonte; fim do balde "Outros" — de ~3,7k para 5).
 - ✅ **Conversão (venda + agendamento)** — separadas na Visão Geral e sobre a **base completa** (migração `20260606270000`): `total_leads`/`sale_leads`/`appointment_leads`. 7d: venda **21,6%** / agendamento **9,2%**. Fim do "soma venda+agendamento sobre só os 36,5% auditados".
 - ✅🧱 Valor médio cotado — moeda corrigida; cálculo/dados a revisar.
 - 🔧 Tempo mediano 1ª resposta — revisar cálculo contra dado real.
