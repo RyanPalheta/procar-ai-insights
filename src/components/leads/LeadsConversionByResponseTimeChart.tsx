@@ -90,7 +90,7 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
               <ChartInfoTooltip
                 description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
                 source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
-                calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
+                calculation="o tempo de resposta é quantos minutos passaram entre a 1ª mensagem do cliente e a 1ª resposta do agente, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada (ganha) dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -114,7 +114,7 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
               <ChartInfoTooltip
                 description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
                 source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
-                calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
+                calculation="o tempo de resposta é quantos minutos passaram entre a 1ª mensagem do cliente e a 1ª resposta do agente, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada (ganha) dividido pelo total de clientes da faixa, vezes 100."
               />
             </CardTitle>
           </CardHeader>
@@ -138,7 +138,7 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
             <ChartInfoTooltip
               description="Relaciona a rapidez do atendimento com a taxa de conversão; eixo X = faixas de tempo de resposta, barra = % de leads que viraram venda em cada faixa."
               source="cruza os clientes que chegaram por conversa de WhatsApp/chat com as mensagens trocadas no WhatsApp/Instagram/Facebook. Considera so os clientes que a IA ja analisou e que tiveram pelo menos 3 mensagens na mesma conversa. Como conta so conversas de chat, o numero e menor que o total no Kommo."
-              calculation="o tempo de resposta e quantos minutos passaram entre a 1ª e a 3ª mensagem da conversa, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada ou agendamento confirmado dividido pelo total de clientes da faixa, vezes 100."
+              calculation="o tempo de resposta é quantos minutos passaram entre a 1ª mensagem do cliente e a 1ª resposta do agente, agrupado em faixas (0-15, 15-30, 30-60, 60+ min). A taxa de cada faixa = clientes marcados como venda fechada (ganha) dividido pelo total de clientes da faixa, vezes 100."
             />
           </CardTitle>
         </CardHeader>

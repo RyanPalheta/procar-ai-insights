@@ -398,14 +398,14 @@ export default function Today() {
           icon={Users}
           glowColor="16, 185, 129"
           info={{
-            description: "Quantos clientes novos chegaram hoje, comparado com ontem. Conta só conversas de WhatsApp/chat, então é menor que o total no Kommo.",
-            source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo.",
+            description: "Quantos clientes novos chegaram hoje, comparado com ontem. Conta a base do painel (espelho Kommo + chat).",
+            source: "conta a base do painel (espelho Kommo + chat) com data de criação hoje.",
             calculation: "quantos clientes chegaram hoje; a comparação é com a quantidade de ontem.",
           }}
           footer={
             <span className="flex items-center gap-1">
               <TrendIcon trend={leadsVariation.trend} />
-              {leadsVariation.label} · só WhatsApp/chat, menor que o Kommo
+              {leadsVariation.label} · base do painel (Kommo + chat)
             </span>
           }
         />
