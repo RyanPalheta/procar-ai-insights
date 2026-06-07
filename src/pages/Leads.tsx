@@ -137,9 +137,12 @@ export default function Leads() {
 
   // Fetch cold audit KPIs
   const { data: coldKpis } = useQuery({
-    queryKey: ["cold-audit-kpis"],
+    queryKey: ["cold-audit-kpis", range.fromIso, range.toIso],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cold_audit_kpis' as never);
+      const { data, error } = await (supabase.rpc as any)('get_cold_audit_kpis', {
+        date_from: range.fromIso,
+        date_to: range.toIso,
+      });
       if (error) throw error;
       return data as any;
     },

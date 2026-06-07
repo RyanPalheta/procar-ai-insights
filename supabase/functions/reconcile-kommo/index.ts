@@ -97,7 +97,8 @@ Deno.serve(async (req) => {
         .from('lead_db')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', date_from)
-        .lte('created_at', date_to);
+        .lte('created_at', date_to)
+        .not('is_duplicate', 'is', true);   // dedup chat<->Kommo (fase 2): nao conta os espelhos marcados
       if (auditedOnly) q = q.not('last_ai_update', 'is', null);
       const { count, error } = await q;
       if (error) throw new Error(`lead_db: ${error.message}`);

@@ -86,9 +86,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Normaliza telefone p/ dedup chat<->Kommo (só dígitos, últimos 10). Mesma regra do sync-kommo.
+    const normPhone = (s: unknown): string | null => {
+      const d = String(s ?? '').replace(/\D/g, '');
+      if (d.length < 10) return null;
+      const ten = d.length === 11 && d.startsWith('1') ? d.slice(1) : d.slice(-10);
+      return ten.slice(-10);
+    };
+
     // Preparar dados para inserção
     const leadData = {
       session_id: leadId,
+      phone: body.phone || null,                 // chat passa a trazer o telefone (antes era descartado)
+      phone_normalized: normPhone(body.phone),   // chave de dedup chat<->Kommo (PLANO-DEDUP-TELEFONE)
       lead_language: body.lead_language || null,
       lead_price: body.lead_price ? parseFloat(body.lead_price) : null,
       sales_person_id: body.sales_person_id || null,
