@@ -107,7 +107,7 @@ const kpiTooltips = {
   newLeads24h: {
     title: "Leads Novos (24h)",
     description: "Quantos clientes novos chegaram nas últimas 24 horas.",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: todos os clientes novos que chegaram por WhatsApp/chat.`,
+    fonte: `${LEAD_DB_SOURCE} Neste cartão: todos os clientes novos do período (base do painel = espelho Kommo + chat).`,
     calculo: "todos os clientes novos das últimas 24 horas, comparados com as 24 horas anteriores. É sempre das últimas 24 horas e não muda quando você troca o filtro de período.",
     comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com as 24 horas anteriores"
   },
@@ -358,7 +358,7 @@ export function LeadsKPICards({
                     value={newLeads24h}
                     icon={Clock}
                     variant="default"
-                    description="Só WhatsApp/chat · menor que o Kommo"
+                    description="Base do painel (Kommo + chat)"
                     trend={getTrend(newLeads24hVariation, true)}
                   />
                 </div>
