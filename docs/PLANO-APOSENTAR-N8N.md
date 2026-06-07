@@ -1,13 +1,15 @@
 # Plano para aposentar o n8n — inventário verificado e sequência segura
 
 > **Data** 7 de junho de 2026 · **Elaborado por** Marcos Venâncio (BI/Dev)
-> **Por que este doc** Antes de "aposentar o n8n" é preciso saber **tudo** que ele faz — inclusive o tracking Meta. Aposentar às cegas quebra o **atendimento ao cliente**, não só um sync.
+> **Por que este doc** Antes de "aposentar o n8n" é preciso saber **tudo** que ele faz — inclusive o tracking Meta. Aposentar às cegas quebra, no mínimo, a **ingestão em tempo real do chat**.
+>
+> **Aviso de evidência:** o conteúdo dos workflows do n8n **não foi inspecionado** nesta rodada (não há acesso ao servidor pelo repo). O que segue vem do `DIAGNOSTICO-CONFIABILIDADE-DADOS.md` (§1.1, inspeção anterior do servidor) + do código deste repo. Onde está "a confirmar", é porque **não foi verificado**.
 
 ## TL;DR (honesto)
 
-O n8n **não é só sincronização**. Ele hospeda **o agente de IA do WhatsApp que conversa com os clientes**, a **ingestão em tempo real** do chat (Evolution API) e, **provavelmente, o tracking Meta**. Nada disso tem equivalente neste repositório. Portanto:
+O n8n **não é só sincronização**: ele faz a **ingestão em tempo real** do chat (Evolution API → `ingest-lead`/`ingest-interaction`) com um **passo de IA** (workflows `Ingest_Dash_client/sales`, tipados "agente de IA / chatTrigger" no diagnóstico — pelo nome, voltados a **ingerir/classificar** a conversa) e, **provavelmente, o tracking Meta**. Portanto:
 
-- **Aposentar o n8n agora quebraria o atendimento** (o bot pararia de responder) e possivelmente o tracking Meta. Não é tarefa de dashboard.
+- **Aposentar o n8n agora quebraria a ingestão em tempo real do chat** (e o `interaction_db`). **A confirmar no servidor:** se o **atendimento ao cliente** (bot que responde) e o **tracking Meta** também rodam no n8n — não há evidência disso no repo, nem o contrário. Não é tarefa de dashboard.
 - O **dashboard** já está quase 100% independente do n8n (syncs em código). Falta **uma** mudança pequena no n8n: enviar uma **chave** (telefone ou `kommo_lead_id`) no ingest do chat — isso destrava o dedup/fonte-única.
 - **Acesso:** os workflows do n8n vivem no servidor `root@5.181.218.168` (fora deste repo). Quem edita o n8n precisa de acesso ao servidor; não dá para fazer a partir do repositório.
 
@@ -15,7 +17,7 @@ O n8n **não é só sincronização**. Ele hospeda **o agente de IA do WhatsApp 
 
 | Workflow n8n | Status | Faz o quê | Equivalente em código | Quebra se desligar? |
 |---|---|---|---|---|
-| `Ingest_Dash_client` / `Ingest_Dash_sales` (chatTrigger) | **ATIVO** | **Agente de IA que responde clientes no WhatsApp** | ❌ **nenhum** | 🔴 **Sim — para o atendimento** |
+| `Ingest_Dash_client` / `Ingest_Dash_sales` (chatTrigger, "agente de IA") | **ATIVO** | Ingestão do chat com passo de IA → chama os `ingest-*` (nome = "Ingest_Dash"). Se **também responde** ao cliente: **não confirmado** | ❌ nenhum | 🟠 Ingestão em tempo real para; atendimento = **a confirmar** |
 | `Webhook -> Dashboard Ingest (Message sent)` | **ATIVO** | Ingestão em tempo real do chat (Evolution → `ingest-lead`/`ingest-interaction`) | parcial (`sync-kommo` cobre volume com 1h de atraso, sem tempo real e sem mensagens) | 🟠 Sim — perde tempo real + `interaction_db` |
 | `ATLAS - Ingestao de Chamadas` (cron) | **ATIVO** | Ingestão de chamadas | `twilio-webhook` + `ingest-call` (existem) | 🟡 Verificar quem é a fonte real das chamadas |
 | `Retrieve leads (past 3 months)` | **OFF** | Puxaria todos os leads da Kommo | ✅ `sync-kommo` (cron horário) | ✅ Já substituído |
@@ -43,7 +45,7 @@ Para o **dedup / fonte única** funcionar, falta só o n8n **enviar uma chave** 
 
 1. **(n8n, pequeno)** Enviar `phone`/`kommo_lead_id` no ingest do chat → dedup liga; dashboard vira fonte única confiável. *Resolve o objetivo do dashboard sem mexer no atendimento.*
 2. **(servidor)** Exportar e auditar os workflows: confirmar **tracking Meta (CAPI/pixel)** e o **polling IG/FB**; migrar para código o que precisar continuar.
-3. **(projeto à parte)** Reescrever o **agente de IA do WhatsApp** fora do n8n (listener Evolution + LLM) — é o maior item; sem isso o atendimento depende do n8n.
+3. **(a confirmar primeiro)** Verificar no servidor se o **atendimento ao cliente** (bot que responde) roda no n8n. **Se** rodar, reescrevê-lo fora (listener Evolution + LLM) é o maior item; **se não** rodar no n8n, este passo cai.
 4. **(código)** Migrar a **ingestão em tempo real** (Evolution webhook → edge function) e os **gatilhos de análise** (hoje por marcos no `ingest-interaction`).
 5. **Só então** desligar o n8n.
 
