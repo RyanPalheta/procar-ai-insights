@@ -314,7 +314,7 @@ export default function Channels() {
                           <ChIcon className="h-4 w-4" style={{ color: c.meta.color }} />
                           {c.meta.label}
                           <ChartInfoTooltip
-                            description={`Resumo de ${c.meta.label}: clientes, conversão e nota de qualidade vêm dos clientes que a IA já analisou (só conversas de WhatsApp/chat, por isso menor que o Kommo); a 1ª resposta e o % respondidas vêm das mensagens trocadas.`}
+                            description={`Resumo de ${c.meta.label}: clientes e conversão vêm da base do painel (espelho Kommo + chat, via source_id); a nota de qualidade vem só dos clientes que a IA já analisou; a 1ª resposta e o % respondidas vêm das mensagens trocadas.`}
                             source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. A 1ª resposta e o % respondidas vêm das mensagens trocadas no WhatsApp/Instagram/Facebook."
                             calculation="Clientes = quantos clientes deste canal no período. Conversão = clientes marcados como venda fechada (ganha) divididos pelo total de clientes, vezes 100. Nota = a média da nota de qualidade que a IA dá ao cliente. 1ª resposta = o valor do meio (mediana) do tempo até o agente responder. % respondidas = conversas que tiveram resposta divididas pelas que o cliente começou, vezes 100."
                           />
@@ -323,7 +323,7 @@ export default function Channels() {
                       <CardContent className="space-y-2">
                         <div>
                           <div className="text-2xl font-bold" style={{ color: c.meta.color }}>{c.totalLeads}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">clientes · só WhatsApp/chat (menor que o Kommo)</div>
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">clientes · base do painel (Kommo + chat)</div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t">
                           <div>
@@ -358,7 +358,7 @@ export default function Channels() {
               <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle className="flex items-center gap-2">Volume de Clientes por Canal (só WhatsApp/chat · menor que o Kommo) <ChartInfoTooltip description="Compara quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook e Telefone); cada barra é a quantidade de clientes. Conta só conversas de WhatsApp/chat, então é menor que o total no Kommo." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes que chegaram no período, separados por canal." calculation="conta quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook, Telefone)." /></CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Volume de Clientes por Canal (base do painel · Kommo + chat) <ChartInfoTooltip description="Compara quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook, Telefone, E-mail, Indicação); cada barra é a quantidade de clientes. Conta a base do painel (espelho Kommo + chat, canal pelo source_id da Kommo)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes que chegaram no período, separados por canal." calculation="conta quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook, Telefone)." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData} margin={{ left: 0 }}>
@@ -379,7 +379,7 @@ export default function Channels() {
 
                 <MagicBentoCard glowColor="59, 130, 246">
                   <Card className="bg-card border-border">
-                    <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal (só WhatsApp/chat · menor que o Kommo) <ChartInfoTooltip description="Compara quanto cada canal converte em venda; cada barra é o % de clientes que viraram venda fechada. Conta só conversas de WhatsApp/chat, então é menor que o total no Kommo." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes do período separados por canal; venda = marcados como venda fechada (ganha)." calculation="clientes marcados como venda fechada (ganha) divididos pelo total de clientes do canal, vezes 100." /></CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal (base do painel · Kommo + chat) <ChartInfoTooltip description="Compara quanto cada canal converte em venda; cada barra é o % de clientes que viraram venda fechada. Conta a base do painel (espelho Kommo + chat, canal pelo source_id da Kommo)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes do período separados por canal; venda = marcados como venda fechada (ganha)." calculation="clientes marcados como venda fechada (ganha) divididos pelo total de clientes do canal, vezes 100." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData}>
@@ -406,12 +406,12 @@ export default function Channels() {
                     <CardTitle className="flex items-center gap-2">
                       Ranking Comparativo
                       <ChartInfoTooltip
-                        description="Compara os canais lado a lado em todas as informações. Clientes, Vendas, Conversão, Nota e % Positivo vêm dos clientes que a IA já analisou (só conversas de WhatsApp/chat, por isso menor que o Kommo); a 1ª Resp e % Respondidas vêm das mensagens trocadas."
+                        description="Compara os canais lado a lado. Clientes, Vendas e Conversão vêm da base do painel (espelho Kommo + chat, canal pelo source_id); Nota e % Positivo vêm só dos clientes que a IA já analisou; a 1ª Resp e % Respondidas vêm das mensagens trocadas."
                         source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. A 1ª Resp e o % Respondidas vêm das mensagens trocadas no WhatsApp/Instagram/Facebook."
                         calculation="Clientes = quantos clientes no período. Vendas = marcados como venda fechada (ganha). Conversão = vendas divididas pelos clientes, vezes 100. Nota = a média da nota de qualidade que a IA dá ao cliente. % Positivo = clientes com sentimento positivo divididos pelos que a IA analisou. 1ª Resp = o valor do meio (mediana) do tempo até o agente responder. % Respondidas = conversas que tiveram resposta divididas pelas que o cliente começou, vezes 100."
                       />
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground">Compare canais lado a lado em todas as informações · Clientes/Conversão = só WhatsApp/chat (menor que o Kommo)</p>
+                    <p className="text-xs text-muted-foreground">Compare canais lado a lado · Clientes/Conversão = base do painel (Kommo + chat); Nota/Sentimento = só os analisados pela IA</p>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -596,7 +596,7 @@ function ChannelDetail({
       {/* KPIs */}
       <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6" glowColor="59, 130, 246">
         <KPI
-          label="Clientes · só WhatsApp/chat (menor que o Kommo)"
+          label="Clientes · base do painel (Kommo + chat)"
           value={stats.totalLeads}
           icon={Users}
           color={meta.color}

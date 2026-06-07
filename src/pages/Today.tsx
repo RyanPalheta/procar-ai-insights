@@ -148,6 +148,7 @@ export default function Today() {
         .select("session_id, channel, sales_status, sentiment, lead_score, lead_temperature, need_summary, service_desired, created_at, last_interaction_at, last_ai_update")
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString())
+        .not("is_duplicate", "is", true)        // dedup chat<->Kommo (fase 2)
         .order("created_at", { ascending: false });
       if (error) {
         console.error("[Today] leadsToday query error:", error);
@@ -166,7 +167,8 @@ export default function Today() {
         .from("lead_db")
         .select("session_id, sales_status")
         .gte("created_at", yesterdayStart.toISOString())
-        .lte("created_at", yesterdayEnd.toISOString());
+        .lte("created_at", yesterdayEnd.toISOString())
+        .not("is_duplicate", "is", true);       // dedup chat<->Kommo (fase 2)
       if (error) throw error;
       return data || [];
     },
