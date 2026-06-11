@@ -5,6 +5,9 @@
 //                receita = paid_cost_cents/100 (USD).
 // Upsert idempotente nas tabelas shopmonkey_appointment / shopmonkey_sale (PK=id).
 //
+// Janela: {days: N} (móvel, default 14) OU {date_from, date_to} ISO explícitos —
+// p/ backfill histórico em fatias (janela única >45d estoura o tempo da function).
+//
 // Requer SHOPMONKEY_API_TOKEN no ambiente das functions (mesmo token do integration).
 // Acesso à API (descoberto): POST /v3/appointment/search {where:{startDate:{gte,lte}}};
 // GET /v3/order/?where={"fullyPaidDate":{"gte","lte"}}  — operadores gte/lte (sem $).
@@ -43,8 +46,24 @@ Deno.serve(async (req) => {
     const smHeaders = { Authorization: `Bearer ${token}`, 'User-Agent': 'procar-sync', 'Content-Type': 'application/json' };
 
     const now = new Date();
-    const since = new Date(now.getTime() - days * 86400000).toISOString();
     const nowIso = now.toISOString();
+    // Janela explícita {date_from, date_to} p/ backfill em FATIAS: uma chamada com
+    // janela grande (60-90d) estoura o limite de tempo da function (os PASSES
+    // multiplicam o volume). Sem date_from, segue a janela móvel por `days`.
+    let since: string;
+    let until: string;
+    if (body.date_from) {
+      const from = new Date(body.date_from);
+      const to = body.date_to ? new Date(body.date_to) : now;
+      if (isNaN(from.getTime()) || isNaN(to.getTime()) || from >= to) {
+        return json({ error: 'date_from/date_to inválidos (ISO, date_from < date_to)' }, 400);
+      }
+      since = from.toISOString();
+      until = to.toISOString();
+    } else {
+      since = new Date(now.getTime() - days * 86400000).toISOString();
+      until = nowIso;
+    }
 
     // --- Agendamentos: POST /v3/appointment/search (por startDate) ---
     const appts: any[] = [];
@@ -53,7 +72,7 @@ Deno.serve(async (req) => {
       const r = await fetch(`${SM}/v3/appointment/search`, {
         method: 'POST',
         headers: smHeaders,
-        body: JSON.stringify({ where: { startDate: { gte: since, lte: nowIso } }, limit: PAGE, skip }),
+        body: JSON.stringify({ where: { startDate: { gte: since, lte: until } }, limit: PAGE, skip }),
       });
       if (!r.ok) return json({ error: `ShopMonkey appointment ${r.status}`, detail: await r.text() }, 502);
       const d = await r.json();
@@ -65,7 +84,7 @@ Deno.serve(async (req) => {
 
     // --- Vendas: GET /v3/order/?where=fullyPaidDate (pagos, por data de pagamento) ---
     const orders: any[] = [];
-    const where = encodeURIComponent(JSON.stringify({ fullyPaidDate: { gte: since, lte: nowIso } }));
+    const where = encodeURIComponent(JSON.stringify({ fullyPaidDate: { gte: since, lte: until } }));
     for (let pass = 0; pass < PASSES; pass++)
     for (let skip = 0; skip < MAX; skip += PAGE) {
       const r = await fetch(`${SM}/v3/order/?where=${where}&limit=${PAGE}&skip=${skip}`, { headers: smHeaders });
@@ -81,7 +100,7 @@ Deno.serve(async (req) => {
     //     janela). Todo order nasce orçamento; vira venda quando pago. É a "cotação"
     //     real (o chat capta pouquíssimas) — contado por vendedor na aba Vendedores. ---
     const allOrders: any[] = [];
-    const whereCreated = encodeURIComponent(JSON.stringify({ createdDate: { gte: since, lte: nowIso } }));
+    const whereCreated = encodeURIComponent(JSON.stringify({ createdDate: { gte: since, lte: until } }));
     for (let pass = 0; pass < PASSES; pass++)
     for (let skip = 0; skip < MAX; skip += PAGE) {
       const r = await fetch(`${SM}/v3/order/?where=${whereCreated}&limit=${PAGE}&skip=${skip}`, { headers: smHeaders });
@@ -170,8 +189,9 @@ Deno.serve(async (req) => {
     const revenue = Math.round(saleRows.reduce((s, r) => s + (r.paid_cost_cents || 0), 0) / 100);
 
     return json({
-      window_days: days,
+      window_days: body.date_from ? undefined : days,
       since,
+      until,
       appointments_synced: apptRows.length,
       agendamentos_green: green,
       walk_ins: apptRows.filter((a) => a.walk_in).length,
