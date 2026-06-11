@@ -513,12 +513,15 @@ export default function Dashboard() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
-    // Language distribution
+    // Language distribution — quem está sem idioma entra como "SEM-IDIOMA" para o
+    // gráfico somar igual aos cards (lead de telefone não tem conversa p/ detectar;
+    // lead de chat recém-chegado ainda não passou pela IA/backfill de idioma).
     const languageCounts = new Map<string, number>();
     globalFilteredLeads.forEach(l => {
-      if (l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA") {
-        languageCounts.set(l.lead_language, (languageCounts.get(l.lead_language) || 0) + 1);
-      }
+      const lang = (l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA")
+        ? l.lead_language
+        : "SEM-IDIOMA";
+      languageCounts.set(lang, (languageCounts.get(lang) || 0) + 1);
     });
     const languageData = Array.from(languageCounts.entries())
       .map(([name, value]) => ({ name, value }))
