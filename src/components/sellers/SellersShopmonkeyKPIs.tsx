@@ -118,8 +118,11 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      <p className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
-                        {r.conv_pct != null ? `${r.conv_pct}%` : "—"}
+                      <p
+                        className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400"
+                        title={Number(r.conv_pct) > 100 ? "Vendas pagas no período > leads atribuídos no período (datas/atribuição não casam em janelas curtas) — redesenho por coorte em discussão" : undefined}
+                      >
+                        {r.conv_pct != null && Number(r.conv_pct) <= 100 ? `${r.conv_pct}%` : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground">conversão</p>
                     </div>
