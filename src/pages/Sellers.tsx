@@ -127,10 +127,12 @@ export default function Sellers() {
       <div className="space-y-1 rounded-lg border border-amber-200/60 bg-amber-50/40 dark:border-amber-500/20 dark:bg-amber-950/10 p-3">
         <h3 className="text-sm font-semibold">Qualidade do atendimento no chat (amostra auditada pela IA)</h3>
         <p className="text-xs text-muted-foreground">
-          Mede conversão, objeções e cotações dos leads de <b>chat (WhatsApp)</b> que a IA analisou — é um
-          <b> subconjunto</b>, NÃO a atividade total da loja. Por isso os números <b>não batem</b> com o painel
-          ShopMonkey acima: um vendedor costuma ter <b>mais agendamentos</b> (loja real) do que leads de chat
-          auditados (ex.: clientes de telefone/presenciais não passam pelo chat).
+          <b>Como as duas seções se relacionam:</b> a de cima é <b>o que cada vendedor PRODUZIU</b> (funil
+          real da loja — leads da Kommo, orçamentos, agendamentos por canal e vendas do ShopMonkey); esta de
+          baixo é <b>COMO ele atendeu</b> no chat (qualidade avaliada pela IA na amostra de conversas de
+          WhatsApp). É um <b>subconjunto</b>, NÃO a atividade total da loja — um vendedor costuma ter mais
+          agendamentos (loja real) do que leads de chat auditados (clientes de telefone/presenciais não passam
+          pelo chat). A consolidação completa num quadro único está em desenho com a Pro Car.
         </p>
       </div>
 

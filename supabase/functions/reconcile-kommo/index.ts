@@ -1,11 +1,14 @@
-// reconcile-kommo — Protótipo de RECONCILIAÇÃO Kommo × lead_db.
+// reconcile-kommo — RECONCILIAÇÃO Kommo × lead_db.
 //
-// Quantifica o gargalo central da auditoria: o dashboard (lead_db) é um
-// subconjunto da Kommo (só leads de chat). Esta função, para um intervalo de
-// datas, conta os leads criados na Kommo (paginando a API v4) e compara com a
-// contagem do lead_db, devolvendo o gap total e a distribuição por etapa.
+// Para um intervalo de datas, conta os leads criados na Kommo (paginando a API
+// v4) e compara com a contagem do lead_db, devolvendo o gap e a distribuição
+// por etapa.
 //
-// READ-ONLY: só lê a Kommo (GET) e o lead_db (count). Não escreve em lugar nenhum.
+// {mark_missing: true} (2ª auditoria, 11/06/2026 — "painel deve ser igual à
+// Kommo"): além de contar, MARCA lead_db.kommo_absent nas linhas da janela cujo
+// session_id não existe (mais) na Kommo — leads apagados/mesclados lá, ou linhas
+// de chat sem espelho. Não-destrutivo (flag, recomputável); a view lead_db_painel
+// e o get_leads_kpis excluem os marcados. Sem mark_missing segue READ-ONLY.
 // Reusa as mesmas credenciais do sync-to-kommo: KOMMO_ACCESS_TOKEN + KOMMO_SUBDOMAIN.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
@@ -59,15 +62,22 @@ Deno.serve(async (req) => {
       }
     } catch { /* nomes são opcionais */ }
 
+    const markMissing = body.mark_missing === true;
+
     // ---- Kommo: pagina os leads criados no intervalo ----
+    // Com mark_missing, a leitura usa a janela com FOLGA de ±1 dia: um lead cujo
+    // created_at na Kommo caiu minutos fora da janela do painel não pode ser
+    // marcado como "ausente" por causa de skew de borda.
+    const PAD_S = markMissing ? 86400 : 0;
     let kommoTotal = 0;
     const byStatus: Record<string, number> = {};
+    const kommoIds = new Set<number>();
     let page = 1;
     const MAX_PAGES = 100; // 250 * 100 = 25k leads (trava de segurança)
     let truncated = false;
     while (true) {
       const url =
-        `${base}/leads?filter[created_at][from]=${fromUnix}&filter[created_at][to]=${toUnix}` +
+        `${base}/leads?filter[created_at][from]=${fromUnix - PAD_S}&filter[created_at][to]=${toUnix + PAD_S}` +
         `&limit=250&page=${page}`;
       const res = await fetch(url, { headers: authHeaders });
       if (res.status === 204) break; // sem conteúdo
@@ -78,9 +88,13 @@ Deno.serve(async (req) => {
       const leads = data?._embedded?.leads ?? [];
       if (leads.length === 0) break;
       for (const l of leads) {
-        kommoTotal++;
-        const key = String(l.status_id);
-        byStatus[key] = (byStatus[key] || 0) + 1;
+        kommoIds.add(Number(l.id));
+        // o total/distribuição reportados continuam sendo SÓ da janela exata
+        if (l.created_at >= fromUnix && l.created_at <= toUnix) {
+          kommoTotal++;
+          const key = String(l.status_id);
+          byStatus[key] = (byStatus[key] || 0) + 1;
+        }
       }
       if (!data?._links?.next) break;
       page++;
@@ -98,12 +112,47 @@ Deno.serve(async (req) => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', date_from)
         .lte('created_at', date_to)
-        .not('is_duplicate', 'is', true);   // dedup chat<->Kommo (fase 2): nao conta os espelhos marcados
+        .not('is_duplicate', 'is', true)    // dedup chat<->Kommo (fase 2): nao conta os espelhos marcados
+        .not('kommo_absent', 'is', true);   // paridade: nao conta leads apagados/mesclados na Kommo
       if (auditedOnly) q = q.not('last_ai_update', 'is', null);
       const { count, error } = await q;
       if (error) throw new Error(`lead_db: ${error.message}`);
       return count ?? 0;
     };
+    // ---- mark_missing: marca/desmarca kommo_absent nas linhas da janela ----
+    let marked = 0;
+    let unmarked = 0;
+    if (markMissing && !truncated) {
+      const PAGE = 1000;
+      let from = 0;
+      const rows: { session_id: number; kommo_absent: boolean }[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from('lead_db')
+          .select('session_id, kommo_absent')
+          .gte('created_at', date_from)
+          .lte('created_at', date_to)
+          .order('session_id', { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw new Error(`lead_db ids: ${error.message}`);
+        rows.push(...((data as any[]) ?? []));
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      const toMark = rows.filter((r) => !kommoIds.has(Number(r.session_id)) && !r.kommo_absent).map((r) => r.session_id);
+      const toUnmark = rows.filter((r) => kommoIds.has(Number(r.session_id)) && r.kommo_absent).map((r) => r.session_id);
+      for (let i = 0; i < toMark.length; i += 500) {
+        const { error } = await supabase.from('lead_db').update({ kommo_absent: true }).in('session_id', toMark.slice(i, i + 500));
+        if (error) throw new Error(`mark kommo_absent: ${error.message}`);
+      }
+      for (let i = 0; i < toUnmark.length; i += 500) {
+        const { error } = await supabase.from('lead_db').update({ kommo_absent: false }).in('session_id', toUnmark.slice(i, i + 500));
+        if (error) throw new Error(`unmark kommo_absent: ${error.message}`);
+      }
+      marked = toMark.length;
+      unmarked = toUnmark.length;
+    }
+
     const dashboardTotal = await dbCount(false);
     const dashboardAudited = await dbCount(true);
 
@@ -135,6 +184,7 @@ Deno.serve(async (req) => {
       range: { date_from, date_to },
       kommo: { total: kommoTotal, by_status: byStatusLabeled, truncated },
       dashboard: { total: dashboardTotal, audited: dashboardAudited },
+      mark_missing: markMissing ? { marked, unmarked } : undefined,
       gap,
       gap_pct: kommoTotal > 0 ? Math.round((gap / kommoTotal) * 1000) / 10 : null,
       note:

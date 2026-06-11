@@ -14,7 +14,9 @@ import {
   Users, MessageSquare, Phone, DollarSign, Gauge, AlertTriangle,
   PhoneIncoming, PhoneOutgoing, ArrowRight, TrendingUp, TrendingDown, Minus, Clock,
 } from "lucide-react";
-import { format, startOfDay, endOfDay, subDays, formatDistanceToNow, parseISO, differenceInMinutes } from "date-fns";
+import { format, subDays, formatDistanceToNow, parseISO, differenceInMinutes } from "date-fns";
+// dia-calendário no fuso da loja/Kommo (2ª auditoria) — não no fuso do navegador
+import { startOfDayShop as startOfDay, endOfDayShop as endOfDay } from "@/lib/period";
 import { ptBR } from "date-fns/locale";
 import { getCallDirection } from "@/lib/calls";
 
@@ -149,6 +151,7 @@ export default function Today() {
         .gte("created_at", todayStart.toISOString())
         .lte("created_at", todayEnd.toISOString())
         .not("is_duplicate", "is", true)        // dedup chat<->Kommo (fase 2)
+        .not("kommo_absent", "is", true)        // paridade: apagados/mesclados na Kommo ficam fora
         .order("created_at", { ascending: false });
       if (error) {
         console.error("[Today] leadsToday query error:", error);

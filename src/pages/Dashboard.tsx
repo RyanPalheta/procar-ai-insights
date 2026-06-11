@@ -90,6 +90,8 @@ export default function Dashboard() {
         let query = supabase
           .from("lead_db")
           .select("*")
+          .not("is_duplicate", "is", true)   // dedup chat<->Kommo (fase 2)
+          .not("kommo_absent", "is", true)   // paridade: apagados/mesclados na Kommo ficam fora
           .order("created_at", { ascending: false });
 
         // Apply period filter server-side
@@ -125,6 +127,8 @@ export default function Dashboard() {
         sale_leads_previous: number | null;
         appointment_leads: number;
         appointment_leads_previous: number | null;
+        no_show_leads: number;
+        no_show_leads_previous: number | null;
         won_leads: number;
         won_leads_previous: number | null;
         avg_score: number;
@@ -176,8 +180,12 @@ export default function Dashboard() {
     const t = (s ?? "").toLowerCase();
     return t.includes("ganha") || t.includes("won");
   };
+  // Agendamento MARCADO (2ª auditoria, legenda E): confirmado + faltou (no-show)
+  // + vendas — toda venda passou pelo agendamento; o no-show marcou e não veio.
+  const isNoShow = (s: string | null): boolean =>
+    (s ?? "").toLowerCase().includes("faltou agendamento");
   const isAppointment = (s: string | null): boolean =>
-    (s ?? "").toLowerCase().includes("agendamento confirmado");
+    (s ?? "").toLowerCase().includes("agendamento confirmado") || isNoShow(s) || isSale(s);
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -269,6 +277,7 @@ export default function Dashboard() {
       const totalLeads = globalFilteredLeads.length;
       const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
       const appointmentLeads = globalFilteredLeads.filter(l => isAppointment(l.sales_status)).length;
+      const noShowLeads = globalFilteredLeads.filter(l => isNoShow(l.sales_status)).length;
       const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
       const appointmentConversionRate = totalLeads > 0 ? (appointmentLeads / totalLeads) * 100 : 0;
       
@@ -302,6 +311,7 @@ export default function Dashboard() {
         saleConversionRateVariation: null,
         appointmentConversionRate,
         appointmentConversionRateVariation: null,
+        noShowLeads,
         avgScore,
         scoreVariation: null,
         leadsWithQuoteVariation: null,
@@ -326,6 +336,7 @@ export default function Dashboard() {
       saleConversionRateVariation: null,
       appointmentConversionRate: 0,
       appointmentConversionRateVariation: null,
+      noShowLeads: 0,
       avgScore: 0,
       scoreVariation: null,
       leadsWithQuoteVariation: null,
@@ -408,6 +419,7 @@ export default function Dashboard() {
       saleConversionRateVariation,
       appointmentConversionRate,
       appointmentConversionRateVariation,
+      noShowLeads: kpisData.no_show_leads ?? 0,
       avgScore: kpisData.avg_score,
       scoreVariation,
       leadsWithQuoteVariation,

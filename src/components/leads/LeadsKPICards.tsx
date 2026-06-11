@@ -35,6 +35,7 @@ interface LeadsKPICardsProps {
   saleConversionRateVariation: number | null;
   appointmentConversionRate: number;
   appointmentConversionRateVariation: number | null;
+  noShowLeads: number;
   avgScore: number;
   scoreVariation: number | null;
   leadsWithQuoteVariation: number | null;
@@ -88,9 +89,9 @@ const kpiTooltips = {
   },
   appointmentConversion: {
     title: "Conversão de Agendamento",
-    description: "De cada 100 leads, quantos viraram AGENDAMENTO confirmado.",
-    fonte: "base COMPLETA de leads (Kommo). Conta só 'Agendamento confirmado' — não inclui 'Faltou agendamento'.",
-    calculo: "leads com agendamento confirmado divididos pelo total de leads do período, vezes 100.",
+    description: "De cada 100 leads, quantos chegaram a MARCAR agendamento — inclui quem confirmou, quem faltou (no-show) e quem já virou venda (toda venda passa pelo agendamento). Sempre maior ou igual à conversão de venda.",
+    fonte: "base COMPLETA de leads (Kommo). Agendamento marcado = 'Agendamento confirmado' + 'Faltou agendamento' + vendas ganhas. O no-show aparece separado no cartão.",
+    calculo: "leads que marcaram agendamento (confirmado + faltou + venda) divididos pelo total de leads do período, vezes 100.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -172,6 +173,7 @@ export function LeadsKPICards({
   saleConversionRateVariation,
   appointmentConversionRate,
   appointmentConversionRateVariation,
+  noShowLeads,
   avgScore,
   scoreVariation,
   leadsWithQuoteVariation,
@@ -312,7 +314,7 @@ export function LeadsKPICards({
                     value={`${appointmentConversionRate.toFixed(1)}%`}
                     icon={CalendarCheck}
                     variant={appointmentConversionRate >= 10 ? "success" : appointmentConversionRate >= 5 ? "warning" : "default"}
-                    description="Agendamentos confirmados ÷ total de leads"
+                    description={`Agendamentos marcados ÷ total de leads · ${noShowLeads} no-show`}
                     trend={getTrend(appointmentConversionRateVariation)}
                   />
                 </div>

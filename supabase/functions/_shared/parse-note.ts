@@ -14,6 +14,13 @@ export interface ParsedNote {
   source: string | null;
   /** Vendedor humano citado no note. */
   seller: string | null;
+  /**
+   * Canal do ATENDIMENTO que gerou o agendamento (2ª auditoria, legenda B —
+   * "atendimentos × agendamentos por canal"). Minerado dos marcadores que a
+   * própria equipe escreve no note: "... RICARDO KOMMO", "... RICARDO TELEFONE".
+   * Valores: kommo | telefone | instagram | facebook | google | presencial | null.
+   */
+  channel: string | null;
 }
 
 // Cobre: "walk in", "walk-in", "walkin", "walk - in", "walking", o plural
@@ -44,9 +51,20 @@ function normalizeSource(s: string): string | null {
   return words || null;
 }
 
+/** Canal do atendimento a partir dos marcadores escritos no note. */
+function detectChannel(lower: string, walkIn: boolean): string | null {
+  if (/\bkommo\b/.test(lower)) return "kommo";
+  if (/\btelefone\b|\bphone\b|liga[çc][ãa]o/.test(lower)) return "telefone";
+  if (/\binsta(gram)?\b|\big\b/.test(lower)) return "instagram";
+  if (/\bface(book)?\b|\bfb\b/.test(lower)) return "facebook";
+  if (/\bgoogle\b/.test(lower)) return "google";
+  if (walkIn) return "presencial";
+  return null;
+}
+
 export function parseNote(raw: string | null | undefined): ParsedNote {
   const note = (raw ?? "").replace(/\s+/g, " ").trim();
-  if (!note) return { walkIn: false, source: null, seller: null };
+  if (!note) return { walkIn: false, source: null, seller: null, channel: null };
 
   const lower = note.toLowerCase();
   const walkIn = WALK_RE.test(note);
@@ -63,6 +81,7 @@ export function parseNote(raw: string | null | undefined): ParsedNote {
   }
 
   const seller = SELLERS.find((s) => new RegExp(`\\b${s}\\b`, "i").test(lower)) ?? null;
+  const channel = detectChannel(lower, walkIn);
 
-  return { walkIn, source, seller };
+  return { walkIn, source, seller, channel };
 }

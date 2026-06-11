@@ -17,7 +17,19 @@ export interface SellerShopmonkeyKPI {
   receita_usd: number;
   conv_pct: number | null;
   taxa_agend_pct: number | null;
+  /** agendamentos por canal de atendimento (marcador do note: kommo/telefone/presencial/...) */
+  agendamentos_por_canal: Record<string, number> | null;
 }
+
+const CHANNEL_CHIP_LABEL: Record<string, string> = {
+  kommo: "Kommo/chat",
+  telefone: "Ligação",
+  presencial: "Presencial",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  google: "Google",
+  "sem marcador": "Sem marcador",
+};
 
 interface Props {
   dateFrom: string | null;
@@ -130,6 +142,22 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                       value={Number(r.vendas) > 0 ? formatUSD(Number(r.receita_usd) / Number(r.vendas), 0) : "—"}
                     />
                   </div>
+                  {/* Agendamentos por canal de atendimento (legenda B da 2ª auditoria) */}
+                  {r.agendamentos_por_canal && Object.keys(r.agendamentos_por_canal).length > 0 && (
+                    <div className="flex flex-wrap gap-1 border-t pt-2">
+                      {Object.entries(r.agendamentos_por_canal)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([canal, n]) => (
+                          <span
+                            key={canal}
+                            className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                            title="Canal do atendimento que gerou o agendamento (marcador escrito no note da loja)"
+                          >
+                            {CHANNEL_CHIP_LABEL[canal] ?? canal} <b className="text-foreground">{n}</b>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

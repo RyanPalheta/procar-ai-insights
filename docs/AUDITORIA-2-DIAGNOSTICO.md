@@ -126,4 +126,34 @@ Legenda das causas: **[DADO]** = dado faltante pela queda da VPS (resolvido pelo
 - Legenda A: aprovar o campo `call_outcome` (ligação convertida) na análise de chamadas.
 - Mensagens de 08/06 e chamadas de 08–09/06: irrecuperáveis pelas fontes do painel; se valer a pena, recuperar do histórico da Evolution API no servidor.
 
-**Bug em aberto (follow-up técnico):** `service_rating` não retornado pela IA desde ~04/05 (nota média) — exige ajuste e teste do `analyze-lead`.
+**Bug em aberto (follow-up técnico):** `service_rating` não retornado pela IA desde ~04/05 (nota média) — exige ajuste e teste do `analyze-lead`. *(resolvido na 2ª onda — ver abaixo)*
+
+---
+
+## 5. Segunda onda (11/06, após aprovação da Pro Car) — itens que estavam pendentes
+
+### 5.1 Item 5 — Walk-in azul (CONFIRMADO e aplicado)
+A Pro Car confirmou a convenção: **agendamento azul no ShopMonkey = walk-in**. Evidência que levou à pergunta: 64,7% dos azuis tinham "WALKIN" escrito vs <5% das demais cores. Aplicado: regra `walk_in = texto no note OU cor azul` no `sync-shopmonkey` + retroativo no banco. **Walk-ins de 30 dias: 68 → 111 (+63%)**.
+
+### 5.2 Legenda E — Conversão de agendamento redefinida (aplicada)
+`get_leads_kpis` agora conta **agendamento MARCADO = confirmado + faltou (no-show) + vendas** e expõe `no_show_leads` separado (card mostra "X no-show"). Sanidade 7 dias: venda 10,2% × agendamento 16,0% — **agendamento ≥ venda, como o funil real**. (Antes: 5,8% < 10,4%, o absurdo apontado.)
+
+### 5.3 Nota Média 0.0 — CAUSA RAIZ encontrada e corrigida
+Não era só o modelo: **a tabela `playbooks` em produção não tinha a coluna `stage_requirements`** que a versão "stage-aware" do `analyze-lead` (deployada ~04/05) seleciona — TODO fetch de playbook falhava com erro 42703 → `playbook = null` → compliance E nota nulos em todas as análises desde então. Correções: (a) coluna criada; (b) `service_rating` agora é validado/coagido (aceita nota 0, que o antigo `|| null` descartava) e, se o modelo omitir, é derivado do compliance computado. **Teste vivo: notas 0, 2 e 6 gravadas** — e a repopulação dos últimos 7 dias está rodando. A Nota Média do Painel 360 volta a operar.
+
+### 5.4 "Dashboard deve ser igual à Kommo" (exigência nova, print de 50 leads)
+Investigação com janelas alinhadas mostrou DOIS problemas distintos:
+1. **Fuso da virada do dia**: o "Hoje" do painel virava no fuso do navegador de quem vê (auditor no Brasil = 1-5h antes da Kommo). No momento do print, o "Hoje" da Kommo ainda era 10/06 (~50 leads) e o do painel já era 11/06 (madrugada). **Fix**: `Hoje/Ontem/7d…` agora são ancorados no fuso da loja (`America/New_York`) para qualquer espectador.
+2. **Excedente do painel (+10-20%)**: o lead_db é insert-only — leads **apagados/mesclados na Kommo** continuavam contando aqui. **Fix**: `reconcile-kommo {mark_missing}` marca `kommo_absent` comparando IDs com a Kommo (folga de ±1 dia nas bordas); a view `lead_db_painel` e todos os KPIs/abas excluem marcados; cron diário mantém. Retroativo de 4 meses marcou 596 órfãos. **Verificação na janela exata do print do auditor (10/06): Kommo 56 × painel 56 — gap ZERO.** Janelas antigas (abril–maio) ainda têm gap residual de 2-4% (leads que nunca entraram no espelho), convergindo conforme o cron roda.
+
+### 5.5 Legenda A — "% Convertidas" nas Chamadas (aplicada)
+`analyze-call` agora extrai `call_outcome` (agendou / comprou / pediu_orcamento / followup / sem_avanco / nao_qualificado) da transcrição, e a aba Chamadas tem o KPI **"% Convertidas"** (agendou+comprou+orçamento ÷ analisadas) ao lado do % Positivo — que ganhou a ressalva de subjetividade. Vale para ligações analisadas a partir de 11/06.
+
+### 5.6 Legenda B — Consolidação dos Vendedores (fase 1 aplicada)
+Descoberta: a equipe JÁ escreve o canal no note do agendamento ("… RICARDO **KOMMO**", "… RICARDO **TELEFONE**"). O `parse-note` agora extrai isso para `shopmonkey_appointment.channel`, o RPC devolve `agendamentos_por_canal` e cada card de vendedor mostra a quebra (30d: Kommo 117 · Presencial 77 · Ligação 32 · Google 14 · IG 5 · FB 2 · 582 sem marcador). A seção de qualidade do chat ganhou texto explicando a relação entre os dois quadros ("o que produziu" × "como atendeu"). Cobertura do canal sobe se os vendedores padronizarem o marcador — exatamente a sugestão do auditor. A consolidação total num quadro único segue em desenho (item 15).
+
+### 5.7 Pendências que REALMENTE ficam com a Pro Car
+- **Scripts novos (itens 8/10)**: a tabela `playbooks` segue com os scripts de 21/11/2025. Onde os novos foram subidos? Precisam entrar na tabela (e podem preencher o `stage_requirements` novo).
+- **Item 15**: desenho da conversão por coorte do funil por vendedor (conversa pedida pelo auditor).
+- **Canal Presencial / remover Indicação na aba Canais**: decisão de produto.
+- **Mensagens de 08/06 e chamadas de 08–09/06**: irrecuperáveis pelas fontes do painel (só Evolution API no servidor).

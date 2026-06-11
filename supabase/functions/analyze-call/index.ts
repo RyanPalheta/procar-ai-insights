@@ -151,7 +151,14 @@ Avalie:
     - Qualidade da abertura (0-10): apresentação, hook, transição
     - Pediu permissão para falar (só relevante em ATIVAS — em passivas marque false)
     - Tentou fechar / avançar próximo passo (especialmente crítico em PASSIVAS)
-    - Quão bem o vendedor ADAPTOU sua abordagem ao tipo da chamada (0-10)`;
+    - Quão bem o vendedor ADAPTOU sua abordagem ao tipo da chamada (0-10)
+11. DESFECHO CONCRETO da ligação (call_outcome) — o que ela de fato GEROU, com base só na transcrição:
+    - "agendou": marcou visita, instalação ou horário na loja
+    - "comprou": fechou a venda na própria ligação
+    - "pediu_orcamento": cotação/orçamento foi solicitado ou ficou de ser enviado
+    - "followup": cliente ficou de pensar/retornar, sem compromisso marcado
+    - "sem_avanco": a conversa não avançou nada comercialmente
+    - "nao_qualificado": engano, spam, assunto não comercial`;
 
     const toolParameters = {
       type: 'object',
@@ -211,11 +218,24 @@ Avalie:
           type: 'boolean',
           description: 'Vendedor criou urgência apropriada? (estoque limitado, promoção por tempo, agenda apertada)',
         },
+        // 2ª auditoria (legenda A): desfecho objetivo da ligação extraído da
+        // transcrição — substitui o "% positivo" subjetivo como métrica principal.
+        call_outcome: {
+          type: 'string',
+          enum: ['agendou', 'comprou', 'pediu_orcamento', 'followup', 'sem_avanco', 'nao_qualificado'],
+          description: 'Desfecho CONCRETO da ligação com base na transcrição (o que ela gerou).',
+        },
+        call_outcome_detail: {
+          type: 'string',
+          nullable: true,
+          description: 'Uma frase curta justificando o desfecho (ex.: "agendou instalação de tint para sábado").',
+        },
       },
       required: [
         'sentiment', 'quality_score', 'executive_summary', 'improvement_points',
         'has_objection', 'used_offer', 'used_anchoring', 'call_tags',
         'call_direction', 'opening_quality', 'close_attempt', 'direction_appropriate_score',
+        'call_outcome',
       ],
     };
 

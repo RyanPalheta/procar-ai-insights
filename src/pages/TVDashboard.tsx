@@ -125,6 +125,8 @@ export default function TVDashboard() {
         const { data, error } = await supabase
           .from("lead_db")
           .select("*")
+          .not("is_duplicate", "is", true)   // dedup chat<->Kommo (fase 2)
+          .not("kommo_absent", "is", true)   // paridade: apagados/mesclados na Kommo ficam fora
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
         if (error) throw error;
