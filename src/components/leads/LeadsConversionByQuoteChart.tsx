@@ -10,8 +10,8 @@ import { Lightbulb, DollarSign } from "lucide-react";
 
 interface ConversionByQuoteData {
   quote_bracket: string;
-  total_leads: number;
-  converted_leads: number;
+  total_leads: number;      // orçamentos gerados na faixa
+  converted_leads: number;  // desses, quantos foram pagos
   conversion_rate: number;
   avg_quote_value: number;
 }
@@ -20,6 +20,15 @@ interface LeadsConversionByQuoteChartProps {
   dateFrom: string | null;
   dateTo: string | null;
 }
+
+const TOOLTIP = {
+  description:
+    "Mostra, por faixa de valor do orçamento, quantos dos orçamentos gerados foram pagos; eixo X = faixas em USD, barra = % de orçamentos pagos.",
+  source:
+    "vem dos orçamentos do ShopMonkey (a fonte real da loja): todo pedido nasce como orçamento e vira venda quando é pago. Não depende do chat/IA.",
+  calculation:
+    "agrupa os orçamentos criados no período pelo valor total: $0-500, $500-1000, $1000-2000, $2000+ (sem os arquivados e sem os de valor zero). Em cada faixa: orçamentos pagos divididos pelos gerados, vezes 100.",
+};
 
 export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversionByQuoteChartProps) {
   const { data, isLoading, error } = useQuery({
@@ -38,22 +47,14 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
     ? data.reduce((sum, d) => sum + (d.conversion_rate || 0), 0) / data.length
     : 0;
 
-  const dataWithQuote = data?.filter(d => d.quote_bracket !== "Sem Cotação") || [];
-  const dataWithoutQuote = data?.find(d => d.quote_bracket === "Sem Cotação");
+  const totalGerados = data?.reduce((sum, d) => sum + (d.total_leads || 0), 0) || 0;
+  const totalPagos = data?.reduce((sum, d) => sum + (d.converted_leads || 0), 0) || 0;
+  const overallRate = totalGerados > 0 ? (totalPagos / totalGerados) * 100 : 0;
 
-  const bestBracket = dataWithQuote.length > 0
-    ? dataWithQuote.reduce((best, current) =>
+  const bestBracket = data && data.length > 0
+    ? data.reduce((best, current) =>
         (current.conversion_rate || 0) > (best?.conversion_rate || 0) ? current : best
-      , dataWithQuote[0])
-    : null;
-
-  const withQuoteAvg = dataWithQuote.length > 0
-    ? dataWithQuote.reduce((sum, d) => sum + (d.converted_leads || 0), 0) /
-      dataWithQuote.reduce((sum, d) => sum + (d.total_leads || 0), 0) * 100
-    : 0;
-  const withoutQuoteRate = dataWithoutQuote?.conversion_rate || 0;
-  const quoteMultiplier = withoutQuoteRate > 0
-    ? (withQuoteAvg / withoutQuoteRate).toFixed(1)
+      , data[0])
     : null;
 
   // Transform data for multi-category coloring
@@ -82,7 +83,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
         <p className="font-medium">{d.quote_bracket}</p>
         <p className="text-muted-foreground text-xs mt-1">
-          {d._converted} convertidos de {d._total} leads
+          {d._converted} pagos de {d._total} orçamentos
         </p>
         {d._avgQuote > 0 && (
           <p className="text-xs mt-1">
@@ -102,11 +103,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Conversão por Cotação
-              <ChartInfoTooltip
-                description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-                source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
-                calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam venda (marcados como venda fechada / ganha) dividido pelo total de clientes da faixa, vezes 100."
-              />
+              <ChartInfoTooltip {...TOOLTIP} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -126,16 +123,12 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Conversão por Cotação
-              <ChartInfoTooltip
-                description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-                source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
-                calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam venda (marcados como venda fechada / ganha) dividido pelo total de clientes da faixa, vezes 100."
-              />
+              <ChartInfoTooltip {...TOOLTIP} />
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-              Sem dados suficientes para análise
+              Sem orçamentos no período
             </div>
           </CardContent>
         </Card>
@@ -150,11 +143,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Conversão por Cotação
-            <ChartInfoTooltip
-              description="Relaciona a faixa de valor cotado com a taxa de conversão; eixo X = faixas de cotação em USD (e 'Sem Cotação'), barra = % de leads que viraram venda."
-              source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui entram apenas os clientes que a IA já analisou, no período selecionado."
-              calculation="separa os clientes pelo valor do orçamento (cotação) que receberam: Sem Cotação, $0-500, $500-1000, $1000-2000, $2000+. Em cada faixa, a taxa é o número de clientes que fecharam venda (marcados como venda fechada / ganha) dividido pelo total de clientes da faixa, vezes 100."
-            />
+            <ChartInfoTooltip {...TOOLTIP} />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -172,35 +161,24 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           />
 
           {/* Insight Card */}
-          {quoteMultiplier && parseFloat(quoteMultiplier) > 1 && (
+          {totalGerados > 0 && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
               <div className="flex items-start gap-2">
                 <Lightbulb className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <p className="text-sm">
                   <span className="font-medium">Insight:</span>{" "}
-                  Leads com cotação convertem{" "}
-                  <span className="font-semibold text-green-600 dark:text-green-400">{quoteMultiplier}x mais</span>{" "}
-                  que leads sem cotação
-                  {bestBracket && (
-                    <>. Melhor faixa:{" "}
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    {totalPagos} de {totalGerados}
+                  </span>{" "}
+                  orçamentos do período foram pagos ({overallRate.toFixed(1)}%)
+                  {bestBracket && (bestBracket.conversion_rate || 0) > 0 && (
+                    <>. Faixa que mais converte:{" "}
                       <span className="font-semibold text-green-600 dark:text-green-400">
                         {bestBracket.quote_bracket}
                       </span>{" "}
                       ({bestBracket.conversion_rate?.toFixed(1)}%)
                     </>
                   )}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {quoteMultiplier && parseFloat(quoteMultiplier) <= 1 && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm">
-                  <span className="font-medium">Observação:</span>{" "}
-                  Leads sem cotação têm conversão similar ou superior aos com cotação.
                 </p>
               </div>
             </div>
