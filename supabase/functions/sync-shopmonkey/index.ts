@@ -185,6 +185,50 @@ Deno.serve(async (req) => {
       if (error) throw new Error('upsert order: ' + error.message);
     }
 
+    // --- Clientes: telefone do customer ShopMonkey -> shopmonkey_customer.
+    //     É a PONTE lead (chat/Kommo, phone_normalized) <-> venda paga, usada pela
+    //     "conversão por orçamento pago" (gráficos de tempo de resposta/cotação).
+    //     Só busca na API quem ainda não temos (defensivo; falha não derruba o sync).
+    let customersFetched = 0;
+    try {
+      const custIds = new Set<string>();
+      for (const a of apptRows) if (a.customer_id) custIds.add(a.customer_id);
+      for (const o of orderRows) if (o.customer_id) custIds.add(o.customer_id);
+      for (const s of saleRows) if (s.customer_id) custIds.add(s.customer_id);
+      const allIds = [...custIds];
+      const have = new Set<string>();
+      for (let i = 0; i < allIds.length; i += 200) {
+        const { data } = await supabase
+          .from('shopmonkey_customer')
+          .select('id')
+          .in('id', allIds.slice(i, i + 200));
+        for (const r of data ?? []) have.add(r.id);
+      }
+      const missing = allIds.filter((id) => !have.has(id)).slice(0, 250); // cap por run
+      const custRows: any[] = [];
+      for (const cid of missing) {
+        try {
+          const cr = await fetch(`${SM}/v3/customer/${cid}`, { headers: smHeaders });
+          if (!cr.ok) continue;
+          const cd = await cr.json();
+          const d = cd.data ?? cd;
+          let phone: string | null = null;
+          const pn = d.phoneNumbers;
+          if (Array.isArray(pn) && pn.length) phone = (typeof pn[0] === 'object' ? pn[0].number : pn[0]);
+          else if (typeof d.phone === 'string') phone = d.phone;
+          const norm = phone ? phone.replace(/\D/g, '').slice(-10) : null;
+          custRows.push({ id: cid, phone: phone ?? null, phone_normalized: norm || null, synced_at: nowIso });
+        } catch { /* segue */ }
+      }
+      if (custRows.length) {
+        const { error } = await supabase.from('shopmonkey_customer').upsert(custRows, { onConflict: 'id' });
+        if (error) throw new Error('upsert customer: ' + error.message);
+        customersFetched = custRows.length;
+      }
+    } catch (e) {
+      console.error('customer sync falhou (segue):', e instanceof Error ? e.message : e);
+    }
+
     const green = apptRows.filter((a) => a.color === 'green').length;
     const revenue = Math.round(saleRows.reduce((s, r) => s + (r.paid_cost_cents || 0), 0) / 100);
 
@@ -197,6 +241,7 @@ Deno.serve(async (req) => {
       walk_ins: apptRows.filter((a) => a.walk_in).length,
       orcamentos_synced: orderRows.length,
       sales_synced: saleRows.length,
+      customers_synced: customersFetched,
       revenue_usd: revenue,
     });
   } catch (e) {

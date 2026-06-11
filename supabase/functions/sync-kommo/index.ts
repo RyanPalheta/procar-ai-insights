@@ -256,9 +256,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3) Backfill do TELEFONE nos espelhos kommo_sync (idempotente; restrito a
-    //    source_system='kommo_sync', nunca toca chat/IA). Agrupa por phone_normalized
-    //    p/ poucas queries. DEFENSIVO: falha aqui não derruba o sync de leads.
+    // 3) Backfill do TELEFONE: refresca os espelhos kommo_sync E preenche linhas de
+    //    chat/ponte que estejam SEM telefone (o telefone do contato Kommo é verdade;
+    //    sem ele a linha de chat não liga à venda paga do ShopMonkey nem deduplica).
+    //    DEFENSIVO: falha aqui não derruba o sync de leads.
     let phonesSet = 0;
     try {
       const byPhone = new Map<string, { raw: string | null; ids: number[] }>();
@@ -274,7 +275,7 @@ Deno.serve(async (req) => {
           const { data, error } = await supabase
             .from('lead_db')
             .update({ phone: raw, phone_normalized: norm })
-            .eq('source_system', 'kommo_sync')
+            .or('source_system.eq.kommo_sync,phone_normalized.is.null')
             .in('session_id', slice)
             .select('session_id');
           if (error) throw new Error('update phone: ' + error.message);
