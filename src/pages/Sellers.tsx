@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useMemo } from "react";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
-import { SellersRankingTable, SellerKPI } from "@/components/sellers/SellersRankingTable";
-import { SellersShopmonkeyKPIs } from "@/components/sellers/SellersShopmonkeyKPIs";
+import { SellersRankingTable, SellerKPI, SellerShopmonkeyKPI } from "@/components/sellers/SellersRankingTable";
 import { GoalData } from "@/components/sellers/SellerGoalStatus";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 
 const METRIC_LABELS: Record<string, string> = {
   conversion_rate: "Taxa de Conversão",
@@ -32,6 +32,19 @@ export default function Sellers() {
       });
       if (error) throw error;
       return (data as unknown as SellerKPI[]) || [];
+    },
+  });
+
+  // Funil real da loja por vendedor (ShopMonkey + Kommo) — mesclado nos cards
+  const { data: shopmonkeyData, isLoading: loadingShopmonkey } = useQuery({
+    queryKey: ["sellers-shopmonkey-kpis", range.fromIso, range.toIso],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("get_sellers_shopmonkey_kpis", {
+        date_from: range.fromIso,
+        date_to: range.toIso,
+      });
+      if (error) throw error;
+      return (data as SellerShopmonkeyKPI[]) || [];
     },
   });
 
@@ -111,32 +124,22 @@ export default function Sellers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Vendedores</h2>
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            Vendedores
+            <ChartInfoTooltip
+              description="Visão unificada por vendedor: o que ele PRODUZIU (funil real da loja — leads da Kommo, orçamentos, agendamentos por canal, vendas e receita do ShopMonkey) e COMO atendeu no chat (qualidade avaliada pela IA na amostra de conversas de WhatsApp)."
+              source="Funil: leads = oportunidades do vendedor na Kommo; orçamentos, agendamentos, vendas e receita = sistema da loja (ShopMonkey), com o vendedor lido do texto do agendamento (~93%). Qualidade: amostra de conversas de chat auditadas pela IA — é um SUBCONJUNTO, não a atividade total (clientes de telefone/presenciais não passam pelo chat)."
+              calculation="Conversão = vendas pagas ÷ total de leads do vendedor. Taxa de agendamento = agendamentos ÷ leads. Score médio e objeções superadas vêm só das conversas auditadas pela IA."
+            />
+          </h2>
           <p className="text-muted-foreground">
-            Desempenho e metas por vendedor
+            Funil da loja + qualidade do chat (IA), por vendedor
           </p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
-      {/* Números REAIS por vendedor (ShopMonkey): cadastra TODOS os vendedores e
-          separa agendamento × venda — o que a auditoria pede e o painel de chat/IA
-          abaixo (auditados) não cobre. */}
-      <SellersShopmonkeyKPIs dateFrom={range.fromIso} dateTo={range.toIso} />
-
-      <div className="space-y-1 rounded-lg border border-amber-200/60 bg-amber-50/40 dark:border-amber-500/20 dark:bg-amber-950/10 p-3">
-        <h3 className="text-sm font-semibold">Qualidade do atendimento no chat (amostra auditada pela IA)</h3>
-        <p className="text-xs text-muted-foreground">
-          <b>Como as duas seções se relacionam:</b> a de cima é <b>o que cada vendedor PRODUZIU</b> (funil
-          real da loja — leads da Kommo, orçamentos, agendamentos por canal e vendas do ShopMonkey); esta de
-          baixo é <b>COMO ele atendeu</b> no chat (qualidade avaliada pela IA na amostra de conversas de
-          WhatsApp). É um <b>subconjunto</b>, NÃO a atividade total da loja — um vendedor costuma ter mais
-          agendamentos (loja real) do que leads de chat auditados (clientes de telefone/presenciais não passam
-          pelo chat). A consolidação completa num quadro único está em desenho com a Pro Car.
-        </p>
-      </div>
-
-      {loadingSellers ? (
+      {loadingSellers || loadingShopmonkey ? (
         <div className="space-y-3">
           <Skeleton className="h-10 w-full max-w-sm" />
           <Skeleton className="h-64 w-full" />
@@ -144,6 +147,7 @@ export default function Sellers() {
       ) : (
         <SellersRankingTable
           sellers={sellersData || []}
+          shopmonkey={shopmonkeyData || []}
           goals={[]}
           sellerGoalsMap={sellerGoalsMap}
           dateFrom={range.fromIso}
