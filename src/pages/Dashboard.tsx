@@ -180,10 +180,8 @@ export default function Dashboard() {
     const t = (s ?? "").toLowerCase();
     return t.includes("ganha") || t.includes("won");
   };
-  // No-show = status "Faltou agendamento" da Kommo (exibido separado no card).
-  // A Conversão de Agendamento em si usa a fonte REAL da loja (ShopMonkey) — ver RPC.
-  const isNoShow = (s: string | null): boolean =>
-    (s ?? "").toLowerCase().includes("faltou agendamento");
+  // Agendamentos (green) e no-show (vermelho) vêm do ShopMonkey via RPC —
+  // convenção do calendário da loja confirmada pela Pro Car em 11/06/2026.
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -274,13 +272,13 @@ export default function Dashboard() {
     if (hasActiveGlobalFilters) {
       const totalLeads = globalFilteredLeads.length;
       const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
-      const noShowLeads = globalFilteredLeads.filter(l => isNoShow(l.sales_status)).length;
       const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
-      // Agendamentos vêm do ShopMonkey (fonte loja, fórmula Pro Car: agendamentos ÷
-      // leads × 100) e não respondem aos filtros de canal/status — usa o RPC.
+      // Agendamentos (green) e no-show (vermelho) vêm do ShopMonkey (fonte loja,
+      // fórmula Pro Car) e não respondem aos filtros de canal/status — usa o RPC.
       const appointmentLeadsSM = kpisData?.appointment_leads ?? 0;
       const totalLeadsRpc = kpisData?.total_leads ?? 0;
       const appointmentConversionRate = totalLeadsRpc > 0 ? (appointmentLeadsSM / totalLeadsRpc) * 100 : 0;
+      const noShowLeads = kpisData?.no_show_leads ?? 0;
       
       const leadsWithScore = globalFilteredLeads.filter(l => l.lead_score !== null);
       const avgScore = leadsWithScore.length > 0 

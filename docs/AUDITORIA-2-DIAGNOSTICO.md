@@ -149,6 +149,9 @@ Investigação com janelas alinhadas mostrou DOIS problemas distintos:
 ### 5.2b Conversão de Agendamento = fórmula da Pro Car (pedido 11/06, print 09:59)
 Definição final, por pedido explícito: **(Agendamentos do ShopMonkey ÷ Total de leads do período) × 100** — o numerador vem da fonte real da loja (agendamento green do ShopMonkey, por data do agendamento), não mais do status da Kommo. O card mostra a fórmula com os números reais (ex.: "(17 agend. ShopMonkey ÷ 56 leads) × 100") e o tooltip explicita fonte e fórmula. No-show (Kommo) segue exibido separado. Sanidade: 7d = 94÷432 = 21,8%; ontem = 17÷56 = 30,4% — sempre acima da conversão de venda, como esperado.
 
+### 5.2c No-show direto do ShopMonkey (pedido 11/06, print 10:12)
+Convenção confirmada: **agendamento VERMELHO no ShopMonkey = no-show/faltou**. O `no_show_leads` deixou de vir do status "Faltou agendamento" da Kommo e passou a contar os agendamentos vermelhos da loja, por data do agendamento. Resultado real: 7 dias = 94 agendamentos (green) e **54 no-shows (red)**; ontem = 17 e 10 — antes o no-show aparecia 0 porque o status da Kommo atrasa. Mapa de cores completo do calendário: green = agendamento confirmado · red = no-show/cancelou · blue = walk-in.
+
 ### 5.4b Painel 360 = Visão Geral, com DUAS taxas (pedido 11/06)
 O Painel 360 passa a mostrar exatamente os números da Visão Geral: card de Leads = mesma base (espelho Kommo + chat, sem duplicatas/ausentes) e, no lugar da "Conversão" única, **Taxa de Orçamentos Pagos** (= Conversão de Venda) e **Taxa de Agendamentos** (= Conversão de Agendamento, marcados incl. no-show e vendas), cada uma com sua tendência.
 

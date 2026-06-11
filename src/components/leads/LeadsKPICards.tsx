@@ -92,8 +92,8 @@ const kpiTooltips = {
   appointmentConversion: {
     title: "Conversão de Agendamento",
     description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período.",
-    fonte: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo). O no-show ('Faltou agendamento' na Kommo) aparece separado no cartão.",
-    calculo: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100.",
+    fonte: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo). No-show = agendamentos VERMELHOS no ShopMonkey (faltou/cancelou), mostrado separado no cartão.",
+    calculo: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
