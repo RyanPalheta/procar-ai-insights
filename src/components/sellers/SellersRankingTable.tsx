@@ -2,12 +2,15 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, TrendingUp, Target, Shield, Footprints, ArrowUpDown, Trophy, Medal, Award, Star } from "lucide-react";
+import {
+  Search, Shield, ArrowUpDown, Trophy, Medal, Award, Star, Sparkles,
+  Users, FileText, CalendarCheck, CalendarClock, Footprints, ShoppingBag, DollarSign, Receipt,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GoalsSummary, GoalData } from "./SellerGoalStatus";
 import { SellerDetailView } from "./SellerDetailView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, formatUSD } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export interface SellerKPI {
@@ -24,59 +27,122 @@ export interface SellerKPI {
   objections_overcome: number;
 }
 
+/** Funil real da loja por vendedor (RPC get_sellers_shopmonkey_kpis). */
+export interface SellerShopmonkeyKPI {
+  seller: string;
+  leads: number;
+  agendamentos: number;
+  walk_ins: number;
+  orcamentos: number;
+  vendas: number;
+  receita_usd: number;
+  conv_pct: number | null;
+  taxa_agend_pct: number | null;
+  /** agendamentos por canal de atendimento (marcador do note: kommo/telefone/presencial/...) */
+  agendamentos_por_canal: Record<string, number> | null;
+}
+
+const CHANNEL_CHIP_LABEL: Record<string, string> = {
+  kommo: "Kommo/chat",
+  telefone: "Ligação",
+  presencial: "Presencial",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  google: "Google",
+  "sem marcador": "Sem marcador",
+};
+
 interface SellersRankingTableProps {
   sellers: SellerKPI[];
+  shopmonkey: SellerShopmonkeyKPI[];
   goals: GoalData[][];
   sellerGoalsMap: Map<string, GoalData[]>;
   dateFrom: string | null;
   dateTo: string | null;
 }
 
-type SortKey = "seller_id" | "conversion_rate" | "leads_with_quote" | "objections_rate" | "total_audited" | "walking_leads";
+type SortKey = "receita" | "vendas" | "conv_loja" | "agendamentos" | "orcamentos" | "avg_score" | "seller_id";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "total_audited", label: "Mais Leads" },
-  { value: "conversion_rate", label: "Maior Conversão" },
-  { value: "leads_with_quote", label: "Mais Cotações" },
-  { value: "objections_rate", label: "Mais Objeções Sup." },
-  { value: "walking_leads", label: "Mais Presenciais" },
+  { value: "receita", label: "Maior Receita" },
+  { value: "vendas", label: "Mais Vendas" },
+  { value: "conv_loja", label: "Maior Conversão" },
+  { value: "agendamentos", label: "Mais Agendamentos" },
+  { value: "orcamentos", label: "Mais Orçamentos" },
+  { value: "avg_score", label: "Maior Score IA" },
   { value: "seller_id", label: "Nome (A-Z)" },
 ];
 
-export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo }: SellersRankingTableProps) {
+const EMPTY_CHAT: Omit<SellerKPI, "seller_id"> = {
+  total_audited: 0,
+  total_leads: 0,
+  won_leads: 0,
+  avg_score: 0,
+  new_audited_24h: 0,
+  leads_with_quote: 0,
+  avg_quoted_price: 0,
+  walking_leads: 0,
+  total_with_objection: 0,
+  objections_overcome: 0,
+};
+
+export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateFrom, dateTo }: SellersRankingTableProps) {
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("total_audited");
+  const [sortKey, setSortKey] = useState<SortKey>("receita");
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
 
-  const enrichedSellers = useMemo(() => {
-    return sellers.map(s => ({
+  // União chat (qualidade IA) × loja (funil ShopMonkey), por nome canônico —
+  // os dois RPCs agrupam por canonical_seller, então o nome é a chave.
+  const unifiedSellers = useMemo(() => {
+    const smByName = new Map(shopmonkey.map(s => [s.seller, s]));
+    const chatNames = new Set(sellers.map(s => s.seller_id));
+
+    const fromChat = sellers.map(s => ({
       ...s,
       conversion_rate: s.total_audited > 0 ? (s.won_leads / s.total_audited) * 100 : 0,
       objections_rate: s.total_with_objection > 0 ? (s.objections_overcome / s.total_with_objection) * 100 : 0,
+      sm: smByName.get(s.seller_id) ?? null,
     }));
-  }, [sellers]);
+
+    const onlyStore = shopmonkey
+      .filter(s => !chatNames.has(s.seller))
+      .map(s => ({
+        seller_id: s.seller,
+        ...EMPTY_CHAT,
+        conversion_rate: 0,
+        objections_rate: 0,
+        sm: s,
+      }));
+
+    return [...fromChat, ...onlyStore];
+  }, [sellers, shopmonkey]);
 
   const filtered = useMemo(() => {
-    let list = enrichedSellers;
+    let list = unifiedSellers;
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s => s.seller_id.toLowerCase().includes(q));
     }
-    list.sort((a, b) => {
-      if (sortKey === "seller_id") {
-        return a.seller_id.localeCompare(b.seller_id);
+    const sortValue = (s: (typeof unifiedSellers)[number]): number => {
+      switch (sortKey) {
+        case "receita": return Number(s.sm?.receita_usd ?? 0);
+        case "vendas": return Number(s.sm?.vendas ?? 0);
+        case "conv_loja": return Number(s.sm?.conv_pct ?? 0);
+        case "agendamentos": return Number(s.sm?.agendamentos ?? 0);
+        case "orcamentos": return Number(s.sm?.orcamentos ?? 0);
+        case "avg_score": return Number(s.avg_score ?? 0);
+        default: return 0;
       }
-      const va = (a as any)[sortKey] ?? 0;
-      const vb = (b as any)[sortKey] ?? 0;
-      return vb - va;
-    });
-    return list;
-  }, [enrichedSellers, search, sortKey]);
+    };
+    return [...list].sort((a, b) =>
+      sortKey === "seller_id" ? a.seller_id.localeCompare(b.seller_id) : sortValue(b) - sortValue(a)
+    );
+  }, [unifiedSellers, search, sortKey]);
 
   const selectedSellerData = useMemo(() => {
     if (!selectedSeller) return null;
-    return enrichedSellers.find(s => s.seller_id === selectedSeller) || null;
-  }, [selectedSeller, enrichedSellers]);
+    return unifiedSellers.find(s => s.seller_id === selectedSeller) || null;
+  }, [selectedSeller, unifiedSellers]);
 
   return (
     <div className="space-y-4">
@@ -87,7 +153,7 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
           <Input placeholder="Buscar vendedor..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={sortKey} onValueChange={v => setSortKey(v as SortKey)}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-52">
             <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -100,78 +166,39 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
       </div>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((seller, index) => {
           const sellerGoals = sellerGoalsMap.get(seller.seller_id) || [];
-          const objectionRate = seller.objections_rate;
+          const sm = seller.sm;
 
-          // Performance tier based on rank
           const isGold = index === 0;
           const isSilver = index === 1;
           const isBronze = index === 2;
           const isTop3 = index < 3;
 
-          // Conversion rate determines tier colors — usa a META configurada do
-          // vendedor (não um corte fixo de 15%), pra bater com a seção "Metas"
-          // do detalhe e acabar com o paradoxo "15% com meta 10%".
-          const convTarget = sellerGoals.find(g => g.metric === "conversion_rate")?.target ?? 10;
-          const convRate = seller.conversion_rate;
-          const isBelowPerf = convRate < convTarget;
-          const isOkPerf = convRate >= convTarget && !isTop3;
-
-          // Card border/accent color based on performance
           const cardAccent = isGold
             ? "border-amber-400/60 dark:border-amber-500/40 shadow-md shadow-amber-500/10"
             : isSilver
               ? "border-slate-400/50 dark:border-slate-400/30 shadow-md shadow-slate-400/10"
               : isBronze
                 ? "border-orange-400/40 dark:border-orange-500/30 shadow-sm shadow-orange-400/10"
-                : isBelowPerf
-                  ? "border-red-400/50 dark:border-red-500/30 shadow-sm shadow-red-400/10"
-                  : isOkPerf
-                    ? "border-emerald-400/40 dark:border-emerald-500/30 shadow-sm shadow-emerald-400/10"
-                    : "hover:border-primary/30";
+                : "hover:border-primary/30";
 
-          // Conversion color
-          const convColor = isTop3
-            ? (isGold ? "text-amber-600 dark:text-amber-400" : isSilver ? "text-slate-600 dark:text-slate-300" : "text-orange-600 dark:text-orange-400")
-            : isBelowPerf
-              ? "text-red-500 dark:text-red-400"
-              : "text-emerald-600 dark:text-emerald-400";
-
-          // Performance gradient bar
-          const perfWidth = Math.min(100, (convRate / Math.max(convTarget, 1)) * 100);
-          const barColor = isTop3
-            ? "bg-amber-500"
-            : isBelowPerf
-              ? "bg-red-400"
-              : "bg-emerald-500";
-
-          // Top accent bar color
           const accentBar = isGold
             ? "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400"
             : isSilver
               ? "bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300 dark:from-slate-500 dark:via-slate-400 dark:to-slate-500"
               : isBronze
                 ? "bg-gradient-to-r from-orange-400 via-amber-300 to-orange-400"
-                : isBelowPerf
-                  ? "bg-gradient-to-r from-red-400 via-red-300 to-red-400 dark:from-red-600 dark:via-red-500 dark:to-red-600"
-                  : isOkPerf
-                    ? "bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-400 dark:from-emerald-600 dark:via-emerald-500 dark:to-emerald-600"
-                    : null;
+                : null;
 
-          // Avatar style
           const avatarStyle = isGold
             ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
             : isSilver
               ? "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300"
               : isBronze
                 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                : isBelowPerf
-                  ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                  : isOkPerf
-                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-                    : "bg-primary/10 text-primary";
+                : "bg-primary/10 text-primary";
 
           return (
             <motion.div
@@ -193,7 +220,6 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                 )}
                 onClick={() => setSelectedSeller(seller.seller_id)}
               >
-                {/* Top gradient accent */}
                 {accentBar && <div className={cn("absolute top-0 left-0 right-0 h-1", accentBar)} />}
 
                 {/* Rank badge */}
@@ -214,14 +240,14 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                       <span className="text-xs font-bold">3º</span>
                     </div>
                   ) : (
-                    <Badge variant={isBelowPerf ? "destructive" : isOkPerf ? "success" : "outline"} className="text-xs font-mono">
+                    <Badge variant="outline" className="text-xs font-mono">
                       #{index + 1}
                     </Badge>
                   )}
                 </div>
 
                 <CardContent className="p-5 space-y-4">
-                  {/* Header: Avatar + Name */}
+                  {/* Header: Avatar + Name + conversão da loja */}
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm flex-shrink-0",
@@ -229,64 +255,99 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
                     )}>
                       {isTop3 ? <Star className="h-5 w-5" /> : seller.seller_id.substring(0, 2).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold truncate">{seller.seller_id}</p>
-                      <p className="text-xs text-muted-foreground">{seller.total_audited} de {seller.total_leads} leads · auditados pela IA</p>
-                    </div>
-                  </div>
-
-                  {/* Performance bar */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">Performance</span>
-                      <span className={cn("font-semibold", convColor)}>{convRate.toFixed(1)}% conv.</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        className={cn("h-full rounded-full", barColor)}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${perfWidth}%` }}
-                        transition={{ duration: 0.8, delay: index * 0.06 + 0.3, ease: "easeOut" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* KPI Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <TrendingUp className="h-3 w-3" />
-                        <span className="text-[11px]">Conversão</span>
-                      </div>
-                      <p className={cn("text-sm font-semibold", convColor)}>{seller.conversion_rate.toFixed(1)}%</p>
-                    </div>
-
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Target className="h-3 w-3" />
-                        <span className="text-[11px]">Cotações</span>
-                      </div>
-                      <p className="text-sm font-semibold">{seller.leads_with_quote}</p>
-                    </div>
-
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Shield className="h-3 w-3" />
-                        <span className="text-[11px]">Objeções Sup.</span>
-                      </div>
-                      <p className="text-sm font-semibold">
-                        {objectionRate.toFixed(0)}%
-                        <span className="text-muted-foreground text-[10px] ml-1">({seller.objections_overcome}/{seller.total_with_objection})</span>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3 flex-shrink-0" />
+                        {sm ? `${Number(sm.leads).toLocaleString("pt-BR")} leads no total` : "sem produção na loja no período"}
                       </p>
                     </div>
-
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Footprints className="h-3 w-3" />
-                        <span className="text-[11px]">Presenciais</span>
+                    {sm && (
+                      <div className="flex-shrink-0 text-right pr-10">
+                        <p
+                          className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400"
+                          title={Number(sm.conv_pct) > 100 ? "Vendas pagas no período > leads atribuídos no período (datas/atribuição não casam em janelas curtas) — redesenho por coorte em discussão" : undefined}
+                        >
+                          {sm.conv_pct != null && Number(sm.conv_pct) <= 100 ? `${sm.conv_pct}%` : "—"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">conversão</p>
                       </div>
-                      <p className="text-sm font-semibold">{seller.walking_leads}</p>
+                    )}
+                  </div>
+
+                  {/* Funil da loja (ShopMonkey + Kommo) */}
+                  {sm ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Metric icon={<FileText className="h-3.5 w-3.5" />} label="Orçamentos" value={sm.orcamentos} />
+                        <Metric icon={<CalendarCheck className="h-3.5 w-3.5" />} label="Agendamentos" value={sm.agendamentos} />
+                        <Metric icon={<CalendarClock className="h-3.5 w-3.5" />} label="Taxa agendamento" value={sm.taxa_agend_pct != null ? `${sm.taxa_agend_pct}%` : "—"} />
+                        <Metric icon={<Footprints className="h-3.5 w-3.5" />} label="Presenciais" value={sm.walk_ins} />
+                        <Metric icon={<ShoppingBag className="h-3.5 w-3.5" />} label="Vendas" value={sm.vendas} />
+                        <Metric icon={<DollarSign className="h-3.5 w-3.5" />} label="Receita" value={formatUSD(Number(sm.receita_usd), 0)} highlight />
+                        <Metric
+                          icon={<Receipt className="h-3.5 w-3.5" />}
+                          label="Ticket médio"
+                          value={Number(sm.vendas) > 0 ? formatUSD(Number(sm.receita_usd) / Number(sm.vendas), 0) : "—"}
+                        />
+                      </div>
+                      {/* Agendamentos por canal de atendimento (marcador do note da loja) */}
+                      {sm.agendamentos_por_canal && Object.keys(sm.agendamentos_por_canal).length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(sm.agendamentos_por_canal)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([canal, n]) => (
+                              <span
+                                key={canal}
+                                className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                                title="Canal do atendimento que gerou o agendamento (marcador escrito no note da loja)"
+                              >
+                                {CHANNEL_CHIP_LABEL[canal] ?? canal} <b className="text-foreground">{n}</b>
+                              </span>
+                            ))}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <p className="rounded-md bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
+                      Sem agendamento, orçamento ou venda atribuída no ShopMonkey neste período.
+                    </p>
+                  )}
+
+                  {/* Qualidade do atendimento no chat (amostra auditada pela IA) */}
+                  <div className="pt-3 border-t border-border space-y-2">
+                    <p className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                      <Sparkles className="h-3 w-3" />
+                      Qualidade no chat (amostra auditada pela IA)
+                    </p>
+                    {seller.total_audited > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Metric
+                          icon={<Star className="h-3.5 w-3.5" />}
+                          label="Score médio IA"
+                          value={`${Number(seller.avg_score).toFixed(1)}/10`}
+                        />
+                        <Metric
+                          icon={<Shield className="h-3.5 w-3.5" />}
+                          label="Objeções superadas"
+                          value={
+                            <>
+                              {seller.objections_rate.toFixed(0)}%
+                              <span className="text-muted-foreground text-[10px] ml-1">({seller.objections_overcome}/{seller.total_with_objection})</span>
+                            </>
+                          }
+                        />
+                        <Metric
+                          icon={<Users className="h-3.5 w-3.5" />}
+                          label="Conversas auditadas"
+                          value={`${seller.total_audited} de ${seller.total_leads}`}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Sem conversa de chat auditada no período — clientes de telefone/presenciais não passam pelo chat.
+                      </p>
+                    )}
                   </div>
 
                   {/* Goals Summary */}
@@ -329,6 +390,30 @@ export function SellersRankingTable({ sellers, sellerGoalsMap, dateFrom, dateTo 
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function Metric({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-1 text-muted-foreground">
+        {icon}
+        <span className="text-[11px]">{label}</span>
+      </div>
+      <p className={highlight ? "text-sm font-semibold text-emerald-600 dark:text-emerald-400" : "text-sm font-semibold"}>
+        {value}
+      </p>
     </div>
   );
 }
