@@ -108,6 +108,31 @@ export default function Dashboard() {
     },
   });
 
+  // Quais leads SEM idioma têm conversa ingerida? Separa, no gráfico de língua,
+  // "Sem idioma (ainda)" (tem chat -> backfill/IA ainda preenche) de
+  // "Não pode ser processado" (telefone / espelho Kommo sem mensagens no painel).
+  const sessionsSemIdioma = useMemo(() => {
+    const ids = (leads ?? [])
+      .filter((l: any) => (!l.lead_language || l.lead_language === "N/A" || l.lead_language === "NDA") && l.session_id != null)
+      .map((l: any) => l.session_id as number);
+    return Array.from(new Set(ids)).sort((a, b) => a - b);
+  }, [leads]);
+
+  const { data: sessionsComChat } = useQuery({
+    queryKey: ["sessions-with-chat", sessionsSemIdioma],
+    enabled: sessionsSemIdioma.length > 0,
+    queryFn: async () => {
+      const out = new Set<number>();
+      for (let i = 0; i < sessionsSemIdioma.length; i += 500) {
+        const slice = sessionsSemIdioma.slice(i, i + 500);
+        const { data, error } = await (supabase.rpc as any)("get_sessions_with_chat", { p_sessions: slice });
+        if (error) throw error;
+        for (const sid of (data as number[]) ?? []) out.add(sid);
+      }
+      return out;
+    },
+  });
+
   // Fetch KPIs via RPC
   const { data: kpisData } = useQuery({
     queryKey: ["leads-kpis", range.fromIso, range.toIso],
@@ -512,14 +537,17 @@ export default function Dashboard() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
-    // Language distribution — quem está sem idioma entra como "SEM-IDIOMA" para o
-    // gráfico somar igual aos cards (lead de telefone não tem conversa p/ detectar;
-    // lead de chat recém-chegado ainda não passou pela IA/backfill de idioma).
+    // Language distribution — quem está sem idioma se divide em dois, para o
+    // gráfico somar igual aos cards e ser honesto sobre o motivo:
+    //   SEM-IDIOMA       -> tem conversa no painel; backfill/IA ainda preenche.
+    //   NAO-PROCESSAVEL  -> sem conversa no painel: telefone (não há chat) ou
+    //                       espelho da Kommo cujas mensagens não foram ingeridas.
     const languageCounts = new Map<string, number>();
     globalFilteredLeads.forEach(l => {
-      const lang = (l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA")
+      const hasLang = l.lead_language && l.lead_language !== "N/A" && l.lead_language !== "NDA";
+      const lang = hasLang
         ? l.lead_language
-        : "SEM-IDIOMA";
+        : (l.session_id != null && sessionsComChat?.has(l.session_id) ? "SEM-IDIOMA" : "NAO-PROCESSAVEL");
       languageCounts.set(lang, (languageCounts.get(lang) || 0) + 1);
     });
     const languageData = Array.from(languageCounts.entries())
@@ -694,7 +722,7 @@ export default function Dashboard() {
       notUsedAnchoring,
       anchoringRate
     };
-  }, [globalFilteredLeads, range]);
+  }, [globalFilteredLeads, range, sessionsComChat]);
 
   // Recent objections
   const recentObjections = useMemo(() => {

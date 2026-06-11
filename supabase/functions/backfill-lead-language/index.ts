@@ -1,7 +1,9 @@
 // backfill-lead-language — preenche lead_db.lead_language (PT-BR/EN-USA/ES-ES) dos
-// leads de CHAT que têm mensagens mas ficaram sem idioma, usando o detector por
-// código (detect-language). Idempotente: só toca quem está NULL/NDA e tem
-// source_system NULL (chat). NUNCA sobrescreve idioma já preenchido.
+// leads que têm mensagens mas ficaram sem idioma, usando o detector por código
+// (detect-language). Idempotente: só toca quem está NULL/NDA. NUNCA sobrescreve
+// idioma já preenchido. Inclui leads espelhados da Kommo (source_system='kommo_sync')
+// cujo session_id casa com uma conversa ingerida — antes eram pulados e ficavam
+// "Sem idioma" para sempre; quem não tem mensagem nenhuma simplesmente não detecta.
 //
 // POST { limit?: number } — processa até `limit` leads por chamada (default 1000).
 // Retorna { candidates, detected, by_lang, remaining } p/ rodar em lotes / cron.
@@ -41,7 +43,6 @@ Deno.serve(async (req) => {
       const { data: leads, error: leadErr } = await supabase
         .from('lead_db')
         .select('session_id')
-        .is('source_system', null)
         .or(MISSING)
         .gt('session_id', cursor)
         .order('session_id', { ascending: true })
@@ -84,7 +85,6 @@ Deno.serve(async (req) => {
           const { data, error } = await supabase
             .from('lead_db')
             .update({ lead_language: lang })
-            .is('source_system', null)
             .or(MISSING)
             .in('session_id', slice)
             .select('session_id');
@@ -96,11 +96,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // quantos ainda faltam (chat sem idioma) — após a varredura
+    // quantos ainda faltam sem idioma — após a varredura
     const { count: remaining } = await supabase
       .from('lead_db')
       .select('session_id', { count: 'exact', head: true })
-      .is('source_system', null)
       .or(MISSING);
 
     return json({ candidates, detected, by_lang: counts, done, next_after: done ? null : cursor, remaining: remaining ?? null });
