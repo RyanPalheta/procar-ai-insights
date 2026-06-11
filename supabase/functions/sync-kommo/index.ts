@@ -231,6 +231,31 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 2b) Espelha a ETAPA (sales_status) em TODAS as linhas existentes — a etapa é
+    //     verdade da Kommo. Linhas criadas pela ponte em tempo real (chat/telefone)
+    //     nasciam sem etapa e o insert-only nunca preenchia: ficavam "Sem etapa
+    //     (ainda)" para sempre no gráfico de status (caso 23907017, 11/06).
+    const byStatus = new Map<string, number[]>();
+    for (const r of rows) {
+      if (!r.sales_status) continue;
+      const arr = byStatus.get(r.sales_status) ?? [];
+      arr.push(r.session_id);
+      byStatus.set(r.sales_status, arr);
+    }
+    let statusSet = 0;
+    for (const [statusName, ids] of byStatus) {
+      for (let i = 0; i < ids.length; i += 300) {
+        const slice = ids.slice(i, i + 300);
+        const { data, error } = await supabase
+          .from('lead_db')
+          .update({ sales_status: statusName })
+          .in('session_id', slice)
+          .select('session_id');
+        if (error) throw new Error('update status: ' + error.message);
+        statusSet += data?.length ?? 0;
+      }
+    }
+
     // 3) Backfill do TELEFONE nos espelhos kommo_sync (idempotente; restrito a
     //    source_system='kommo_sync', nunca toca chat/IA). Agrupa por phone_normalized
     //    p/ poucas queries. DEFENSIVO: falha aqui não derruba o sync de leads.
@@ -294,10 +319,11 @@ Deno.serve(async (req) => {
       already_present: leads.length - inserted,
       leads_com_vendedor: rows.filter((r) => r.sales_person_id).length,
       espelhos_normalizados: sellersSet,
+      etapas_normalizadas: statusSet,
       canais_normalizados: channelsSet,
       leads_com_telefone: rows.filter((r) => r.phone_normalized).length,
       telefones_gravados: phonesSet,
-      note: 'Insert-only + normalização de vendedor + backfill de telefone (kommo_sync). Use start_page/max_pages p/ backfill em lotes. Leads de chat/IA não alterados.',
+      note: 'Insert-only + normalização de vendedor/etapa/canal + backfill de telefone. A ETAPA (sales_status) é espelhada da Kommo para TODAS as linhas (a Kommo é a verdade do funil). Use start_page/max_pages p/ backfill em lotes.',
     });
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);
