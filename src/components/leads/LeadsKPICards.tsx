@@ -35,6 +35,9 @@ interface LeadsKPICardsProps {
   saleConversionRateVariation: number | null;
   appointmentConversionRate: number;
   appointmentConversionRateVariation: number | null;
+  appointmentLeadsCount: number;
+  totalLeadsCount: number;
+  noShowLeads: number;
   avgScore: number;
   scoreVariation: number | null;
   leadsWithQuoteVariation: number | null;
@@ -88,9 +91,9 @@ const kpiTooltips = {
   },
   appointmentConversion: {
     title: "Conversão de Agendamento",
-    description: "De cada 100 leads, quantos viraram AGENDAMENTO confirmado.",
-    fonte: "base COMPLETA de leads (Kommo). Conta só 'Agendamento confirmado' — não inclui 'Faltou agendamento'.",
-    calculo: "leads com agendamento confirmado divididos pelo total de leads do período, vezes 100.",
+    description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período.",
+    fonte: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo). No-show = agendamentos VERMELHOS no ShopMonkey (faltou/cancelou), mostrado separado no cartão.",
+    calculo: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -172,6 +175,9 @@ export function LeadsKPICards({
   saleConversionRateVariation,
   appointmentConversionRate,
   appointmentConversionRateVariation,
+  appointmentLeadsCount,
+  totalLeadsCount,
+  noShowLeads,
   avgScore,
   scoreVariation,
   leadsWithQuoteVariation,
@@ -312,7 +318,7 @@ export function LeadsKPICards({
                     value={`${appointmentConversionRate.toFixed(1)}%`}
                     icon={CalendarCheck}
                     variant={appointmentConversionRate >= 10 ? "success" : appointmentConversionRate >= 5 ? "warning" : "default"}
-                    description="Agendamentos confirmados ÷ total de leads"
+                    description={`(${appointmentLeadsCount} agend. ShopMonkey ÷ ${totalLeadsCount} leads) × 100 · ${noShowLeads} no-show`}
                     trend={getTrend(appointmentConversionRateVariation)}
                   />
                 </div>

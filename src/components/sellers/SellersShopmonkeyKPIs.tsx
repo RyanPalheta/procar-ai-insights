@@ -17,7 +17,19 @@ export interface SellerShopmonkeyKPI {
   receita_usd: number;
   conv_pct: number | null;
   taxa_agend_pct: number | null;
+  /** agendamentos por canal de atendimento (marcador do note: kommo/telefone/presencial/...) */
+  agendamentos_por_canal: Record<string, number> | null;
 }
+
+const CHANNEL_CHIP_LABEL: Record<string, string> = {
+  kommo: "Kommo/chat",
+  telefone: "Ligação",
+  presencial: "Presencial",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  google: "Google",
+  "sem marcador": "Sem marcador",
+};
 
 interface Props {
   dateFrom: string | null;
@@ -106,8 +118,11 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      <p className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
-                        {r.conv_pct != null ? `${r.conv_pct}%` : "—"}
+                      <p
+                        className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400"
+                        title={Number(r.conv_pct) > 100 ? "Vendas pagas no período > leads atribuídos no período (datas/atribuição não casam em janelas curtas) — redesenho por coorte em discussão" : undefined}
+                      >
+                        {r.conv_pct != null && Number(r.conv_pct) <= 100 ? `${r.conv_pct}%` : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground">conversão</p>
                     </div>
@@ -130,6 +145,22 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
                       value={Number(r.vendas) > 0 ? formatUSD(Number(r.receita_usd) / Number(r.vendas), 0) : "—"}
                     />
                   </div>
+                  {/* Agendamentos por canal de atendimento (legenda B da 2ª auditoria) */}
+                  {r.agendamentos_por_canal && Object.keys(r.agendamentos_por_canal).length > 0 && (
+                    <div className="flex flex-wrap gap-1 border-t pt-2">
+                      {Object.entries(r.agendamentos_por_canal)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([canal, n]) => (
+                          <span
+                            key={canal}
+                            className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                            title="Canal do atendimento que gerou o agendamento (marcador escrito no note da loja)"
+                          >
+                            {CHANNEL_CHIP_LABEL[canal] ?? canal} <b className="text-foreground">{n}</b>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -139,9 +170,20 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
               <span><b className="text-foreground">{totals.orcamentos}</b> orçamentos</span>
               <span><b className="text-foreground">{totals.agendamentos}</b> agendamentos</span>
               <span><b className="text-foreground">{totals.vendas}</b> vendas</span>
-              <span>Conversão <b className="text-emerald-600 dark:text-emerald-400">{convTotal}%</b></span>
+              <span>
+                Conversão{" "}
+                <b className="text-emerald-600 dark:text-emerald-400">
+                  {totals.leads > 0 ? `${convTotal}%` : "—"}
+                </b>
+              </span>
               <span>Receita <b className="text-foreground">{formatUSD(totals.receita_usd, 0)}</b></span>
             </div>
+            {(totals.leads === 0 || totals.vendas > totals.leads) && (
+              <p className="text-[11px] text-muted-foreground">
+                Leads = criados no período com vendedor atribuído (Kommo); vendas = pagas no período (ShopMonkey).
+                Em períodos curtos as datas podem não coincidir — a venda paga hoje costuma vir de um lead criado dias antes.
+              </p>
+            )}
           </>
         )}
       </CardContent>

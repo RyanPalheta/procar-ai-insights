@@ -125,6 +125,8 @@ export default function TVDashboard() {
         const { data, error } = await supabase
           .from("lead_db")
           .select("*")
+          .not("is_duplicate", "is", true)   // dedup chat<->Kommo (fase 2)
+          .not("kommo_absent", "is", true)   // paridade: apagados/mesclados na Kommo ficam fora
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
         if (error) throw error;
@@ -153,16 +155,28 @@ export default function TVDashboard() {
       const wonLeads = raw.won_leads ?? 0;
       const totalAuditedPrev = raw.total_audited_previous ?? 0;
       const wonLeadsPrev = raw.won_leads_previous ?? 0;
+      // MESMOS números da Visão Geral (exigência Pro Car 11/06): duas taxas —
+      // venda (orçamentos pagos) e agendamento marcado — sobre a base completa.
+      const totalLeads = raw.total_leads ?? 0;
+      const saleLeads = raw.sale_leads ?? 0;
+      const apptLeads = raw.appointment_leads ?? 0;
+      const totalLeadsPrev = raw.total_leads_previous ?? 0;
+      const saleLeadsPrev = raw.sale_leads_previous ?? 0;
+      const apptLeadsPrev = raw.appointment_leads_previous ?? 0;
       return {
         total_audited: totalAudited,
         won_leads: wonLeads,
-        conversion_rate: totalAudited > 0 ? Math.round((wonLeads / totalAudited) * 1000) / 10 : 0,
+        total_leads: totalLeads,
+        conversion_rate: totalLeads > 0 ? Math.round((saleLeads / totalLeads) * 1000) / 10 : 0,
+        appointment_rate: totalLeads > 0 ? Math.round((apptLeads / totalLeads) * 1000) / 10 : 0,
+        no_show_leads: raw.no_show_leads ?? 0,
         avg_score: raw.avg_score ?? 0,
         median_first_response_time_minutes: raw.median_first_response_time_minutes ?? 0,
         previous_period: {
           total_audited: totalAuditedPrev,
           won_leads: wonLeadsPrev,
-          conversion_rate: totalAuditedPrev > 0 ? Math.round((wonLeadsPrev / totalAuditedPrev) * 1000) / 10 : 0,
+          conversion_rate: totalLeadsPrev > 0 ? Math.round((saleLeadsPrev / totalLeadsPrev) * 1000) / 10 : 0,
+          appointment_rate: totalLeadsPrev > 0 ? Math.round((apptLeadsPrev / totalLeadsPrev) * 1000) / 10 : 0,
           avg_score: raw.avg_score_previous ?? 0,
           median_first_response_time_minutes: raw.median_first_response_time_minutes_previous ?? 0,
         },
@@ -375,6 +389,7 @@ export default function TVDashboard() {
       : 0;
 
     const conversionDiff = kpisData.conversion_rate - kpisData.previous_period.conversion_rate;
+    const appointmentDiff = kpisData.appointment_rate - kpisData.previous_period.appointment_rate;
 
     const responseDiff = (kpisData.median_first_response_time_minutes || 0) - 
                          (kpisData.previous_period.median_first_response_time_minutes || 0);
@@ -393,6 +408,10 @@ export default function TVDashboard() {
       conversion: {
         value: `${conversionDiff >= 0 ? '+' : ''}${conversionDiff.toFixed(1)}%`,
         isPositive: conversionDiff >= 0,
+      },
+      appointment: {
+        value: `${appointmentDiff >= 0 ? '+' : ''}${appointmentDiff.toFixed(1)}%`,
+        isPositive: appointmentDiff >= 0,
       },
       response: {
         value: `${responseDiff >= 0 ? '+' : ''}${Math.round(responseDiff)}m`,
@@ -519,33 +538,47 @@ export default function TVDashboard() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8"
+        className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-6 lg:mb-8"
       >
         <motion.div variants={itemVariants}>
           <TVKPICard
             title={`Leads (${periodLabel})`}
-            value={metrics?.leadsCount ?? 0}
+            value={selectedSeller === "all" ? (kpisData?.total_leads ?? metrics?.leadsCount ?? 0) : (metrics?.leadsCount ?? 0)}
             icon={Users}
             trend={trends?.leads}
-            subtitle="Só WhatsApp/chat · menor que o Kommo"
+            subtitle={selectedSeller === "all" ? "Base do painel (= Kommo) · igual à Visão Geral" : "Leads do vendedor selecionado"}
             info={{
-              description: "Quantos clientes chegaram no período e vendedor selecionados.",
-              source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes deste canal no período (e do vendedor, se filtrado).",
-              calculation: "conta todos os clientes que chegaram por WhatsApp/chat no período selecionado (e do vendedor, se filtrado).",
+              description: "Quantos clientes chegaram no período (e vendedor, se filtrado). Com 'Todos', é o MESMO número de leads da Visão Geral.",
+              source: "base do painel (espelho Kommo + chat, sem duplicatas e sem leads apagados/mesclados na Kommo) — igual à Visão Geral.",
+              calculation: "conta todos os clientes do período selecionado; com vendedor filtrado, só os leads atribuídos a ele.",
             }}
           />
         </motion.div>
         <motion.div variants={itemVariants}>
           <TVKPICard
-            title="Conversão"
+            title="Taxa de Orçamentos Pagos"
             value={`${Math.round(kpisData?.conversion_rate ?? 0)}%`}
             icon={Percent}
             trend={trends?.conversion}
-            subtitle="Clientes analisados pela IA · menor que o Kommo"
+            subtitle="Vendas ganhas ÷ leads · = Conversão de Venda da Visão Geral"
             info={{
-              description: "De cada 100 clientes analisados pela IA no período, quantos viraram venda.",
-              source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera os clientes que a IA já analisou; venda = clientes marcados como venda fechada (ganha) ou como agendamento confirmado.",
-              calculation: "clientes marcados como venda fechada divididos pelo total de clientes que a IA já analisou no período, vezes 100.",
+              description: "De cada 100 clientes do período, quantos viraram venda fechada (orçamento pago). É o MESMO número da 'Conversão de Venda' da Visão Geral.",
+              source: "base completa do painel (espelho Kommo + chat). Venda = clientes marcados como venda fechada (ganha).",
+              calculation: "clientes marcados como venda fechada (ganha) divididos pelo total de clientes do período, vezes 100.",
+            }}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title="Taxa de Agendamentos"
+            value={`${Math.round(kpisData?.appointment_rate ?? 0)}%`}
+            icon={Percent}
+            trend={trends?.appointment}
+            subtitle="(Agend. ShopMonkey ÷ leads) × 100 · = Visão Geral"
+            info={{
+              description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período. É o MESMO número da 'Conversão de Agendamento' da Visão Geral.",
+              source: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo).",
+              calculation: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100.",
             }}
           />
         </motion.div>

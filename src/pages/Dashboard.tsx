@@ -90,6 +90,8 @@ export default function Dashboard() {
         let query = supabase
           .from("lead_db")
           .select("*")
+          .not("is_duplicate", "is", true)   // dedup chat<->Kommo (fase 2)
+          .not("kommo_absent", "is", true)   // paridade: apagados/mesclados na Kommo ficam fora
           .order("created_at", { ascending: false });
 
         // Apply period filter server-side
@@ -125,6 +127,8 @@ export default function Dashboard() {
         sale_leads_previous: number | null;
         appointment_leads: number;
         appointment_leads_previous: number | null;
+        no_show_leads: number;
+        no_show_leads_previous: number | null;
         won_leads: number;
         won_leads_previous: number | null;
         avg_score: number;
@@ -176,8 +180,8 @@ export default function Dashboard() {
     const t = (s ?? "").toLowerCase();
     return t.includes("ganha") || t.includes("won");
   };
-  const isAppointment = (s: string | null): boolean =>
-    (s ?? "").toLowerCase().includes("agendamento confirmado");
+  // Agendamentos (green) e no-show (vermelho) vêm do ShopMonkey via RPC —
+  // convenção do calendário da loja confirmada pela Pro Car em 11/06/2026.
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -268,9 +272,13 @@ export default function Dashboard() {
     if (hasActiveGlobalFilters) {
       const totalLeads = globalFilteredLeads.length;
       const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
-      const appointmentLeads = globalFilteredLeads.filter(l => isAppointment(l.sales_status)).length;
       const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
-      const appointmentConversionRate = totalLeads > 0 ? (appointmentLeads / totalLeads) * 100 : 0;
+      // Agendamentos (green) e no-show (vermelho) vêm do ShopMonkey (fonte loja,
+      // fórmula Pro Car) e não respondem aos filtros de canal/status — usa o RPC.
+      const appointmentLeadsSM = kpisData?.appointment_leads ?? 0;
+      const totalLeadsRpc = kpisData?.total_leads ?? 0;
+      const appointmentConversionRate = totalLeadsRpc > 0 ? (appointmentLeadsSM / totalLeadsRpc) * 100 : 0;
+      const noShowLeads = kpisData?.no_show_leads ?? 0;
       
       const leadsWithScore = globalFilteredLeads.filter(l => l.lead_score !== null);
       const avgScore = leadsWithScore.length > 0 
@@ -302,6 +310,9 @@ export default function Dashboard() {
         saleConversionRateVariation: null,
         appointmentConversionRate,
         appointmentConversionRateVariation: null,
+        appointmentLeadsCount: appointmentLeadsSM,
+        totalLeadsCount: totalLeadsRpc,
+        noShowLeads,
         avgScore,
         scoreVariation: null,
         leadsWithQuoteVariation: null,
@@ -326,6 +337,9 @@ export default function Dashboard() {
       saleConversionRateVariation: null,
       appointmentConversionRate: 0,
       appointmentConversionRateVariation: null,
+      appointmentLeadsCount: 0,
+      totalLeadsCount: 0,
+      noShowLeads: 0,
       avgScore: 0,
       scoreVariation: null,
       leadsWithQuoteVariation: null,
@@ -408,6 +422,9 @@ export default function Dashboard() {
       saleConversionRateVariation,
       appointmentConversionRate,
       appointmentConversionRateVariation,
+      appointmentLeadsCount: kpisData.appointment_leads ?? 0,
+      totalLeadsCount: kpisData.total_leads ?? 0,
+      noShowLeads: kpisData.no_show_leads ?? 0,
       avgScore: kpisData.avg_score,
       scoreVariation,
       leadsWithQuoteVariation,

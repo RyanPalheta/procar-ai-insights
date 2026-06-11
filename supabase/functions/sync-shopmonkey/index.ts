@@ -109,6 +109,10 @@ Deno.serve(async (req) => {
 
     const apptRows = dedupe(appts.map((a) => {
       const p = parseNote(a.note);
+      // Walk-in = texto no note OU agendamento AZUL — convenção do calendário da
+      // loja confirmada pela Pro Car em 11/06/2026 (2ª auditoria, item 5): 65% dos
+      // azuis têm "WALKIN" escrito vs <5% das demais cores; o texto falta em ~35%.
+      const isBlue = (a.color ?? '').toLowerCase() === 'blue';
       return {
         id: a.id,
         start_date: a.startDate ?? null,
@@ -118,9 +122,10 @@ Deno.serve(async (req) => {
         order_id: a.orderId ?? null,
         created_date: a.createdDate ?? null,
         note: a.note ?? null,
-        walk_in: p.walkIn,
+        walk_in: p.walkIn || isBlue,
         source: p.source,
         seller: p.seller,
+        channel: isBlue && !p.channel ? "presencial" : p.channel,
         synced_at: nowIso,
       };
     }));

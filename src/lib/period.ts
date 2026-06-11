@@ -1,4 +1,4 @@
-import { startOfDay, endOfDay, subDays, format } from "date-fns";
+import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 /**
@@ -7,7 +7,49 @@ import { ptBR } from "date-fns/locale";
  * "Hoje"/"Ontem" são dia-calendário exatos (não "últimas 24h"), o que o
  * processo diário exige. Tudo é resolvido para um intervalo from/to preciso
  * via resolvePeriod(), usado tanto em filtros client-side quanto nas RPCs.
+ *
+ * FUSO (2ª auditoria, 11/06/2026): o dia-calendário é ancorado no FUSO DA
+ * LOJA/KOMMO (America/New_York), não no fuso do navegador de quem vê. Antes,
+ * um auditor no Brasil via o "Hoje" virar 1-2h antes do "Hoje" da Kommo e
+ * concluía que o painel divergia (ex.: Kommo 50 leads × painel ~5 na virada).
  */
+export const SHOP_TZ = "America/New_York";
+
+/** Offset (ms) do fuso `timeZone` em relação ao UTC no instante `date`. */
+function tzOffsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const p = Object.fromEntries(dtf.formatToParts(date).map((x) => [x.type, x.value]));
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return asUTC - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+/** Meia-noite do dia de `date` no fuso da loja, como instante UTC. */
+function startOfDay(date: Date): Date {
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SHOP_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+  });
+  const [y, m, d] = dtf.format(date).split("-").map(Number);
+  let guess = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+  // corrige pelo offset do fuso naquele instante (2 iterações cobrem DST)
+  for (let i = 0; i < 2; i++) {
+    guess = new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - tzOffsetMs(guess, SHOP_TZ));
+  }
+  return guess;
+}
+
+/** Último ms do dia de `date` no fuso da loja (via meia-noite do dia seguinte). */
+function endOfDay(date: Date): Date {
+  const mid = new Date(startOfDay(date).getTime() + 30 * 3600 * 1000); // cai no dia seguinte
+  return new Date(startOfDay(mid).getTime() - 1);
+}
+
+// Para telas que montam o dia manualmente (ex.: aba Hoje) usarem o MESMO fuso.
+export { startOfDay as startOfDayShop, endOfDay as endOfDayShop };
 export type PeriodPreset = "today" | "yesterday" | "7" | "30" | "90" | "all" | "custom";
 
 export interface PeriodValue {

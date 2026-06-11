@@ -165,6 +165,17 @@ export default function Calls() {
       ? Math.round((sentimentCounts.Positivo / analyzedCount) * 100)
       : 0;
 
+    // 2ª auditoria (legenda A): "% convertidas" OBJETIVO — desfecho concreto da
+    // ligação extraído da transcrição (agendou/comprou/pediu orçamento), em vez do
+    // clima subjetivo. Análises antigas não têm call_outcome; a base é só quem tem.
+    const withOutcome = analyzed.filter((c: any) => c.ai_call_analysis?.call_outcome);
+    const convertedCount = withOutcome.filter((c: any) =>
+      ["agendou", "comprou", "pediu_orcamento"].includes(c.ai_call_analysis.call_outcome)
+    ).length;
+    const pctConverted = withOutcome.length
+      ? Math.round((convertedCount / withOutcome.length) * 100)
+      : null;
+
     const withObj = analyzed.filter((c: any) => c.ai_call_analysis?.has_objection).length;
     const pctObjection = analyzedCount ? Math.round((withObj / analyzedCount) * 100) : 0;
     const overcomeCount = analyzed.filter((c: any) => c.ai_call_analysis?.has_objection && c.ai_call_analysis?.objection_overcome).length;
@@ -270,6 +281,9 @@ export default function Calls() {
       avgScore,
       sentimentCounts,
       pctPositive,
+      withOutcomeCount: withOutcome.length,
+      convertedCount,
+      pctConverted,
       pctObjection,
       pctOvercome,
       avgCompliance,
@@ -513,10 +527,24 @@ export default function Calls() {
 
         <MagicBentoCard glowColor="59, 130, 246">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA achou que o clima da conversa foi Positivo." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que a IA já avaliou o clima da conversa." calculation="chamadas com clima Positivo divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA achou que o clima da conversa foi Positivo. Clima é subjetivo — para resultado concreto, use o cartão '% Convertidas' ao lado." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que a IA já avaliou o clima da conversa." calculation="chamadas com clima Positivo divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctPositive}%</div>
               <div className="text-xs text-muted-foreground">{stats.sentimentCounts.Positivo} chamadas positivas</div>
+            </CardContent>
+          </Card>
+        </MagicBentoCard>
+
+        <MagicBentoCard glowColor="59, 130, 246">
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="h-3 w-3 text-emerald-500" />% Convertidas <ChartInfoTooltip description="O percentual das ligações analisadas em que a transcrição mostra um RESULTADO concreto: agendou visita/instalação, fechou a compra ou pediu orçamento. É a métrica objetiva pedida na auditoria — não depende de 'clima'." source="as ligações telefônicas registradas (com transcrição feita por IA). A IA lê a transcrição e marca o desfecho (agendou, comprou, pediu orçamento, follow-up, sem avanço). Só conta as ligações analisadas após 11/06/2026 — as anteriores não têm o desfecho marcado." calculation="ligações com desfecho 'agendou', 'comprou' ou 'pediu orçamento' divididas pelas ligações com desfecho marcado, vezes 100." /></CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pctConverted != null ? `${stats.pctConverted}%` : "—"}</div>
+              <div className="text-xs text-muted-foreground">
+                {stats.withOutcomeCount > 0
+                  ? `${stats.convertedCount} de ${stats.withOutcomeCount} com desfecho marcado`
+                  : "disponível para ligações analisadas a partir de 11/06"}
+              </div>
             </CardContent>
           </Card>
         </MagicBentoCard>

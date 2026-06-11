@@ -731,7 +731,21 @@ Analise e responda:
     }
     const computedFinalScore = isClosed ? computedPartialScore : null;
 
-    console.log(`[analyze-lead] Stage=${conversationStage}, expected=${stageRequirements.length} steps, completed_in_stage=${completedSteps.length}, partial=${computedPartialScore}, final=${computedFinalScore}, closed=${isClosed}`);
+    // Nota do atendimento (0-10). O modelo parou de devolver service_rating por
+    // volta de 04/05/2026 (o compliance seguia vindo porque é computado acima) —
+    // a Nota Média do Painel 360 zerou. Coage/valida o valor do modelo (aceita
+    // string numérica e nota 0, que o antigo `|| null` descartava) e, na ausência,
+    // deriva da própria aderência computada (0-100 → 0-10).
+    const ratingRaw = Number(analysisResult.service_rating);
+    const ratingFromModel = Number.isFinite(ratingRaw)
+      ? Math.min(10, Math.max(0, Math.round(ratingRaw * 10) / 10))
+      : null;
+    const ratingFallback = computedPartialScore != null
+      ? Math.round(computedPartialScore) / 10
+      : null;
+    const finalServiceRating = ratingFromModel ?? ratingFallback;
+
+    console.log(`[analyze-lead] Stage=${conversationStage}, expected=${stageRequirements.length} steps, completed_in_stage=${completedSteps.length}, partial=${computedPartialScore}, final=${computedFinalScore}, closed=${isClosed}, rating=${finalServiceRating}${ratingFromModel == null ? ' (derivada do compliance)' : ''}`);
 
     // Prepare update payload
     const updatePayload: any = {
@@ -766,7 +780,7 @@ Analise e responda:
       playbook_steps_completed: hasAgentMessages && playbook ? (analysisResult.playbook_steps_completed || null) : null,
       playbook_steps_missing: hasAgentMessages && playbook ? (analysisResult.playbook_steps_missing || null) : null,
       playbook_violations: hasAgentMessages && playbook ? (analysisResult.playbook_violations || null) : null,
-      service_rating: hasAgentMessages && playbook ? (analysisResult.service_rating || null) : null,
+      service_rating: hasAgentMessages && playbook ? finalServiceRating : null,
       // Greeting & qualification fields
       has_greeting: hasAgentMessages ? (analysisResult.has_greeting || false) : null,
       has_qualification: hasAgentMessages ? (analysisResult.has_qualification || false) : null,
