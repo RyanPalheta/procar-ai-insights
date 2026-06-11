@@ -180,12 +180,10 @@ export default function Dashboard() {
     const t = (s ?? "").toLowerCase();
     return t.includes("ganha") || t.includes("won");
   };
-  // Agendamento MARCADO (2ª auditoria, legenda E): confirmado + faltou (no-show)
-  // + vendas — toda venda passou pelo agendamento; o no-show marcou e não veio.
+  // No-show = status "Faltou agendamento" da Kommo (exibido separado no card).
+  // A Conversão de Agendamento em si usa a fonte REAL da loja (ShopMonkey) — ver RPC.
   const isNoShow = (s: string | null): boolean =>
     (s ?? "").toLowerCase().includes("faltou agendamento");
-  const isAppointment = (s: string | null): boolean =>
-    (s ?? "").toLowerCase().includes("agendamento confirmado") || isNoShow(s) || isSale(s);
 
   // Sentiment normalization function
   const normalizeSentiment = (sentiment: string | null): string | null => {
@@ -276,10 +274,13 @@ export default function Dashboard() {
     if (hasActiveGlobalFilters) {
       const totalLeads = globalFilteredLeads.length;
       const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
-      const appointmentLeads = globalFilteredLeads.filter(l => isAppointment(l.sales_status)).length;
       const noShowLeads = globalFilteredLeads.filter(l => isNoShow(l.sales_status)).length;
       const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
-      const appointmentConversionRate = totalLeads > 0 ? (appointmentLeads / totalLeads) * 100 : 0;
+      // Agendamentos vêm do ShopMonkey (fonte loja, fórmula Pro Car: agendamentos ÷
+      // leads × 100) e não respondem aos filtros de canal/status — usa o RPC.
+      const appointmentLeadsSM = kpisData?.appointment_leads ?? 0;
+      const totalLeadsRpc = kpisData?.total_leads ?? 0;
+      const appointmentConversionRate = totalLeadsRpc > 0 ? (appointmentLeadsSM / totalLeadsRpc) * 100 : 0;
       
       const leadsWithScore = globalFilteredLeads.filter(l => l.lead_score !== null);
       const avgScore = leadsWithScore.length > 0 
@@ -311,6 +312,8 @@ export default function Dashboard() {
         saleConversionRateVariation: null,
         appointmentConversionRate,
         appointmentConversionRateVariation: null,
+        appointmentLeadsCount: appointmentLeadsSM,
+        totalLeadsCount: totalLeadsRpc,
         noShowLeads,
         avgScore,
         scoreVariation: null,
@@ -336,6 +339,8 @@ export default function Dashboard() {
       saleConversionRateVariation: null,
       appointmentConversionRate: 0,
       appointmentConversionRateVariation: null,
+      appointmentLeadsCount: 0,
+      totalLeadsCount: 0,
       noShowLeads: 0,
       avgScore: 0,
       scoreVariation: null,
@@ -419,6 +424,8 @@ export default function Dashboard() {
       saleConversionRateVariation,
       appointmentConversionRate,
       appointmentConversionRateVariation,
+      appointmentLeadsCount: kpisData.appointment_leads ?? 0,
+      totalLeadsCount: kpisData.total_leads ?? 0,
       noShowLeads: kpisData.no_show_leads ?? 0,
       avgScore: kpisData.avg_score,
       scoreVariation,

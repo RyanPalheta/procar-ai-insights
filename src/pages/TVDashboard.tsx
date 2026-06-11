@@ -574,11 +574,11 @@ export default function TVDashboard() {
             value={`${Math.round(kpisData?.appointment_rate ?? 0)}%`}
             icon={Percent}
             trend={trends?.appointment}
-            subtitle="Agendamentos marcados ÷ leads · = Visão Geral"
+            subtitle="(Agend. ShopMonkey ÷ leads) × 100 · = Visão Geral"
             info={{
-              description: "De cada 100 clientes do período, quantos chegaram a MARCAR agendamento (confirmado + faltou + vendas). É o MESMO número da 'Conversão de Agendamento' da Visão Geral.",
-              source: "base completa do painel (espelho Kommo + chat). Agendamento marcado = 'Agendamento confirmado' + 'Faltou agendamento' (no-show) + vendas ganhas.",
-              calculation: "clientes que marcaram agendamento divididos pelo total de clientes do período, vezes 100.",
+              description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período. É o MESMO número da 'Conversão de Agendamento' da Visão Geral.",
+              source: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo).",
+              calculation: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100.",
             }}
           />
         </motion.div>

@@ -161,7 +161,9 @@ Deno.serve(async (req) => {
 
     // Persiste 1 snapshot/dia (upsert por captured_day) para o card "Saúde da base"
     // acompanhar a convergência ao longo do tempo. Best-effort: não quebra a resposta.
-    try {
+    // {snapshot:false} pula a persistência: o cron HORÁRIO (janela 2d, só p/ manter
+    // kommo_absent fresco) não pode sobrescrever o snapshot diário de 30d.
+    if (body.snapshot !== false) try {
       await supabase.from('kommo_reconciliation_snapshot').upsert({
         captured_day: new Date().toISOString().slice(0, 10),
         captured_at: new Date().toISOString(),
