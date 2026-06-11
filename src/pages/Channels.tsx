@@ -31,6 +31,23 @@ const CHANNEL_META: Record<string, { label: string; color: string; Icon: LucideI
   "indicação": { label: "Indicação", color: "#f59e0b", Icon: UserPlus },
 };
 
+// Texto de fonte ESPECÍFICO por canal (auditoria 06/2026: o texto genérico de
+// WhatsApp aparecia repetido nos demais canais, inclusive onde não fazia sentido).
+const CHANNEL_SOURCE_TEXT: Record<string, string> = {
+  whatsapp:
+    "clientes que chegaram por WhatsApp — espelho da Kommo (source_id) + conversas de chat ingeridas. A 1ª resposta e o % respondidas vêm das mensagens trocadas no chat.",
+  instagram:
+    "clientes que chegaram por Instagram — espelho da Kommo (source_id) + conversas de chat ingeridas. A 1ª resposta e o % respondidas vêm das mensagens trocadas no chat.",
+  facebook:
+    "clientes que chegaram por Facebook — espelho da Kommo (source_id) + conversas de chat ingeridas. A 1ª resposta e o % respondidas vêm das mensagens trocadas no chat.",
+  phone:
+    "clientes com origem Telefone no espelho da Kommo (source_id). Em geral não têm conversa de chat, então 1ª resposta e % respondidas só aparecem quando há mensagens.",
+  email:
+    "clientes com origem E-mail no espelho da Kommo (source_id). Sem conversa de chat associada na maioria dos casos.",
+  "indicação":
+    "clientes com origem Indicação registrada na Kommo. Atenção: indicação é uma ORIGEM, não um canal de contato — o cliente indicado pode chegar por WhatsApp, telefone ou presencialmente.",
+};
+
 function normalizeChannelKey(raw: string | null): string | null {
   if (!raw) return null;
   const lower = raw.toLowerCase();
@@ -315,7 +332,7 @@ export default function Channels() {
                           {c.meta.label}
                           <ChartInfoTooltip
                             description={`Resumo de ${c.meta.label}: clientes e conversão vêm da base do painel (espelho Kommo + chat, via source_id); a nota de qualidade vem só dos clientes que a IA já analisou; a 1ª resposta e o % respondidas vêm das mensagens trocadas.`}
-                            source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. A 1ª resposta e o % respondidas vêm das mensagens trocadas no WhatsApp/Instagram/Facebook."
+                            source={CHANNEL_SOURCE_TEXT[c.channel] ?? `clientes com origem ${c.meta.label} na base do painel (espelho Kommo via source_id + chat).`}
                             calculation="Clientes = quantos clientes deste canal no período. Conversão = clientes marcados como venda fechada (ganha) divididos pelo total de clientes, vezes 100. Nota = a média da nota de qualidade que a IA dá ao cliente. 1ª resposta = o valor do meio (mediana) do tempo até o agente responder. % respondidas = conversas que tiveram resposta divididas pelas que o cliente começou, vezes 100."
                           />
                         </CardTitle>

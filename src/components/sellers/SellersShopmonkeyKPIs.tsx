@@ -139,9 +139,20 @@ export function SellersShopmonkeyKPIs({ dateFrom, dateTo }: Props) {
               <span><b className="text-foreground">{totals.orcamentos}</b> orçamentos</span>
               <span><b className="text-foreground">{totals.agendamentos}</b> agendamentos</span>
               <span><b className="text-foreground">{totals.vendas}</b> vendas</span>
-              <span>Conversão <b className="text-emerald-600 dark:text-emerald-400">{convTotal}%</b></span>
+              <span>
+                Conversão{" "}
+                <b className="text-emerald-600 dark:text-emerald-400">
+                  {totals.leads > 0 ? `${convTotal}%` : "—"}
+                </b>
+              </span>
               <span>Receita <b className="text-foreground">{formatUSD(totals.receita_usd, 0)}</b></span>
             </div>
+            {(totals.leads === 0 || totals.vendas > totals.leads) && (
+              <p className="text-[11px] text-muted-foreground">
+                Leads = criados no período com vendedor atribuído (Kommo); vendas = pagas no período (ShopMonkey).
+                Em períodos curtos as datas podem não coincidir — a venda paga hoje costuma vir de um lead criado dias antes.
+              </p>
+            )}
           </>
         )}
       </CardContent>

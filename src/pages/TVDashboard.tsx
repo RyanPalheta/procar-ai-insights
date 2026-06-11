@@ -153,16 +153,22 @@ export default function TVDashboard() {
       const wonLeads = raw.won_leads ?? 0;
       const totalAuditedPrev = raw.total_audited_previous ?? 0;
       const wonLeadsPrev = raw.won_leads_previous ?? 0;
+      // Conversão = venda ÷ base completa (sale_leads/total_leads), a MESMA
+      // definição da Visão Geral — o 360° divergia por usar won/auditados pela IA.
+      const totalLeads = raw.total_leads ?? 0;
+      const saleLeads = raw.sale_leads ?? 0;
+      const totalLeadsPrev = raw.total_leads_previous ?? 0;
+      const saleLeadsPrev = raw.sale_leads_previous ?? 0;
       return {
         total_audited: totalAudited,
         won_leads: wonLeads,
-        conversion_rate: totalAudited > 0 ? Math.round((wonLeads / totalAudited) * 1000) / 10 : 0,
+        conversion_rate: totalLeads > 0 ? Math.round((saleLeads / totalLeads) * 1000) / 10 : 0,
         avg_score: raw.avg_score ?? 0,
         median_first_response_time_minutes: raw.median_first_response_time_minutes ?? 0,
         previous_period: {
           total_audited: totalAuditedPrev,
           won_leads: wonLeadsPrev,
-          conversion_rate: totalAuditedPrev > 0 ? Math.round((wonLeadsPrev / totalAuditedPrev) * 1000) / 10 : 0,
+          conversion_rate: totalLeadsPrev > 0 ? Math.round((saleLeadsPrev / totalLeadsPrev) * 1000) / 10 : 0,
           avg_score: raw.avg_score_previous ?? 0,
           median_first_response_time_minutes: raw.median_first_response_time_minutes_previous ?? 0,
         },
@@ -541,11 +547,11 @@ export default function TVDashboard() {
             value={`${Math.round(kpisData?.conversion_rate ?? 0)}%`}
             icon={Percent}
             trend={trends?.conversion}
-            subtitle="Clientes analisados pela IA · menor que o Kommo"
+            subtitle="Venda ÷ base completa · igual à Visão Geral"
             info={{
-              description: "De cada 100 clientes analisados pela IA no período, quantos viraram venda.",
-              source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera os clientes que a IA já analisou; venda = clientes marcados como venda fechada (ganha) ou como agendamento confirmado.",
-              calculation: "clientes marcados como venda fechada divididos pelo total de clientes que a IA já analisou no período, vezes 100.",
+              description: "De cada 100 clientes do período (base completa: chat + espelho Kommo), quantos viraram venda fechada.",
+              source: "base completa do painel (espelho Kommo + chat). Venda = clientes marcados como venda fechada (ganha). Mesma definição usada na Visão Geral.",
+              calculation: "clientes marcados como venda fechada (ganha) divididos pelo total de clientes do período, vezes 100.",
             }}
           />
         </motion.div>

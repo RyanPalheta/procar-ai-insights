@@ -508,9 +508,18 @@ export default function Leads() {
         </div>
       )}
 
-      {/* Upsell KPIs */}
+      {/* Upsell KPIs — respeitam o período selecionado (created_at dentro do range) */}
       {leads && (() => {
-        const upsellLeads = leads.filter(l => l.has_upsell && l.last_ai_update);
+        const fromTs = range.fromIso ? new Date(range.fromIso).getTime() : null;
+        const toTs = range.toIso ? new Date(range.toIso).getTime() : null;
+        const inPeriod = (l: any) => {
+          const t = new Date(l.created_at).getTime();
+          if (fromTs !== null && t < fromTs) return false;
+          if (toTs !== null && t > toTs) return false;
+          return true;
+        };
+        const analyzedInPeriod = leads.filter(l => l.last_ai_update && inPeriod(l));
+        const upsellLeads = analyzedInPeriod.filter(l => l.has_upsell);
         const upsellCount = upsellLeads.length;
         const upsellTotalValue = upsellLeads.reduce((sum: number, l: any) => sum + (l.upsell_value_estimate || 0), 0);
         if (upsellCount === 0) return null;
@@ -527,7 +536,7 @@ export default function Leads() {
                   value={upsellCount}
                   icon={TrendingUp}
                   variant="success"
-                  description={`${leads.filter(l => l.last_ai_update).length > 0 ? Math.round((upsellCount / leads.filter(l => l.last_ai_update).length) * 100) : 0}% dos clientes analisados · menor que o Kommo`}
+                  description={`${analyzedInPeriod.length > 0 ? Math.round((upsellCount / analyzedInPeriod.length) * 100) : 0}% dos clientes analisados no período · menor que o Kommo`}
                   info={{
                     description: "Clientes já analisados em que a IA viu chance de vender algo a mais (upsell).",
                     source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes com chance de venda extra que a IA já analisou.",
