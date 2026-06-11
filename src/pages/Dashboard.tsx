@@ -500,18 +500,18 @@ export default function Dashboard() {
       })
       .sort((a, b) => b.value - a.value);
 
-    // Status distribution
+    // Status distribution — leads sem etapa entram como "Sem etapa (ainda)" para
+    // o gráfico somar igual aos cards (lead recém-chegado fica sem status até o
+    // espelho da Kommo atualizar no sync horário).
     const statusCounts = new Map<string, number>();
     globalFilteredLeads.forEach(l => {
-      const normalizedStatus = normalizeStatus(l.sales_status);
-      if (normalizedStatus) {
-        statusCounts.set(normalizedStatus, (statusCounts.get(normalizedStatus) || 0) + 1);
-      }
+      const normalizedStatus = normalizeStatus(l.sales_status) ?? "Sem etapa (ainda)";
+      statusCounts.set(normalizedStatus, (statusCounts.get(normalizedStatus) || 0) + 1);
     });
     const statusData = Array.from(statusCounts.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
+      .slice(0, 6);
 
     // Language distribution
     const languageCounts = new Map<string, number>();
