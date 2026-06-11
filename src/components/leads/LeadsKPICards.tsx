@@ -134,9 +134,9 @@ const kpiTooltips = {
   },
   medianFirstResponseTime: {
     title: "Tempo Mediano 1ª Resposta",
-    description: "Quanto tempo o cliente costuma esperar pela primeira resposta — da primeira mensagem dele até a primeira resposta da equipe. Usamos o valor do meio (mediana), que não é distorcido por casos muito fora da curva.",
+    description: "Quanto tempo o cliente costuma esperar pela primeira resposta — da primeira mensagem dele até a primeira resposta da equipe, contando só o horário de atendimento (9h às 20h, horário da loja). Usamos o valor do meio (mediana), que não é distorcido por casos muito fora da curva.",
     fonte: "vem das mensagens trocadas no WhatsApp, Instagram e Facebook, ligadas aos clientes que chegaram por conversa. A gente identifica nas mensagens quem é o cliente e quem é a equipe.",
-    calculo: "para cada conversa, medimos o tempo entre a primeira mensagem do cliente e a primeira resposta da equipe; mostramos o valor do meio (mediana) de todos esses tempos, em minutos.",
+    calculo: "para cada conversa, medimos os minutos entre a primeira mensagem do cliente e a primeira resposta da equipe, contando só o que passou dentro do horário de atendimento (9h–20h, fuso da loja) — quem escreve de madrugada começa a contar às 9h; mostramos o valor do meio (mediana) de todos esses tempos.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`

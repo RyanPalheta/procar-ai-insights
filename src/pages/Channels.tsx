@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
+import { businessMinutesBetween } from "@/lib/businessHours";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
@@ -196,7 +197,8 @@ export default function Channels() {
       );
       if (firstAgent) {
         respondedSessionsByChannel[ch] = (respondedSessionsByChannel[ch] || 0) + 1;
-        const deltaMin = (new Date(firstAgent.timestamp).getTime() - firstClientTime) / 60000;
+        // conta só o tempo dentro do horário de atendimento (9h-20h, fuso da loja)
+        const deltaMin = businessMinutesBetween(new Date(firstClient.timestamp), new Date(firstAgent.timestamp));
         if (deltaMin >= 0 && deltaMin < 7 * 24 * 60) {
           if (!responseTimesByChannel[ch]) responseTimesByChannel[ch] = [];
           responseTimesByChannel[ch].push(deltaMin);
@@ -333,7 +335,7 @@ export default function Channels() {
                           <ChartInfoTooltip
                             description={`Resumo de ${c.meta.label}: clientes e conversão vêm da base do painel (espelho Kommo + chat, via source_id); a nota de qualidade vem só dos clientes que a IA já analisou; a 1ª resposta e o % respondidas vêm das mensagens trocadas.`}
                             source={CHANNEL_SOURCE_TEXT[c.channel] ?? `clientes com origem ${c.meta.label} na base do painel (espelho Kommo via source_id + chat).`}
-                            calculation="Clientes = quantos clientes deste canal no período. Conversão = clientes marcados como venda fechada (ganha) divididos pelo total de clientes, vezes 100. Nota = a média da nota de qualidade que a IA dá ao cliente. 1ª resposta = o valor do meio (mediana) do tempo até o agente responder. % respondidas = conversas que tiveram resposta divididas pelas que o cliente começou, vezes 100."
+                            calculation="Clientes = quantos clientes deste canal no período. Conversão = clientes marcados como venda fechada (ganha) divididos pelo total de clientes, vezes 100. Nota = a média da nota de qualidade que a IA dá ao cliente. 1ª resposta = o valor do meio (mediana) do tempo até o agente responder, contando só o horário de atendimento (9h às 20h, horário da loja). % respondidas = conversas que tiveram resposta divididas pelas que o cliente começou, vezes 100."
                           />
                         </CardTitle>
                       </CardHeader>
@@ -662,9 +664,9 @@ function ChannelDetail({
           icon={Clock}
           color={responseStats?.medianResponse !== null && responseStats?.medianResponse < 60 ? "#22c55e" : "#eab308"}
           info={{
-            description: `O tempo do meio (mediana) até o agente dar a primeira resposta depois da primeira mensagem do cliente em ${meta.label}.`,
+            description: `O tempo do meio (mediana) até o agente dar a primeira resposta depois da primeira mensagem do cliente em ${meta.label}. Conta só o tempo dentro do horário de atendimento (9h às 20h, horário da loja).`,
             source: "as mensagens trocadas no WhatsApp/Instagram/Facebook. Aqui: as conversas do canal que tiveram resposta do agente.",
-            calculation: "em cada conversa, o tempo em minutos entre a primeira mensagem do cliente e a primeira resposta do agente; mostra o valor do meio (mediana) e ignora tempos negativos ou acima de 7 dias.",
+            calculation: "em cada conversa, os minutos entre a primeira mensagem do cliente e a primeira resposta do agente, contando só o que passou dentro do horário de atendimento (9h–20h, fuso da loja) — quem escreve de madrugada começa a contar às 9h; mostra o valor do meio (mediana) e ignora tempos acima de 7 dias.",
           }}
         />
         <KPI
