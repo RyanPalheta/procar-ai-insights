@@ -33,7 +33,6 @@ import { LeadsComplianceChart } from "@/components/leads/LeadsComplianceChart";
 import { LeadsConversionByResponseTimeChart } from "@/components/leads/LeadsConversionByResponseTimeChart";
 import { LeadsConversionByQuoteChart } from "@/components/leads/LeadsConversionByQuoteChart";
 import { GoogleReviewsCard } from "@/components/dashboard/GoogleReviewsCard";
-import { KommoHealthCard } from "@/components/dashboard/KommoHealthCard";
 
 // Objection category colors
 const objectionCategoryColors: Record<string, { bg: string; border: string; tag: string }> = {
@@ -830,11 +829,11 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
       />
 
-      {/* Confiança nos dados: reputação Google + convergência da base (Kommo × painel) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <GoogleReviewsCard />
-        <KommoHealthCard />
-      </div>
+      {/* Reputação Google. O card "Saúde da base (Kommo × painel)" foi removido a
+          pedido da Pro Car (11/06): com a paridade automática (kommo_absent +
+          reconcile horário), painel = Kommo por construção — o monitor ficou
+          redundante. A reconciliação continua rodando no backend (crons). */}
+      <GoogleReviewsCard />
 
       {/* Timeline Chart - Full Width */}
       <LeadsTimelineChart
