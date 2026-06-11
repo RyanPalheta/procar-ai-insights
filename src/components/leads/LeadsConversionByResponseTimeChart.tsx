@@ -148,6 +148,11 @@ export function LeadsConversionByResponseTimeChart({ dateFrom, dateTo }: LeadsCo
             index="time_bracket"
             categories={["Acima da média", "Na média", "Abaixo da média"]}
             colors={["emerald", "yellow", "red"]}
+            // Só UMA das 3 categorias tem valor por faixa (as outras são null);
+            // sem stack o Recharts reserva 3 slots lado a lado e a barra real
+            // fica com 1/3 da largura, com 2/3 de vão. Empilhar colapsa tudo
+            // numa coluna de largura cheia.
+            stack={true}
             showLegend={false}
             showGridLines={false}
             yAxisWidth={40}
