@@ -82,9 +82,9 @@ const LEAD_DB_SOURCE =
 const kpiTooltips = {
   saleConversion: {
     title: "Conversão de Venda",
-    description: "De cada 100 leads, quantos viraram VENDA (venda ganha / pedido pago).",
-    fonte: "base COMPLETA de leads (Kommo), não só os auditados pela IA — o status de venda existe para todos os leads.",
-    calculo: "leads com venda ganha divididos pelo total de leads do período, vezes 100.",
+    description: "De cada 100 leads, quantos viraram VENDA — orçamento pago na loja.",
+    fonte: "vendas = orçamentos do ShopMonkey que foram PAGOS no período (a fonte real da loja, pela data do pagamento); leads = base do painel (= Kommo).",
+    calculo: "orçamentos pagos no período divididos pelo total de leads do período, vezes 100.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -108,17 +108,17 @@ const kpiTooltips = {
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   newLeads24h: {
-    title: "Leads Novos (24h)",
-    description: "Quantos clientes novos chegaram nas últimas 24 horas.",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: todos os clientes novos do período (base do painel = espelho Kommo + chat).`,
-    calculo: "todos os clientes novos das últimas 24 horas, comparados com as 24 horas anteriores. É sempre das últimas 24 horas e não muda quando você troca o filtro de período.",
-    comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com as 24 horas anteriores"
+    title: "Leads Novos Hoje",
+    description: "Quantos clientes novos chegaram HOJE — de meia-noite a 23:59 no horário da loja.",
+    fonte: "base do painel (= Kommo, espelho + chat, sem duplicatas). Dia-calendário no fuso da loja (America/New_York) — o mesmo dia do 'Hoje' da Kommo.",
+    calculo: "conta os clientes criados de 00:00 a 23:59 de hoje (horário da loja), comparados com ONTEM (dia completo). Não muda quando você troca o filtro de período.",
+    comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com ontem (dia completo)"
   },
   leadsWithQuote: {
     title: "Leads com Cotação",
-    description: "Quantos clientes já receberam um valor de orçamento (cotação).",
-    fonte: "vem da cotação que a IA extrai do chat E do preço registrado na Kommo — conta a base completa de leads, não só os auditados.",
-    calculo: "conta os leads do período que têm um valor de cotação registrado (do chat ou da Kommo).",
+    description: "Quantos orçamentos (cotações) a loja abriu no período.",
+    fonte: "vem dos orçamentos do ShopMonkey (a fonte real da loja): todo pedido nasce como orçamento e vira venda quando é pago. Mesma fonte dos orçamentos da aba Vendedores. Não depende do chat/IA.",
+    calculo: "conta os orçamentos criados no ShopMonkey no período (sem os arquivados).",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -126,8 +126,8 @@ const kpiTooltips = {
   avgQuotedPrice: {
     title: "Valor Médio Cotado",
     description: "O valor médio dos orçamentos passados aos clientes (ticket médio).",
-    fonte: `${LEAD_DB_SOURCE} Neste cartão: clientes analisados pela IA que receberam um valor de cotação.`,
-    calculo: "a média dos valores de cotação dos clientes que receberam orçamento no período.",
+    fonte: "vem dos orçamentos do ShopMonkey (a fonte real da loja). Não depende do chat/IA.",
+    calculo: "a média do valor total dos orçamentos criados no período (só os com valor maior que zero).",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -360,11 +360,11 @@ export function LeadsKPICards({
               <TooltipTrigger asChild>
                 <div className="cursor-help">
                   <KPICard
-                    title="Leads Novos (24h)"
+                    title="Leads Novos Hoje"
                     value={newLeads24h}
                     icon={Clock}
                     variant="default"
-                    description="Base do painel (Kommo + chat)"
+                    description="00:00–23:59 de hoje (horário da loja) · vs ontem"
                     trend={getTrend(newLeads24hVariation, true)}
                   />
                 </div>
