@@ -52,63 +52,56 @@ export function GoogleReviewsCard() {
     },
   });
 
-  const header = (
-    <div className="flex items-center gap-2">
-      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-      <div>
-        <h3 className="font-semibold leading-tight flex items-center gap-1.5">
-          Avaliações Google
-          <ChartInfoTooltip
-            description="Total de avaliações e nota média da loja no Google Maps, com quantas avaliações novas entraram nos últimos 7 dias."
-            source="Google Places API (New) — contagem oficial do Google (userRatingCount + rating). Sincronizada 1x/dia pela edge function sync-google-reviews; guardamos um snapshot por dia para calcular a variação."
-            calculation="Total = userRatingCount do Google. Novas (7d) = total atual − total do snapshot de ~7 dias atrás."
-          />
-        </h3>
-        <p className="text-xs text-muted-foreground">Reputação no Google Maps (atualizada diariamente)</p>
-      </div>
-    </div>
-  );
-
   return (
     <Card>
-      <CardContent className="p-5 space-y-4">
-        {header}
-
+      <CardContent className="px-4 py-2.5">
         {isLoading ? (
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-7 w-full" />
         ) : !data ? (
-          <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
-            Sem dados ainda. Configure o segredo <code className="font-mono text-xs">GOOGLE_PLACES_API_KEY</code> nas
-            functions e rode <code className="font-mono text-xs">sync-google-reviews</code> — a primeira sincronização
-            preenche este card.
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            <span className="font-semibold text-foreground">Avaliações Google</span>
+            <span>
+              — sem dados ainda. Configure <code className="font-mono text-xs">GOOGLE_PLACES_API_KEY</code> e rode{" "}
+              <code className="font-mono text-xs">sync-google-reviews</code>.
+            </span>
           </div>
         ) : (
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            {/* Total + nota */}
-            <div className="space-y-1.5">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold tabular-nums">
-                  {Number(data.review_count).toLocaleString("en-US")}
-                </span>
-                <span className="text-sm text-muted-foreground">avaliações</span>
-              </div>
-              {data.rating != null && (
-                <div className="flex items-center gap-2">
-                  <Stars rating={Number(data.rating)} />
-                  <span className="text-sm font-medium">{Number(data.rating).toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground">de 5</span>
-                </div>
-              )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="font-semibold flex items-center gap-1.5">
+                Avaliações Google
+                <ChartInfoTooltip
+                  description="Total de avaliações e nota média da loja no Google Maps, com quantas avaliações novas entraram nos últimos 7 dias. Atualizado diariamente."
+                  source="Google Places API (New) — contagem oficial do Google (userRatingCount + rating). Sincronizada 1x/dia pela edge function sync-google-reviews; guardamos um snapshot por dia para calcular a variação."
+                  calculation="Total = userRatingCount do Google. Novas (7d) = total atual − total do snapshot de ~7 dias atrás."
+                />
+              </span>
             </div>
 
-            {/* Variação + meta */}
-            <div className="flex flex-col items-end gap-1.5">
-              {data.count_7d_ago != null && data.review_count - data.count_7d_ago > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  +{(data.review_count - data.count_7d_ago).toLocaleString("en-US")} em 7 dias
-                </span>
-              )}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-bold tabular-nums leading-none">
+                {Number(data.review_count).toLocaleString("en-US")}
+              </span>
+              <span className="text-xs text-muted-foreground">avaliações</span>
+            </div>
+
+            {data.rating != null && (
+              <div className="flex items-center gap-1.5">
+                <Stars rating={Number(data.rating)} />
+                <span className="text-sm font-medium">{Number(data.rating).toFixed(1)}</span>
+              </div>
+            )}
+
+            {data.count_7d_ago != null && data.review_count - data.count_7d_ago > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <TrendingUp className="h-3.5 w-3.5" />
+                +{(data.review_count - data.count_7d_ago).toLocaleString("en-US")} em 7 dias
+              </span>
+            )}
+
+            <div className="ml-auto flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
                 Atualizado {formatDistanceToNow(new Date(data.captured_at), { addSuffix: true, locale: ptBR })}
               </span>
