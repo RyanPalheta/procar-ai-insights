@@ -146,6 +146,9 @@ Investigação com janelas alinhadas mostrou DOIS problemas distintos:
 1. **Fuso da virada do dia**: o "Hoje" do painel virava no fuso do navegador de quem vê (auditor no Brasil = 1-5h antes da Kommo). No momento do print, o "Hoje" da Kommo ainda era 10/06 (~50 leads) e o do painel já era 11/06 (madrugada). **Fix**: `Hoje/Ontem/7d…` agora são ancorados no fuso da loja (`America/New_York`) para qualquer espectador.
 2. **Excedente do painel (+10-20%)**: o lead_db é insert-only — leads **apagados/mesclados na Kommo** continuavam contando aqui. **Fix**: `reconcile-kommo {mark_missing}` marca `kommo_absent` comparando IDs com a Kommo (folga de ±1 dia nas bordas); a view `lead_db_painel` e todos os KPIs/abas excluem marcados; cron diário mantém. Retroativo de 4 meses marcou 596 órfãos. **Verificação na janela exata do print do auditor (10/06): Kommo 56 × painel 56 — gap ZERO.** Janelas antigas (abril–maio) ainda têm gap residual de 2-4% (leads que nunca entraram no espelho), convergindo conforme o cron roda.
 
+### 5.4b Painel 360 = Visão Geral, com DUAS taxas (pedido 11/06)
+O Painel 360 passa a mostrar exatamente os números da Visão Geral: card de Leads = mesma base (espelho Kommo + chat, sem duplicatas/ausentes) e, no lugar da "Conversão" única, **Taxa de Orçamentos Pagos** (= Conversão de Venda) e **Taxa de Agendamentos** (= Conversão de Agendamento, marcados incl. no-show e vendas), cada uma com sua tendência.
+
 ### 5.5 Legenda A — "% Convertidas" nas Chamadas (aplicada)
 `analyze-call` agora extrai `call_outcome` (agendou / comprou / pediu_orcamento / followup / sem_avanco / nao_qualificado) da transcrição, e a aba Chamadas tem o KPI **"% Convertidas"** (agendou+comprou+orçamento ÷ analisadas) ao lado do % Positivo — que ganhou a ressalva de subjetividade. Vale para ligações analisadas a partir de 11/06.
 
