@@ -15,8 +15,11 @@ const LANGUAGE_CONFIG: Record<string, { flag: string; color: string; label: stri
   "ES": { flag: "🇪🇸", color: "#f97316", label: "Español" },
   "EN": { flag: "🇬🇧", color: "#22c55e", label: "English" },
   "PT": { flag: "🇵🇹", color: "#ef4444", label: "Português" },
-  // sem conversa p/ detectar (telefone) ou IA/backfill ainda não rodou
+  // tem conversa no painel, mas o backfill/IA ainda não preencheu o idioma
   "SEM-IDIOMA": { flag: "🌐", color: "#9ca3af", label: "Sem idioma (ainda)" },
+  // sem conversa no painel: telefone (não há chat) ou espelho da Kommo cujas
+  // mensagens não foram ingeridas (ex.: queda da VPS) — não há o que detectar
+  "NAO-PROCESSAVEL": { flag: "🚫", color: "#6b7280", label: "Não pode ser processado" },
 };
 
 const DEFAULT_CONFIG = { flag: "🌐", color: "#9ca3af", label: "Outro" };
@@ -48,7 +51,7 @@ export function LeadsLanguageChart({ data }: LeadsLanguageChartProps) {
             Leads por Língua
             <ChartInfoTooltip
               description="Separa os clientes pelo idioma identificado na conversa (ex.: PT-BR, EN-USA, ES). O tamanho da bandeira e a barra mostram a quantidade e o percentual de cada idioma."
-              source="o idioma é identificado pela IA na conversa de chat. Quem ainda não tem idioma aparece como 'Sem idioma (ainda)': leads de telefone não têm conversa para detectar, e leads recém-chegados ainda não passaram pela IA/varredura diária — assim o gráfico soma igual aos cards."
+              source="o idioma é identificado na conversa de chat (varredura diária + IA). 'Sem idioma (ainda)' = lead com conversa que a varredura ainda não preencheu (ex.: recém-chegado ou só mídia). 'Não pode ser processado' = lead sem conversa no painel: telefone (não há chat) e leads espelhados do Kommo cujas mensagens não foram processadas — assim o gráfico soma igual aos cards."
               calculation="conta quantos clientes têm cada idioma e calcula o percentual: clientes daquele idioma dividido pelo total de clientes do período, vezes 100."
             />
           </CardTitle>
