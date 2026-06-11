@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, X, AlertTriangle, Lightbulb, Gift, Anchor, TrendingUp } from "lucide-react";
-import { differenceInHours, differenceInDays, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
+import { differenceInDays, parseISO, format, subDays, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
 
@@ -270,13 +270,13 @@ export default function Dashboard() {
   // KPI Calculations
   const kpiMetrics = useMemo(() => {
     if (hasActiveGlobalFilters) {
-      const totalLeads = globalFilteredLeads.length;
-      const saleLeads = globalFilteredLeads.filter(l => isSale(l.sales_status)).length;
-      const saleConversionRate = totalLeads > 0 ? (saleLeads / totalLeads) * 100 : 0;
-      // Agendamentos (green) e no-show (vermelho) vêm do ShopMonkey (fonte loja,
-      // fórmula Pro Car) e não respondem aos filtros de canal/status — usa o RPC.
-      const appointmentLeadsSM = kpisData?.appointment_leads ?? 0;
+      // Vendas (orçamentos pagos), agendamentos (green) e no-show (vermelho) vêm do
+      // ShopMonkey (fonte loja, fórmula Pro Car) e não respondem aos filtros de
+      // canal/status — usa o RPC.
       const totalLeadsRpc = kpisData?.total_leads ?? 0;
+      const saleLeadsSM = kpisData?.sale_leads ?? 0;
+      const saleConversionRate = totalLeadsRpc > 0 ? (saleLeadsSM / totalLeadsRpc) * 100 : 0;
+      const appointmentLeadsSM = kpisData?.appointment_leads ?? 0;
       const appointmentConversionRate = totalLeadsRpc > 0 ? (appointmentLeadsSM / totalLeadsRpc) * 100 : 0;
       const noShowLeads = kpisData?.no_show_leads ?? 0;
       
@@ -285,16 +285,17 @@ export default function Dashboard() {
         ? leadsWithScore.reduce((sum, l) => sum + (l.lead_score || 0), 0) / leadsWithScore.length 
         : 0;
       
-      const newLeads24h = globalFilteredLeads.filter(l => 
-        differenceInHours(new Date(), new Date(l.created_at)) <= 24
+      // "Leads Novos Hoje": 00:00–23:59 do dia corrente no fuso da loja (mesma
+      // régua do RPC) — não mais janela móvel de 24h.
+      const shopTodayStart = resolvePeriod({ preset: "today" }).from;
+      const newLeads24h = globalFilteredLeads.filter(l =>
+        shopTodayStart ? new Date(l.created_at) >= shopTodayStart : false
       ).length;
       
-      const leadsWithQuote = globalFilteredLeads.filter(l => l.lead_price && l.lead_price > 0).length;
-      
-      const quotedLeads = globalFilteredLeads.filter(l => l.lead_price && l.lead_price > 0);
-      const avgQuotedPrice = quotedLeads.length > 0
-        ? quotedLeads.reduce((sum, l) => sum + (l.lead_price || 0), 0) / quotedLeads.length
-        : 0;
+      // Cotações = orçamentos (orders) do ShopMonkey — fonte loja, não responde
+      // aos filtros de canal/status do chat. Usa o RPC.
+      const leadsWithQuote = kpisData?.leads_with_quote ?? 0;
+      const avgQuotedPrice = kpisData?.avg_quoted_price ?? 0;
 
       // Walk-in vem do ShopMonkey (loja), não do lead_db: é um total da loja por
       // data de agendamento e não responde aos filtros de canal/status/idioma (que
