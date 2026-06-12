@@ -7,6 +7,8 @@ import { TrendingUp } from "lucide-react";
 
 interface LeadsTimelineChartProps {
   data: Array<{ date: string; count: number }>;
+  /** "hour" quando o período selecionado é um único dia (Hoje/Ontem/custom de 1 dia) */
+  granularity?: "day" | "hour";
 }
 
 const chartConfig = {
@@ -16,7 +18,8 @@ const chartConfig = {
   },
 };
 
-export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
+export function LeadsTimelineChart({ data, granularity = "day" }: LeadsTimelineChartProps) {
+  const isHourly = granularity === "hour";
   const total = data.reduce((sum, d) => sum + d.count, 0);
   const avg = data.length > 0 ? total / data.length : 0;
   const peak = data.length > 0 ? Math.max(...data.map((d) => d.count)) : 0;
@@ -53,7 +56,9 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
               <TrendingUp className="h-4 w-4 text-primary" />
               Leads Novos por Período
               <ChartInfoTooltip
-                description="Mostra como o número de clientes novos varia a cada dia. Na linha de baixo aparece cada dia do período e a linha mostra quantos clientes novos chegaram naquele dia. A linha tracejada marca a média diária do período."
+                description={isHourly
+                  ? "Período de um dia: mostra como os clientes novos chegaram HORA a HORA. Na linha de baixo aparece cada hora do dia e a linha mostra quantos clientes novos chegaram naquela hora. A linha tracejada marca a média por hora."
+                  : "Mostra como o número de clientes novos varia a cada dia. Na linha de baixo aparece cada dia do período e a linha mostra quantos clientes novos chegaram naquele dia. A linha tracejada marca a média diária do período."}
                 source="conta os clientes novos que chegaram no período selecionado, respeitando os filtros de canal, situação e idioma que você ativou. A análise feita pela IA é gravada de volta no Kommo (não é uma leitura ao vivo do Kommo)."
                 calculation="agrupamos os clientes pelo dia em que chegaram e contamos quantos foram em cada dia, criando um ponto por dia dentro do período escolhido."
               />
@@ -66,11 +71,11 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold leading-none tabular-nums">{avg.toFixed(1).replace(".", ",")}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">média/dia</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">{isHourly ? "média/hora" : "média/dia"}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold leading-none tabular-nums">{peak}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">pico</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-0.5">{isHourly ? "pico/hora" : "pico"}</p>
                 </div>
               </div>
             )}

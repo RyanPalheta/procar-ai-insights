@@ -489,6 +489,7 @@ export default function Dashboard() {
       topProductsData: [],
       temperatureData: [],
       timelineData: [],
+      timelineGranularity: "day" as const,
       objectionsData: [],
       complianceData: [],
       avgCompliance: 0,
@@ -607,28 +608,49 @@ export default function Dashboard() {
     const timelinePeriodDays = range.from && range.to
       ? Math.max(1, differenceInDays(range.to, range.from) + 1)
       : 90;
-    const timelineCounts = new Map<string, number>();
     // Anchor buckets to the END of the resolved range (range.to) so that
     // "Ontem"/past custom ranges line up with the dd/MM keys the leads carry.
     // For "Todos"/no upper bound, fall back to now (preserves the old behavior).
     const endRef = range.to ?? new Date();
     const periodStart = range.from ?? subDays(endRef, timelinePeriodDays);
-    globalFilteredLeads.forEach(l => {
-      const leadDate = parseISO(l.created_at);
-      if (leadDate >= periodStart) {
-        const dateKey = format(leadDate, "dd/MM");
-        timelineCounts.set(dateKey, (timelineCounts.get(dateKey) || 0) + 1);
-      }
-    });
 
     const timelineData: Array<{ date: string; count: number }> = [];
-    for (let i = timelinePeriodDays - 1; i >= 0; i--) {
-      const date = subDays(endRef, i);
-      const dateKey = format(date, "dd/MM");
-      timelineData.push({
-        date: dateKey,
-        count: timelineCounts.get(dateKey) || 0
+    // Período de UM dia (Hoje/Ontem/personalizado de 1 dia): um ponto único por
+    // dia não diz nada — troca a granularidade para HORA do dia.
+    const timelineGranularity: "day" | "hour" =
+      range.from && range.to && timelinePeriodDays === 1 ? "hour" : "day";
+
+    if (timelineGranularity === "hour") {
+      const hourCounts = new Map<number, number>();
+      globalFilteredLeads.forEach(l => {
+        const leadDate = parseISO(l.created_at);
+        if (leadDate >= periodStart && leadDate <= endRef) {
+          hourCounts.set(leadDate.getHours(), (hourCounts.get(leadDate.getHours()) || 0) + 1);
+        }
       });
+      // "Hoje" corta na hora corrente (sem cauda de zeros no futuro); dia
+      // passado mostra as 24 horas completas.
+      const lastHour = endRef.getTime() > Date.now() ? new Date().getHours() : 23;
+      for (let h = 0; h <= lastHour; h++) {
+        timelineData.push({ date: `${h}h`, count: hourCounts.get(h) || 0 });
+      }
+    } else {
+      const timelineCounts = new Map<string, number>();
+      globalFilteredLeads.forEach(l => {
+        const leadDate = parseISO(l.created_at);
+        if (leadDate >= periodStart) {
+          const dateKey = format(leadDate, "dd/MM");
+          timelineCounts.set(dateKey, (timelineCounts.get(dateKey) || 0) + 1);
+        }
+      });
+      for (let i = timelinePeriodDays - 1; i >= 0; i--) {
+        const date = subDays(endRef, i);
+        const dateKey = format(date, "dd/MM");
+        timelineData.push({
+          date: dateKey,
+          count: timelineCounts.get(dateKey) || 0
+        });
+      }
     }
 
     // Objection categories ranking
@@ -713,6 +735,7 @@ export default function Dashboard() {
       topProductsData,
       temperatureData,
       timelineData,
+      timelineGranularity,
       objectionsData,
       complianceData,
       avgCompliance,
@@ -875,6 +898,7 @@ export default function Dashboard() {
       {/* Timeline Chart - Full Width */}
       <LeadsTimelineChart
         data={chartData.timelineData}
+        granularity={chartData.timelineGranularity}
       />
 
       {/* Primary Charts - 3 columns */}
