@@ -92,8 +92,8 @@ export default function Logs() {
         </p>
       </div>
 
-      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-4" glowColor="59, 130, 246">
-        <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-4" glowColor="228, 0, 43">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Operações Bem-sucedidas</CardTitle>
@@ -104,7 +104,7 @@ export default function Logs() {
             </CardContent>
           </Card>
         </MagicBentoCard>
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Em Processamento</CardTitle>
@@ -115,7 +115,7 @@ export default function Logs() {
             </CardContent>
           </Card>
         </MagicBentoCard>
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Avisos</CardTitle>
@@ -126,7 +126,7 @@ export default function Logs() {
             </CardContent>
           </Card>
         </MagicBentoCard>
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Erros</CardTitle>
@@ -139,7 +139,7 @@ export default function Logs() {
         </MagicBentoCard>
       </MagicBentoGrid>
 
-      <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Registro de Atividades</CardTitle>

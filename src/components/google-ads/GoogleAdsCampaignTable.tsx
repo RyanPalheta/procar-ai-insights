@@ -56,20 +56,30 @@ export function GoogleAdsCampaignTable({ campaigns }: GoogleAdsCampaignTableProp
 
   const statusBadge = (status: string) => {
     if (status === "ENABLED" || status === "enabled") {
-      return <Badge variant="default" className="bg-green-600 text-xs">Ativo</Badge>;
+      return (
+        <Badge variant="outline" className="text-xs gap-1.5 bg-success/10 text-success border-success/25">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          Ativa
+        </Badge>
+      );
     }
     if (status === "PAUSED" || status === "paused") {
-      return <Badge variant="outline" className="text-xs">Pausado</Badge>;
+      return (
+        <Badge variant="outline" className="text-xs gap-1.5 text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+          Pausada
+        </Badge>
+      );
     }
     return <Badge variant="secondary" className="text-xs">{status}</Badge>;
   };
 
   return (
-    <MagicBentoCard className="rounded-lg col-span-full" glowColor="234, 179, 8">
+    <MagicBentoCard className="rounded-lg col-span-full" glowColor="228, 0, 43">
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-yellow-500" />
+            <BarChart3 className="h-4 w-4 text-warning" />
             Campanhas Google Ads
             <Badge variant="outline" className="ml-2">{campaigns.length}</Badge>
           </CardTitle>
@@ -79,9 +89,9 @@ export function GoogleAdsCampaignTable({ campaigns }: GoogleAdsCampaignTableProp
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Campanha</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="min-w-[200px] text-[10px] font-semibold uppercase tracking-wider">Campanha</TableHead>
+                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider">Status</TableHead>
                     <TableHead className="text-right"><SortButton field="spend">Gasto</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="impressions">Impressoes</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="clicks">Cliques</SortButton></TableHead>
@@ -93,21 +103,26 @@ export function GoogleAdsCampaignTable({ campaigns }: GoogleAdsCampaignTableProp
                 </TableHeader>
                 <TableBody>
                   {sorted.map((campaign) => (
-                    <TableRow key={campaign.campaign_id}>
+                    <TableRow key={campaign.campaign_id} className="odd:bg-muted/30 hover:bg-primary/5">
                       <TableCell className="font-medium max-w-[250px] truncate">
                         {campaign.campaign_name}
                       </TableCell>
                       <TableCell>{statusBadge(campaign.campaign_status)}</TableCell>
-                      <TableCell className="text-right">{formatUSD(campaign.spend)}</TableCell>
-                      <TableCell className="text-right">{campaign.impressions.toLocaleString("en-US")}</TableCell>
-                      <TableCell className="text-right">{campaign.clicks.toLocaleString("en-US")}</TableCell>
-                      <TableCell className="text-right">{campaign.ctr.toFixed(2)}%</TableCell>
-                      <TableCell className="text-right">{formatUSD(campaign.cpc)}</TableCell>
-                      <TableCell className="text-right">{Math.round(campaign.conversions)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{formatUSD(campaign.spend)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.impressions.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.clicks.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.ctr.toFixed(2)}%</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{formatUSD(campaign.cpc)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{Math.round(campaign.conversions)}</TableCell>
                       <TableCell className="text-right">
                         {campaign.roas > 0 ? (
-                          <Badge variant={campaign.roas >= 3 ? "default" : "outline"}>
-                            {campaign.roas.toFixed(2)}x
+                          <Badge
+                            variant="outline"
+                            className={campaign.roas >= 3
+                              ? "tabular-nums bg-success/10 text-success border-success/25"
+                              : "tabular-nums bg-warning/10 text-warning border-warning/25"}
+                          >
+                            {campaign.roas.toFixed(2)}×
                           </Badge>
                         ) : "-"}
                       </TableCell>

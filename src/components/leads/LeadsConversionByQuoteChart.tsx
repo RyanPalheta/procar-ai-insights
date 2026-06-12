@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
-import { BarChart } from "@tremor/react";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,11 +24,22 @@ interface LeadsConversionByQuoteChartProps {
 
 const TOOLTIP = {
   description:
-    "Mostra, por faixa de valor do orçamento, quantos dos orçamentos gerados foram pagos; eixo X = faixas em USD, barra = % de orçamentos pagos.",
+    "Mostra, por faixa de valor do orçamento, quantos dos orçamentos gerados foram pagos; eixo X = faixas em USD, barra = % de orçamentos pagos. A linha tracejada marca a média entre as faixas.",
   source:
     "vem dos orçamentos do ShopMonkey (a fonte real da loja): todo pedido nasce como orçamento e vira venda quando é pago. Não depende do chat/IA.",
   calculation:
     "agrupa os orçamentos criados no período pelo valor total: $0-500, $500-1000, $1000-2000, $2000+ (sem os arquivados e sem os de valor zero). Em cada faixa: orçamentos pagos divididos pelos gerados, vezes 100.",
+};
+
+// Semântica vs. média: verde acima, âmbar na média, vermelho abaixo
+const CATEGORY_COLORS = {
+  above: "hsl(var(--success))",
+  near: "hsl(var(--warning))",
+  below: "hsl(var(--destructive-foreground))",
+} as const;
+
+const chartConfig = {
+  rate: { label: "Taxa de conversão" },
 };
 
 export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversionByQuoteChartProps) {
@@ -57,20 +69,17 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
       , data[0])
     : null;
 
-  // Transform data for multi-category coloring
   const chartData = data?.map(d => {
     const rate = d.conversion_rate || 0;
     const isAbove = rate > avgRate * 1.1;
     const isNear = !isAbove && rate > avgRate * 0.9;
+    const category: keyof typeof CATEGORY_COLORS = isAbove ? "above" : isNear ? "near" : "below";
     return {
       quote_bracket: d.quote_bracket,
-      "Acima da média": isAbove ? rate : null,
-      "Na média": isNear ? rate : null,
-      "Abaixo da média": (!isAbove && !isNear) ? rate : null,
-      // Keep original data for tooltip
+      rate,
+      category,
       _total: d.total_leads,
       _converted: d.converted_leads,
-      _rate: rate,
       _avgQuote: d.avg_quote_value,
     };
   }) || [];
@@ -90,14 +99,14 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
             Valor médio: {formatUSD(d._avgQuote)}
           </p>
         )}
-        <p className="font-semibold mt-1">Taxa: {d._rate?.toFixed(1)}%</p>
+        <p className="font-semibold mt-1 tabular-nums">Taxa: {d.rate?.toFixed(1)}%</p>
       </div>
     );
   };
 
   if (isLoading) {
     return (
-      <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
+      <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
         <Card className="bg-card border-border h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -117,7 +126,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
 
   if (error || !data || data.length === 0) {
     return (
-      <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
+      <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
         <Card className="bg-card border-border h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -137,7 +146,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
   }
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
@@ -147,38 +156,68 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <BarChart
-            data={chartData}
-            index="quote_bracket"
-            categories={["Acima da média", "Na média", "Abaixo da média"]}
-            colors={["emerald", "yellow", "red"]}
-            // Só UMA das 3 categorias tem valor por faixa (as outras são null);
-            // sem stack o Recharts reserva 3 slots lado a lado e a barra real
-            // fica com 1/3 da largura, com 2/3 de vão. Empilhar colapsa tudo
-            // numa coluna de largura cheia.
-            stack={true}
-            showLegend={false}
-            showGridLines={false}
-            yAxisWidth={40}
-            valueFormatter={(v: number) => v != null ? `${v.toFixed(0)}%` : ""}
-            customTooltip={customTooltip}
-            className="h-[200px]"
-          />
+          <ChartContainer config={chartConfig} className="h-[200px] w-full aspect-auto">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 18, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="hsl(var(--border) / 0.5)" vertical={false} />
+                <XAxis
+                  dataKey="quote_bracket"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 500 }}
+                  tickMargin={8}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <ChartTooltip content={customTooltip} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                <ReferenceLine
+                  y={avgRate}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="5 5"
+                  strokeWidth={1.2}
+                  label={{
+                    value: `média ${avgRate.toFixed(0)}%`,
+                    position: "insideTopRight",
+                    fill: "hsl(var(--muted-foreground))",
+                    fontSize: 10,
+                    fontWeight: 600,
+                  }}
+                />
+                <Bar dataKey="rate" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                  {chartData.map((entry) => (
+                    <Cell key={entry.quote_bracket} fill={CATEGORY_COLORS[entry.category]} />
+                  ))}
+                  <LabelList
+                    dataKey="rate"
+                    position="top"
+                    className="fill-muted-foreground"
+                    style={{ fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+                    formatter={(v: number) => `${v.toFixed(0)}%`}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
 
           {/* Insight Card */}
           {totalGerados > 0 && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+            <div className="bg-success/10 border border-success/20 rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                <Lightbulb className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                 <p className="text-sm">
                   <span className="font-medium">Insight:</span>{" "}
-                  <span className="font-semibold text-green-600 dark:text-green-400">
+                  <span className="font-semibold text-success">
                     {totalPagos} de {totalGerados}
                   </span>{" "}
                   orçamentos do período foram pagos ({overallRate.toFixed(1)}%)
                   {bestBracket && (bestBracket.conversion_rate || 0) > 0 && (
                     <>. Faixa que mais converte:{" "}
-                      <span className="font-semibold text-green-600 dark:text-green-400">
+                      <span className="font-semibold text-success">
                         {bestBracket.quote_bracket}
                       </span>{" "}
                       ({bestBracket.conversion_rate?.toFixed(1)}%)
@@ -192,15 +231,15 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           {/* Legend */}
           <div className="flex flex-wrap gap-4 justify-center text-xs">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-emerald-500" />
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: CATEGORY_COLORS.above }} />
               <span className="text-muted-foreground">Acima da média</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-yellow-400" />
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: CATEGORY_COLORS.near }} />
               <span className="text-muted-foreground">Na média</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-red-500" />
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: CATEGORY_COLORS.below }} />
               <span className="text-muted-foreground">Abaixo da média</span>
             </div>
           </div>

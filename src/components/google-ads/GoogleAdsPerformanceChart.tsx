@@ -14,11 +14,11 @@ interface GoogleAdsPerformanceChartProps {
 const chartConfig = {
   clicks: {
     label: "Cliques",
-    color: "hsl(45, 93%, 47%)",
+    color: "hsl(var(--chart-3))",
   },
   conversions: {
     label: "Conversoes",
-    color: "hsl(142, 76%, 36%)",
+    color: "hsl(var(--success))",
   },
 };
 
@@ -29,11 +29,11 @@ export function GoogleAdsPerformanceChart({ data }: GoogleAdsPerformanceChartPro
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="234, 179, 8">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
-            <MousePointerClick className="h-4 w-4 text-yellow-500" />
+            <MousePointerClick className="h-4 w-4 text-warning" />
             Cliques e Conversoes
             <ChartInfoTooltip
               description="Compara cliques e conversoes diarios do Google Ads; Eixo X = dia (dd/MM), barra amarela = cliques e barra verde = conversoes no mesmo dia."
@@ -63,13 +63,13 @@ export function GoogleAdsPerformanceChart({ data }: GoogleAdsPerformanceChartPro
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar
                     dataKey="clicks"
-                    fill="hsl(45, 93%, 47%)"
+                    fill="hsl(var(--chart-3))"
                     radius={[4, 4, 0, 0]}
                     opacity={0.8}
                   />
                   <Bar
                     dataKey="conversions"
-                    fill="hsl(142, 76%, 36%)"
+                    fill="hsl(var(--success))"
                     radius={[4, 4, 0, 0]}
                     opacity={0.8}
                   />

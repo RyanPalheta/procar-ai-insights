@@ -5,11 +5,13 @@ import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 interface TVKPICardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  /** Mantido por compatibilidade com os chamadores; o ícone não é mais exibido. */
+  icon?: LucideIcon;
   trend?: {
     value: string;
     isPositive: boolean;
   };
+  /** Mantido por compatibilidade; o chip de ícone que usava o alerta foi removido. */
   isAlert?: boolean;
   subtitle?: string;
   info?: {
@@ -22,25 +24,14 @@ interface TVKPICardProps {
 export function TVKPICard({
   title,
   value,
-  icon: Icon,
   trend,
-  isAlert = false,
   subtitle,
   info
 }: TVKPICardProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100 h-full flex flex-col">
+    <div className="app-card relative bg-card rounded-2xl shadow-md p-6 border border-border h-full flex flex-col">
       <div className="flex items-center gap-3 mb-3">
-        <div className={cn(
-          "p-3 rounded-xl",
-          isAlert ? "bg-orange-100" : "bg-green-100"
-        )}>
-          <Icon className={cn(
-            "h-6 w-6",
-            isAlert ? "text-orange-600" : "text-green-600"
-          )} />
-        </div>
-        <span className="text-slate-500 text-lg font-medium">{title}</span>
+        <span className="text-muted-foreground text-lg font-medium">{title}</span>
         {info && (
           <ChartInfoTooltip
             className="ml-auto"
@@ -52,20 +43,20 @@ export function TVKPICard({
       </div>
       
       <div className="flex-1 flex flex-col justify-center">
-        <div className="text-5xl xl:text-6xl font-bold text-slate-800 mb-2">
+        <div className="text-5xl xl:text-6xl font-bold text-foreground mb-2 tabular-nums">
           {value}
         </div>
-        
+
         {subtitle && (
-          <p className="text-slate-400 text-sm mb-2">{subtitle}</p>
+          <p className="text-muted-foreground text-sm mb-2">{subtitle}</p>
         )}
-        
+
         {trend && (
           <div className={cn(
             "inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold w-fit",
-            trend.isPositive 
-              ? "bg-green-100 text-green-700" 
-              : "bg-orange-100 text-orange-700"
+            trend.isPositive
+              ? "bg-success/15 text-success"
+              : "bg-warning/15 text-warning"
           )}>
             {trend.isPositive ? (
               <TrendingUp className="h-4 w-4" />

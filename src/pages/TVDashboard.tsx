@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/procar-logo.avif";
 import { cn } from "@/lib/utils";
 
 import { TVKPICard } from "@/components/tv/TVKPICard";
@@ -96,20 +96,6 @@ export default function TVDashboard() {
   const { role, signOut } = useAuth();
   const navigate = useNavigate();
   const isAdmin = role === "admin";
-
-  // Force light mode for TV display
-  useEffect(() => {
-    const previousTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
-    
-    return () => {
-      document.documentElement.classList.remove('light');
-      if (previousTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    };
-  }, []);
 
   // Fetch leads data with auto-refresh every 30 seconds
   // Use pagination to get all leads (default limit is 1000)
@@ -444,7 +430,7 @@ export default function TVDashboard() {
   const periodLabel = range.label;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 lg:p-8 overflow-hidden">
+    <div className="min-h-screen bg-background p-6 lg:p-8 overflow-hidden">
       {/* Header */}
       <motion.header 
         variants={headerVariants}
@@ -457,7 +443,7 @@ export default function TVDashboard() {
           {isAdmin && (
             <Link 
               to="/"
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-sm transition-all"
+              className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 hover:shadow-sm transition-all"
               title="Voltar ao Dashboard"
             >
               <Home className="h-5 w-5" />
@@ -468,26 +454,26 @@ export default function TVDashboard() {
           {!isAdmin && (
             <button
               onClick={async () => { await signOut(); navigate("/login"); }}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-300 hover:shadow-sm transition-all"
+              className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:shadow-sm transition-all"
               title="Sair"
             >
               <LogOut className="h-5 w-5" />
             </button>
           )}
           
-          <motion.img 
-            src={logo} 
-            alt="PROCAR Logo" 
-            className="h-12 w-12 object-contain"
-            initial={{ rotate: -180, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
+          <motion.div
+            className="flex items-center rounded-xl bg-[#101114] px-3 py-2.5 dark:bg-transparent dark:px-0 dark:py-0"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
-          />
+          >
+            <img src={logo} alt="ProCar Sound & Security" className="h-8 w-auto object-contain" />
+          </motion.div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
               Painel 360°
             </h1>
-            <p className="text-slate-500">Atualização em tempo real</p>
+            <p className="text-muted-foreground">Atualização em tempo real</p>
           </div>
         </div>
 
@@ -499,7 +485,7 @@ export default function TVDashboard() {
         >
           {/* Period Filter */}
           <div className="flex items-center gap-3">
-            <span className="text-slate-500 text-sm font-medium">Período:</span>
+            <span className="text-muted-foreground text-sm font-medium">Período:</span>
             <PeriodFilter
               value={period}
               onChange={setPeriod}
@@ -509,9 +495,9 @@ export default function TVDashboard() {
 
           {/* Seller Filter */}
           <div className="flex items-center gap-3">
-            <span className="text-slate-500 text-sm font-medium">Vendedor:</span>
+            <span className="text-muted-foreground text-sm font-medium">Vendedor:</span>
             <Select value={selectedSeller} onValueChange={setSelectedSeller}>
-              <SelectTrigger className="w-[200px] bg-white border-slate-200 shadow-sm rounded-xl">
+              <SelectTrigger className="w-[200px] bg-card border-border shadow-sm rounded-xl">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
@@ -524,7 +510,7 @@ export default function TVDashboard() {
           </div>
 
           {/* Auto-refresh indicator */}
-          <div className="flex items-center gap-3 text-slate-500">
+          <div className="flex items-center gap-3 text-muted-foreground">
             <RefreshCw className="h-5 w-5 animate-spin-slow" />
             <span className="text-sm">
               Auto-refresh: 30s • Última: {lastUpdate}
@@ -671,10 +657,10 @@ export default function TVDashboard() {
             variants={itemVariants}
             whileHover={{ scale: 1.02, y: -2 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            className="bg-white rounded-2xl shadow-md p-5 border border-slate-100 cursor-default"
+            className="app-card relative bg-card rounded-2xl shadow-md p-5 border border-border cursor-default"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="flex items-center gap-1.5 text-slate-500 text-sm font-medium">
+              <span className="flex items-center gap-1.5 text-muted-foreground text-sm font-medium">
                 {item.label}
                 <ChartInfoTooltip
                   description={item.info.description}
@@ -689,15 +675,15 @@ export default function TVDashboard() {
                   transition={{ delay: 0.5 + index * 0.1, type: "spring" }}
                   className={cn(
                     "text-xs font-semibold px-2 py-1 rounded-full",
-                    item.trend.isPositive ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                    item.trend.isPositive ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
                   )}
                 >
                   {item.trend.value}
                 </motion.span>
               )}
             </div>
-            <motion.div 
-              className="text-3xl font-bold text-slate-800"
+            <motion.div
+              className="text-3xl font-bold text-foreground"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 100 }}

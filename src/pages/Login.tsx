@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/procar-logo.avif";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,11 +34,10 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-4">
       <Card className="w-full max-w-sm border-0 shadow-2xl">
         <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-10">
-          <div className="p-3 rounded-2xl bg-primary/5 shadow-sm">
-            <img src={logo} alt="PROCAR Logo" className="h-12 w-12 object-contain" />
+          <div className="px-4 py-3 rounded-2xl bg-[#101114] shadow-sm dark:bg-transparent dark:shadow-none dark:px-0 dark:py-0">
+            <img src={logo} alt="ProCar Sound & Security" className="h-10 w-auto object-contain dark:h-12" />
           </div>
           <div className="text-center space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">PROCAR</h1>
             <p className="text-sm text-muted-foreground">Faça login para acessar o painel</p>
           </div>
         </CardHeader>

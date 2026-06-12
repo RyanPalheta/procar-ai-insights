@@ -23,13 +23,25 @@ import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalL
 
 /* ----------------- helpers ----------------- */
 import type { LucideIcon } from "lucide-react";
+// Canais com marca própria mantêm a cor oficial; os demais usam a paleta do tema
 const CHANNEL_META: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
   whatsapp: { label: "WhatsApp", color: "#25D366", Icon: MessageSquare },
   facebook: { label: "Facebook", color: "#1877F2", Icon: Facebook },
   instagram: { label: "Instagram", color: "#E4405F", Icon: Instagram },
-  phone: { label: "Telefone", color: "#8b5cf6", Icon: Phone },
-  email: { label: "E-mail", color: "#0ea5e9", Icon: Mail },
-  "indicação": { label: "Indicação", color: "#f59e0b", Icon: UserPlus },
+  phone: { label: "Telefone", color: "hsl(var(--chart-2))", Icon: Phone },
+  email: { label: "E-mail", color: "hsl(var(--chart-4))", Icon: Mail },
+  "indicação": { label: "Indicação", color: "hsl(var(--chart-3))", Icon: UserPlus },
+};
+
+// Anatomia padrão dos gráficos (identidade ProCar)
+const AXIS_TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
+const GRID_STROKE = "hsl(var(--border) / 0.5)";
+const TOOLTIP_STYLE = {
+  backgroundColor: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "hsl(var(--foreground))",
 };
 
 // Texto de fonte ESPECÍFICO por canal (auditoria 06/2026: o texto genérico de
@@ -72,9 +84,9 @@ function fmtMinutes(min: number | null): string {
 
 function scoreColor(s: number | null): string {
   if (s === null) return "text-muted-foreground";
-  if (s >= 70) return "text-green-500";
-  if (s >= 40) return "text-yellow-500";
-  return "text-red-500";
+  if (s >= 70) return "text-success";
+  if (s >= 40) return "text-warning";
+  return "text-destructive-foreground";
 }
 
 /* ----------------- page ----------------- */
@@ -322,11 +334,11 @@ export default function Channels() {
           ) : (
             <>
               {/* KPI row: one big card per channel */}
-              <MagicBentoGrid className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" glowColor="59, 130, 246">
+              <MagicBentoGrid className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" glowColor="228, 0, 43">
                 {comparativeData.map((c) => {
                   const ChIcon = c.meta.Icon;
                   return (
-                  <MagicBentoCard key={c.channel} glowColor="59, 130, 246">
+                  <MagicBentoCard key={c.channel} glowColor="228, 0, 43">
                     <Card className="bg-card border-border">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -375,16 +387,16 @@ export default function Channels() {
 
               {/* Comparative bars */}
               <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                <MagicBentoCard glowColor="59, 130, 246">
+                <MagicBentoCard glowColor="228, 0, 43">
                   <Card className="bg-card border-border">
                     <CardHeader><CardTitle className="flex items-center gap-2">Volume de Clientes por Canal (base do painel · Kommo + chat) <ChartInfoTooltip description="Compara quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook, Telefone, E-mail, Indicação); cada barra é a quantidade de clientes. Conta a base do painel (espelho Kommo + chat, canal pelo source_id da Kommo)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes que chegaram no período, separados por canal." calculation="conta quantos clientes chegaram por cada canal (WhatsApp, Instagram, Facebook, Telefone)." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData} margin={{ left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                          <XAxis dataKey="meta.label" />
-                          <YAxis />
-                          <Tooltip />
+                          <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                          <XAxis dataKey="meta.label" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                           <Bar dataKey="totalLeads" radius={[4, 4, 0, 0]}>
                             {comparativeData.map((c, i) => (
                               <Cell key={i} fill={c.meta.color} />
@@ -396,16 +408,16 @@ export default function Channels() {
                   </Card>
                 </MagicBentoCard>
 
-                <MagicBentoCard glowColor="59, 130, 246">
+                <MagicBentoCard glowColor="228, 0, 43">
                   <Card className="bg-card border-border">
                     <CardHeader><CardTitle className="flex items-center gap-2">Taxa de Conversão por Canal (base do painel · Kommo + chat) <ChartInfoTooltip description="Compara quanto cada canal converte em venda; cada barra é o % de clientes que viraram venda fechada. Conta a base do painel (espelho Kommo + chat, canal pelo source_id da Kommo)." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes do período separados por canal; venda = marcados como venda fechada (ganha)." calculation="clientes marcados como venda fechada (ganha) divididos pelo total de clientes do canal, vezes 100." /></CardTitle></CardHeader>
                     <CardContent className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={comparativeData}>
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                          <XAxis dataKey="meta.label" />
-                          <YAxis tickFormatter={(v) => `${v}%`} />
-                          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} />
+                          <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                          <XAxis dataKey="meta.label" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <YAxis tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                           <Bar dataKey="convRate" radius={[4, 4, 0, 0]}>
                             {comparativeData.map((c, i) => (
                               <Cell key={i} fill={c.meta.color} />
@@ -419,7 +431,7 @@ export default function Channels() {
               </div>
 
               {/* Ranking table */}
-              <MagicBentoCard glowColor="59, 130, 246">
+              <MagicBentoCard glowColor="228, 0, 43">
                 <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -482,7 +494,7 @@ export default function Channels() {
 
               {/* Idioma × Canal */}
               {languageByChannel.length > 0 && (
-                <MagicBentoCard glowColor="59, 130, 246">
+                <MagicBentoCard glowColor="228, 0, 43">
                   <Card className="bg-card border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -498,15 +510,15 @@ export default function Channels() {
                     <CardContent className="h-[280px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={languageByChannel}>
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                          <XAxis dataKey="channel" tick={{ fontSize: 12 }} />
-                          <YAxis allowDecimals={false} />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="Inglês" stackId="lang" fill="#3b82f6" />
-                          <Bar dataKey="Espanhol" stackId="lang" fill="#f59e0b" />
-                          <Bar dataKey="Português" stackId="lang" fill="#10b981" />
-                          <Bar dataKey="Outro" stackId="lang" fill="#9ca3af" />
+                          <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                          <XAxis dataKey="channel" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Bar dataKey="Inglês" stackId="lang" fill="hsl(var(--chart-2))" />
+                          <Bar dataKey="Espanhol" stackId="lang" fill="hsl(var(--chart-3))" />
+                          <Bar dataKey="Português" stackId="lang" fill="hsl(var(--chart-1))" />
+                          <Bar dataKey="Outro" stackId="lang" fill="hsl(var(--chart-4))" />
                         </BarChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -535,7 +547,7 @@ export default function Channels() {
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-purple-500" />
+                <Phone className="h-5 w-5 text-primary" />
                 Análise de Telefone
                 <ChartInfoTooltip
                   description="Resumo do canal telefone: clientes, nota de qualidade e conversão vêm dos clientes que a IA já analisou (só conversas de chat, por isso menor que o Kommo); 'chamadas no período' vem das ligações telefônicas registradas."
@@ -551,7 +563,7 @@ export default function Channels() {
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-purple-500">{channelStats.phone?.totalLeads || 0}</div>
+                  <div className="text-2xl font-bold text-primary">{channelStats.phone?.totalLeads || 0}</div>
                   <div className="text-xs text-muted-foreground">clientes de telefone · só conversas de chat (menor que o Kommo)</div>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50">
@@ -605,15 +617,15 @@ function ChannelDetail({
     .filter((d) => d.value > 0);
 
   const sentimentColors: Record<string, string> = {
-    Positivo: "#22c55e",
-    Neutro: "#94a3b8",
-    Negativo: "#ef4444",
+    Positivo: "hsl(var(--success))",
+    Neutro: "hsl(var(--chart-4))",
+    Negativo: "hsl(var(--destructive-foreground))",
   };
 
   return (
     <>
       {/* KPIs */}
-      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6" glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6" glowColor="228, 0, 43">
         <KPI
           label="Clientes · base do painel (Kommo + chat)"
           value={stats.totalLeads}
@@ -629,7 +641,7 @@ function ChannelDetail({
           label="Vendas fechadas · só WhatsApp/chat"
           value={stats.closedWon}
           icon={TrendingUp}
-          color="#22c55e"
+          color="hsl(var(--success))"
           info={{
             description: `Clientes de ${meta.label} marcados como venda fechada (ganha). Conta só conversas de WhatsApp/chat, não o total de vendas no Kommo.`,
             source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os marcados como venda fechada (ganha).",
@@ -651,7 +663,7 @@ function ChannelDetail({
           label="Nota média · só WhatsApp/chat"
           value={stats.avgScore ?? "—"}
           icon={Gauge}
-          color={stats.avgScore && stats.avgScore >= 70 ? "#22c55e" : stats.avgScore && stats.avgScore >= 40 ? "#eab308" : "#ef4444"}
+          color={stats.avgScore && stats.avgScore >= 70 ? "hsl(var(--success))" : stats.avgScore && stats.avgScore >= 40 ? "hsl(var(--warning))" : "hsl(var(--destructive-foreground))"}
           info={{
             description: `A média da nota de qualidade (de 0 a 100) que a IA dá aos clientes de ${meta.label}. Considera só os clientes que a IA já analisou.`,
             source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: só os clientes que a IA já analisou.",
@@ -662,7 +674,7 @@ function ChannelDetail({
           label="1ª resposta (md)"
           value={fmtMinutes(responseStats?.medianResponse ?? null)}
           icon={Clock}
-          color={responseStats?.medianResponse !== null && responseStats?.medianResponse < 60 ? "#22c55e" : "#eab308"}
+          color={responseStats?.medianResponse !== null && responseStats?.medianResponse < 60 ? "hsl(var(--success))" : "hsl(var(--warning))"}
           info={{
             description: `O tempo do meio (mediana) até o agente dar a primeira resposta depois da primeira mensagem do cliente em ${meta.label}. Conta só o tempo dentro do horário de atendimento (9h às 20h, horário da loja).`,
             source: "as mensagens trocadas no WhatsApp/Instagram/Facebook. Aqui: as conversas do canal que tiveram resposta do agente.",
@@ -673,7 +685,7 @@ function ChannelDetail({
           label="% respondidas"
           value={`${responseStats?.responseRate ?? 0}%`}
           icon={MessageSquare}
-          color={responseStats?.responseRate >= 80 ? "#22c55e" : "#eab308"}
+          color={responseStats?.responseRate >= 80 ? "hsl(var(--success))" : "hsl(var(--warning))"}
           info={{
             description: `% de conversas de ${meta.label} começadas pelo cliente que receberam ao menos uma resposta do agente.`,
             source: "as mensagens trocadas no WhatsApp/Instagram/Facebook. Aqui: as conversas do canal que o cliente começou.",
@@ -684,20 +696,20 @@ function ChannelDetail({
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         {/* Sentiment donut */}
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader><CardTitle className="flex items-center gap-2"><Smile className="h-4 w-4" />Sentimento <ChartInfoTooltip description="Mostra como ficou o clima das conversas (Positivo, Neutro, Negativo) dos clientes deste canal; cada fatia é a parcela de clientes em cada categoria." source="conta só os clientes que chegaram por conversa de WhatsApp/chat. Aqui: só os clientes deste canal que a IA já analisou e classificou o clima da conversa." calculation="conta os clientes em cada categoria (Positivo, Neutro, Negativo); a fatia é a parte de cada categoria sobre o total que a IA analisou." /></CardTitle></CardHeader>
             <CardContent className="h-[260px]">
               {sentimentData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                    <Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2} strokeWidth={0}>
                       {sentimentData.map((entry, i) => (
                         <Cell key={i} fill={sentimentColors[entry.name]} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -708,7 +720,7 @@ function ChannelDetail({
         </MagicBentoCard>
 
         {/* Hourly heatmap as bar chart */}
-        <MagicBentoCard className="lg:col-span-2" glowColor="59, 130, 246">
+        <MagicBentoCard className="lg:col-span-2" glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Clock className="h-4 w-4" />Mensagens por hora do dia <ChartInfoTooltip description="Mostra quantas mensagens deste canal chegam em cada hora do dia (0h às 23h); cada barra é a quantidade de mensagens, para enxergar os horários de pico." source="as mensagens trocadas no WhatsApp/Instagram/Facebook deste canal no período." calculation="separa as mensagens pela hora em que chegaram e soma quantas houve em cada uma das 24 horas do dia." /></CardTitle>
@@ -717,10 +729,10 @@ function ChannelDetail({
             <CardContent className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourly}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                  <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                   <Bar dataKey="count" fill={meta.color} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -730,7 +742,7 @@ function ChannelDetail({
       </div>
 
       {/* Insights card */}
-      <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader><CardTitle className="flex items-center gap-2">
             Insights de {meta.label}
@@ -774,7 +786,7 @@ function KPI({ label, value, icon: Icon, color, info }: {
   info?: { description: string; source?: string; calculation?: string };
 }) {
   return (
-    <MagicBentoCard glowColor="59, 130, 246">
+    <MagicBentoCard glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">

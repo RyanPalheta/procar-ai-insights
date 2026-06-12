@@ -396,7 +396,7 @@ export default function Today() {
       </div>
 
       {/* KPIs */}
-      <MagicBentoGrid className="grid gap-4 grid-cols-2 lg:grid-cols-6" glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 lg:grid-cols-6" glowColor="228, 0, 43">
         <KPICard
           title="Novos leads"
           value={loadingLeads ? "—" : metrics.totalLeads}
@@ -418,7 +418,7 @@ export default function Today() {
           title="Mensagens"
           value={loadingInteractions ? "—" : metrics.totalInteractions}
           icon={MessageSquare}
-          glowColor="59, 130, 246"
+          glowColor="228, 0, 43"
           info={{
             description: "Total de mensagens trocadas hoje (recebidas e enviadas).",
             source: "as mensagens trocadas no WhatsApp/Instagram/Facebook.",
@@ -430,7 +430,7 @@ export default function Today() {
           title="Chamadas"
           value={loadingCalls ? "—" : metrics.totalCalls}
           icon={Phone}
-          glowColor="139, 92, 246"
+          glowColor="228, 0, 43"
           info={{
             description: "Chamadas telefônicas registradas hoje, separadas em ativas (saída) e passivas (entrada).",
             source: "as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo.",
@@ -472,7 +472,7 @@ export default function Today() {
           title="Score médio"
           value={metrics.avgScore || "—"}
           icon={Gauge}
-          glowColor="14, 165, 233"
+          glowColor="228, 0, 43"
           info={{
             description: "A nota média de qualidade que a IA dá aos clientes que chegaram hoje por conversa de WhatsApp/chat.",
             source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Considera só os clientes que já receberam uma nota da IA.",
@@ -484,7 +484,7 @@ export default function Today() {
           title="Atenção"
           value={needsAttention.length}
           icon={AlertTriangle}
-          glowColor="239, 68, 68"
+          glowColor="228, 0, 43"
           info={{
             description: `Clientes de chat com nota alta (${HOT_LEAD_SCORE_THRESHOLD} ou mais) que ainda estão em aberto e há ${HOT_LEAD_THRESHOLD_MINUTES} minutos ou mais ninguém responde.`,
             source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Não conta quem já fechou venda, perdeu ou foi descartado. Não é só de hoje.",
@@ -497,7 +497,7 @@ export default function Today() {
       {/* Middle: live feed (2/3) + side charts (1/3) */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Live feed */}
-        <MagicBentoCard className="lg:col-span-2" glowColor="59, 130, 246">
+        <MagicBentoCard className="lg:col-span-2" glowColor="228, 0, 43">
           <Card className="bg-card border-border h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Atividade ao vivo</CardTitle>
@@ -600,7 +600,7 @@ export default function Today() {
       </div>
 
       {/* Hourly distribution */}
-      <MagicBentoCard glowColor="139, 92, 246">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader><CardTitle className="flex items-center gap-2">Distribuição por hora <ChartInfoTooltip description="Mostra cada hora do dia (0h às 23h); as barras comparam quantos clientes novos e quantas ligações entraram em cada hora de hoje." source="os clientes que chegaram por conversa de WhatsApp/chat e as ligações telefônicas registradas, ambos de hoje. Não passa pelo Kommo." calculation="para cada hora, conta os clientes novos e as ligações que aconteceram naquela hora e mostra duas barras (Leads e Chamadas)." /></CardTitle></CardHeader>
           <CardContent className="h-[240px]">
@@ -625,7 +625,7 @@ export default function Today() {
       </MagicBentoCard>
 
       {/* Needs attention */}
-      <MagicBentoCard glowColor="239, 68, 68">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">

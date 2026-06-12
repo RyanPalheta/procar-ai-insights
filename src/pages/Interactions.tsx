@@ -54,8 +54,8 @@ export default function Interactions() {
         <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
-      <MagicBentoGrid className="grid gap-4 md:grid-cols-2" glowColor="59, 130, 246">
-        <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 md:grid-cols-2" glowColor="228, 0, 43">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -72,7 +72,7 @@ export default function Interactions() {
             </CardContent>
           </Card>
         </MagicBentoCard>
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function Interactions() {
         </MagicBentoCard>
       </MagicBentoGrid>
 
-      <MagicBentoCard glowColor="59, 130, 246" enableTilt={false} enableMagnetism={false}>
+      <MagicBentoCard glowColor="228, 0, 43" enableTilt={false} enableMagnetism={false}>
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Lista de Interações</CardTitle>
