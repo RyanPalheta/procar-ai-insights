@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import logo from "@/assets/procar-logo.avif";
 import { cn } from "@/lib/utils";
+import { canonicalSeller, uniqueCanonicalSellers } from "@/lib/sellers";
 
 import { TVKPICard } from "@/components/tv/TVKPICard";
 import { TVQualitySection } from "@/components/tv/TVQualitySection";
@@ -174,11 +175,7 @@ export default function TVDashboard() {
   // Extract unique sellers
   const uniqueSellers = useMemo(() => {
     if (!leads) return [];
-    const sellers = new Set<string>();
-    leads.forEach(l => {
-      if (l.sales_person_id) sellers.add(l.sales_person_id);
-    });
-    return Array.from(sellers).sort();
+    return uniqueCanonicalSellers(leads.map(l => l.sales_person_id));
   }, [leads]);
 
   // Filter leads by selected period and seller (calendar bounds)
@@ -188,7 +185,7 @@ export default function TVDashboard() {
       const created = new Date(l.created_at);
       if (range.from !== null && created < range.from) return false;
       if (range.to !== null && created > range.to) return false;
-      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      if (selectedSeller !== "all" && canonicalSeller(l.sales_person_id) !== selectedSeller) return false;
       return true;
     });
   }, [leads, range.fromIso, range.toIso, selectedSeller]);
@@ -201,7 +198,7 @@ export default function TVDashboard() {
     return leads.filter(l => {
       const created = new Date(l.created_at);
       if (!(created >= prev.from && created <= prev.to)) return false;
-      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      if (selectedSeller !== "all" && canonicalSeller(l.sales_person_id) !== selectedSeller) return false;
       return true;
     });
   }, [leads, range.fromIso, range.toIso, selectedSeller]);

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatUSD } from "@/lib/utils";
+import { canonicalSeller } from "@/lib/sellers";
 import {
   Table,
   TableBody,
@@ -191,8 +192,9 @@ export default function Leads() {
   const uniqueSellers = useMemo(() => {
     const sellers = new Map<string, number>();
     leads?.forEach(lead => {
-      if (lead.sales_person_id) {
-        sellers.set(lead.sales_person_id, (sellers.get(lead.sales_person_id) || 0) + 1);
+      const c = canonicalSeller(lead.sales_person_id);
+      if (c) {
+        sellers.set(c, (sellers.get(c) || 0) + 1);
       }
     });
     return Array.from(sellers.entries()).sort((a, b) => b[1] - a[1]);
@@ -222,7 +224,7 @@ export default function Leads() {
       if (salesStatusFilter !== "all" && lead.sales_status !== salesStatusFilter) return false;
 
       // Seller filter
-      if (sellerFilter !== "all" && lead.sales_person_id !== sellerFilter) return false;
+      if (sellerFilter !== "all" && canonicalSeller(lead.sales_person_id) !== sellerFilter) return false;
 
       // Score range filter
       if (lead.lead_score !== null && lead.lead_score !== undefined) {
