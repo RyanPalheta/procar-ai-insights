@@ -24,11 +24,11 @@ interface LeadsConversionByQuoteChartProps {
 
 const TOOLTIP = {
   description:
-    "Mostra, por faixa de valor do orçamento, quantos dos orçamentos gerados foram pagos; eixo X = faixas em USD, barra = % de orçamentos pagos. A linha tracejada marca a média entre as faixas.",
+    "Mostra, por faixa de valor do PRIMEIRO orçamento que o lead recebeu, quantos leads viraram venda paga; eixo X = faixas em USD, barra = % de leads convertidos. A linha tracejada marca a média entre as faixas. Mesma definição de conversão do gráfico de Tempo de Resposta.",
   source:
-    "vem dos orçamentos do ShopMonkey (a fonte real da loja): todo pedido nasce como orçamento e vira venda quando é pago. Não depende do chat/IA.",
+    "cruza os leads do painel com os orçamentos do ShopMonkey, ligados pelo telefone do cliente. Só conta orçamentos gerados DEPOIS da chegada do lead (sem arquivados e sem valor zero) — orçamentos de clientes walk-in que não vieram como lead ficam de fora.",
   calculation:
-    "agrupa os orçamentos criados no período pelo valor total: $0-500, $500-1000, $1000-2000, $2000+ (sem os arquivados e sem os de valor zero). Em cada faixa: orçamentos pagos divididos pelos gerados, vezes 100.",
+    "para cada lead do período com orçamento no ShopMonkey, pega o primeiro orçamento após a chegada e agrupa pela faixa de valor: $0-500, $500-1000, $1000-2000, $2000+. A taxa da faixa = leads com venda PAGA na loja (ShopMonkey, paga depois da chegada do lead) divididos pelos leads da faixa, vezes 100.",
 };
 
 // Semântica vs. média: verde acima, âmbar na média, vermelho abaixo
@@ -92,7 +92,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
         <p className="font-medium">{d.quote_bracket}</p>
         <p className="text-muted-foreground text-xs mt-1">
-          {d._converted} pagos de {d._total} orçamentos
+          {d._converted} convertidos de {d._total} leads com orçamento
         </p>
         {d._avgQuote > 0 && (
           <p className="text-xs mt-1">
@@ -214,7 +214,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
                   <span className="font-semibold text-success">
                     {totalPagos} de {totalGerados}
                   </span>{" "}
-                  orçamentos do período foram pagos ({overallRate.toFixed(1)}%)
+                  leads que receberam orçamento converteram em venda paga ({overallRate.toFixed(1)}%)
                   {bestBracket && (bestBracket.conversion_rate || 0) > 0 && (
                     <>. Faixa que mais converte:{" "}
                       <span className="font-semibold text-success">

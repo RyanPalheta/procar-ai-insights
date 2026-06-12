@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
-import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Area, AreaChart, CartesianGrid, LabelList, ReferenceLine, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 
 interface LeadsTimelineChartProps {
@@ -22,6 +22,27 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
   const peak = data.length > 0 ? Math.max(...data.map((d) => d.count)) : 0;
   // ~7 rótulos no eixo X independente do tamanho do período
   const tickInterval = Math.max(0, Math.ceil(data.length / 7) - 1);
+  // valor sempre visível em cada ponto; em períodos longos pula alguns
+  // rótulos (máx. ~25) para não sobrepor — o tooltip continua com todos
+  const labelStep = Math.max(1, Math.ceil(data.length / 25));
+
+  const renderPointLabel = (props: { x?: number | string; y?: number | string; value?: number | string; index?: number }) => {
+    const { x, y, value, index } = props;
+    if (index === undefined || index % labelStep !== 0) return null;
+    return (
+      <text
+        x={Number(x)}
+        y={Number(y) - 9}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={700}
+        style={{ fontVariantNumeric: "tabular-nums" }}
+        fill="hsl(var(--foreground))"
+      >
+        {value}
+      </text>
+    );
+  };
 
   return (
     <MagicBentoCard className="rounded-lg col-span-full" glowColor="228, 0, 43">
@@ -59,7 +80,7 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
           {data.length > 0 ? (
             <ChartContainer config={chartConfig} className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={data} margin={{ top: 22, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="leadsTimelineGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.32} />
@@ -106,9 +127,11 @@ export function LeadsTimelineChart({ data }: LeadsTimelineChartProps) {
                     stroke="hsl(var(--chart-1))"
                     strokeWidth={2.5}
                     fill="url(#leadsTimelineGradient)"
-                    dot={false}
+                    dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 2.5 }}
                     activeDot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2, stroke: "hsl(var(--card))", r: 5 }}
-                  />
+                  >
+                    <LabelList dataKey="count" content={renderPointLabel} />
+                  </Area>
                 </AreaChart>
               </ResponsiveContainer>
             </ChartContainer>

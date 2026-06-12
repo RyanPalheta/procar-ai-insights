@@ -6,6 +6,7 @@ import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X,
 import { Button } from "@/components/ui/button";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
+import { format } from "date-fns";
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +44,8 @@ interface LeadsKPICardsProps {
   leadsWithQuoteVariation: number | null;
   newLeads24h: number;
   newLeads24hVariation: number | null;
+  /** variação do total de leads do período vs período anterior (p/ o card dinâmico) */
+  totalLeadsVariation?: number | null;
   leadsWithQuote: number;
   avgQuotedPrice: number;
   avgQuotedPriceVariation: number | null;
@@ -108,11 +111,11 @@ const kpiTooltips = {
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
   newLeads24h: {
-    title: "Leads Novos Hoje",
-    description: "Quantos clientes novos chegaram HOJE — de meia-noite a 23:59 no horário da loja.",
-    fonte: "base do painel (= Kommo, espelho + chat, sem duplicatas). Dia-calendário no fuso da loja (America/New_York) — o mesmo dia do 'Hoje' da Kommo.",
-    calculo: "conta os clientes criados de 00:00 a 23:59 de hoje (horário da loja), comparados com ONTEM (dia completo). Não muda quando você troca o filtro de período.",
-    comparison: (_periodLabel: string, _isAll: boolean) => "Comparando com ontem (dia completo)"
+    title: "Leads Novos",
+    description: "Quantos clientes novos chegaram no período selecionado no filtro (dias-calendário no horário da loja).",
+    fonte: "base do painel (= Kommo, espelho + chat, sem duplicatas). Dia-calendário no fuso da loja (America/New_York) — a mesma régua da Kommo.",
+    calculo: "conta os clientes criados dentro do período do filtro, comparados com a janela imediatamente anterior de mesma duração.",
+    comparison: (_periodLabel: string, _isAll: boolean) => "Acompanha o filtro de período"
   },
   leadsWithQuote: {
     title: "Leads com Cotação",
@@ -183,6 +186,7 @@ export function LeadsKPICards({
   leadsWithQuoteVariation,
   newLeads24h,
   newLeads24hVariation,
+  totalLeadsVariation = null,
   leadsWithQuote,
   avgQuotedPrice,
   avgQuotedPriceVariation,
@@ -249,6 +253,65 @@ export function LeadsKPICards({
       isNegativeChange: variation < 0
     };
   };
+
+  // Card "Leads Novos" acompanha o filtro de período: Hoje → dia atual vs ontem;
+  // 7/30/90 → total do período vs janela anterior; personalizado → "de X a Y".
+  const newLeadsCard = (() => {
+    const resolved = resolvePeriod(period);
+    switch (period.preset) {
+      case "today":
+        return {
+          title: "Leads Novos Hoje",
+          value: newLeads24h,
+          description: "00:00–23:59 de hoje (horário da loja) · vs ontem",
+          trend: getTrend(newLeads24hVariation, true),
+          comparison: "Comparando com ontem (dia completo)",
+          calculo: "conta os clientes criados de 00:00 a 23:59 de hoje (horário da loja), comparados com ONTEM (dia completo).",
+        };
+      case "yesterday":
+        return {
+          title: "Leads Novos Ontem",
+          value: totalLeadsCount,
+          description: "00:00–23:59 de ontem (horário da loja) · vs dia anterior",
+          trend: getTrend(totalLeadsVariation, true),
+          comparison: "Comparando ontem com o dia anterior (dias completos)",
+          calculo: "conta os clientes criados de 00:00 a 23:59 de ontem (horário da loja), comparados com o dia anterior.",
+        };
+      case "7":
+      case "30":
+      case "90":
+        return {
+          title: `Leads Novos em ${period.preset} Dias`,
+          value: totalLeadsCount,
+          description: `${resolved.label.toLowerCase()} · vs ${period.preset} dias anteriores`,
+          trend: getTrend(totalLeadsVariation, true),
+          comparison: `Comparando ${resolved.label.toLowerCase()} com os ${period.preset} dias anteriores`,
+          calculo: `conta os clientes criados nos ${period.preset} dias do período (dias-calendário no horário da loja), comparados com a janela anterior de mesma duração.`,
+        };
+      case "all":
+        return {
+          title: "Leads Novos (Total)",
+          value: totalLeadsCount,
+          description: "todo o período",
+          trend: undefined,
+          comparison: "Mostrando dados de todo o período",
+          calculo: "conta todos os clientes da base do painel, sem recorte de período.",
+        };
+      case "custom": {
+        const desc = resolved.from && resolved.to
+          ? `de ${format(resolved.from, "dd/MM/yyyy")} a ${format(resolved.to, "dd/MM/yyyy")}`
+          : resolved.label;
+        return {
+          title: "Leads Novos no Período",
+          value: totalLeadsCount,
+          description: desc,
+          trend: getTrend(totalLeadsVariation, true),
+          comparison: `Comparando ${desc} com o período anterior de mesma duração`,
+          calculo: "conta os clientes criados dentro do intervalo escolhido (dias-calendário no horário da loja), comparados com a janela anterior de mesma duração.",
+        };
+      }
+    }
+  })();
 
   return (
     <div className="space-y-3">
@@ -360,21 +423,21 @@ export function LeadsKPICards({
               <TooltipTrigger asChild>
                 <div className="cursor-help">
                   <KPICard
-                    title="Leads Novos Hoje"
-                    value={newLeads24h}
+                    title={newLeadsCard.title}
+                    value={newLeadsCard.value}
                     icon={Clock}
                     variant="default"
-                    description="00:00–23:59 de hoje (horário da loja) · vs ontem"
-                    trend={getTrend(newLeads24hVariation, true)}
+                    description={newLeadsCard.description}
+                    trend={newLeadsCard.trend}
                   />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs p-3">
                 <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.newLeads24h.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.newLeads24h.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.newLeads24h.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.newLeads24h.fonte} calculo={kpiTooltips.newLeads24h.calculo} />
+                  <p className="font-medium">{newLeadsCard.title}</p>
+                  <p className="text-xs text-muted-foreground">Quantos clientes novos chegaram no período selecionado no filtro (dias-calendário no horário da loja).</p>
+                  <p className="text-xs text-primary">{newLeadsCard.comparison}</p>
+                  <TooltipProvenance fonte={kpiTooltips.newLeads24h.fonte} calculo={newLeadsCard.calculo} />
                 </div>
               </TooltipContent>
             </Tooltip>
