@@ -343,6 +343,7 @@ export default function Dashboard() {
         leadsWithQuoteVariation: null,
         newLeads24h,
         newLeads24hVariation: null,
+        totalLeadsVariation: null,
         leadsWithQuote,
         avgQuotedPrice,
         avgQuotedPriceVariation: null,
@@ -370,6 +371,7 @@ export default function Dashboard() {
       leadsWithQuoteVariation: null,
       newLeads24h: 0,
       newLeads24hVariation: null,
+      totalLeadsVariation: null,
       leadsWithQuote: 0,
       avgQuotedPrice: 0,
       avgQuotedPriceVariation: null,
@@ -417,6 +419,12 @@ export default function Dashboard() {
       newLeads24hVariation = ((kpisData.new_audited_24h - kpisData.new_audited_24h_previous) / kpisData.new_audited_24h_previous) * 100;
     }
 
+    // variação do total de leads do período (p/ o card "Leads Novos" dinâmico)
+    let totalLeadsVariation: number | null = null;
+    if (kpisData.total_leads_previous && kpisData.total_leads_previous > 0) {
+      totalLeadsVariation = ((kpisData.total_leads - kpisData.total_leads_previous) / kpisData.total_leads_previous) * 100;
+    }
+
     let avgQuotedPriceVariation: number | null = null;
     if (kpisData.avg_quoted_price_previous && kpisData.avg_quoted_price_previous > 0) {
       avgQuotedPriceVariation = ((kpisData.avg_quoted_price - kpisData.avg_quoted_price_previous) / kpisData.avg_quoted_price_previous) * 100;
@@ -455,6 +463,7 @@ export default function Dashboard() {
       leadsWithQuoteVariation,
       newLeads24h: kpisData.new_audited_24h,
       newLeads24hVariation,
+      totalLeadsVariation,
       leadsWithQuote: kpisData.leads_with_quote,
       avgQuotedPrice: kpisData.avg_quoted_price,
       avgQuotedPriceVariation,
