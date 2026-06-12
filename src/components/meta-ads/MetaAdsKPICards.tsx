@@ -50,7 +50,7 @@ export function MetaAdsKPICards({ data, previousData, supabaseMetrics }: MetaAds
   const costPerAppointment = confirmedAppointments > 0 ? data.spend / confirmedAppointments : 0;
   const costPerFinancial = financialPresented > 0 ? data.spend / financialPresented : 0;
   return (
-    <MagicBentoGrid enableSpotlight spotlightRadius={300} glowColor="59, 130, 246">
+    <MagicBentoGrid enableSpotlight spotlightRadius={300} glowColor="228, 0, 43">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <KPICard
           title="Gasto Total"

@@ -8,9 +8,10 @@ interface LeadsObjectionsChartProps {
   data: { name: string; value: number }[];
 }
 
+// Escala de "calor" da marca: objeção mais frequente = vermelho mais forte
 const OBJECTION_TREMOR_COLORS = [
-  "red", "orange", "amber", "yellow", "lime",
-  "emerald", "teal", "cyan", "sky", "blue",
+  "rose", "rose", "orange", "amber", "amber",
+  "slate", "slate", "slate", "slate", "slate",
 ];
 
 export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
@@ -19,7 +20,7 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
 
   if (safeData.length === 0) {
     return (
-      <MagicBentoCard className="rounded-lg" glowColor="239, 68, 68">
+      <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
         <Card className="bg-card border-border h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -47,7 +48,7 @@ export function LeadsObjectionsChart({ data }: LeadsObjectionsChartProps) {
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="239, 68, 68">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

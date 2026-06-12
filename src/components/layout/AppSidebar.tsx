@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useMemo } from "react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/procar-logo.avif";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -135,15 +135,15 @@ function SidebarInner() {
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src={logo}
-                alt="PROCAR Logo"
-                className="h-8 w-8 flex-shrink-0 object-contain"
-              />
-              <div>
-                <h2 className="font-semibold text-sm tracking-tight text-sidebar-foreground leading-none">PROCAR</h2>
-                <p className="text-[10px] text-sidebar-foreground/50 font-medium mt-0.5">Dashboard</p>
+              {/* chip escuro só no tema claro — no dark a logo assenta direto no fundo */}
+              <div className="flex items-center rounded-lg bg-[#101114] px-2.5 py-2 flex-shrink-0 dark:bg-transparent dark:px-0 dark:py-0">
+                <img
+                  src={logo}
+                  alt="ProCar Sound & Security"
+                  className="h-6 w-auto dark:h-7"
+                />
               </div>
+              <p className="text-[10px] text-sidebar-foreground/50 font-medium">Dashboard</p>
             </div>
             <SidebarTrigger className="text-sidebar-foreground/50 hover:text-sidebar-foreground" />
           </div>

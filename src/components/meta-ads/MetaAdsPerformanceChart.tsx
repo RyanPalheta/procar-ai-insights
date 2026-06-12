@@ -18,7 +18,7 @@ const chartConfig = {
   },
   clicks: {
     label: "Cliques",
-    color: "hsl(142, 71%, 45%)",
+    color: "hsl(var(--success))",
   },
 };
 
@@ -29,7 +29,7 @@ export function MetaAdsPerformanceChart({ data }: MetaAdsPerformanceChartProps) 
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -87,10 +87,10 @@ export function MetaAdsPerformanceChart({ data }: MetaAdsPerformanceChartProps) 
                     yAxisId="right"
                     type="monotone"
                     dataKey="clicks"
-                    stroke="hsl(142, 71%, 45%)"
+                    stroke="hsl(var(--success))"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ fill: "hsl(142, 71%, 45%)", r: 4 }}
+                    activeDot={{ fill: "hsl(var(--success))", r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

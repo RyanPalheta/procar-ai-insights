@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview Redesign — Dashboard ProCar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<style>
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 224 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 30% 12%;
+    --primary: 349 100% 45%;            /* ProCar red #e4002b */
+    --primary-foreground: 0 0% 100%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 9% 45%;
+    --border: 220 13% 89%;
+    --success: 152 60% 36%;
+    --warning: 38 92% 50%;
+    --destructive: 0 72% 42%;
+    --chart-1: 349 100% 45%;            /* vermelho ProCar */
+    --chart-2: 240 6% 12%;              /* grafite */
+    --chart-3: 38 92% 50%;              /* âmbar */
+    --chart-4: 220 9% 56%;              /* aço */
+    --chart-5: 351 95% 71%;             /* rosa-vermelho claro */
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 20% / .04), 0 2px 6px -1px hsl(220 20% 20% / .06);
+    --shadow-md: 0 2px 6px 0 hsl(220 20% 20% / .04), 0 8px 20px -4px hsl(220 20% 20% / .08);
+    --radius: 0.625rem;
+  }
+  .dark {
+    --background: 240 6% 8%;
+    --foreground: 220 14% 85%;
+    --card: 240 6% 11%;
+    --card-foreground: 220 14% 85%;
+    --primary: 349 100% 58%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 220 9% 58%;
+    --border: 240 5% 18%;
+    --success: 152 55% 45%;
+    --warning: 38 88% 52%;
+    --destructive: 0 80% 62%;
+    --chart-1: 349 100% 60%;
+    --chart-2: 220 14% 88%;
+    --chart-3: 40 95% 55%;
+    --chart-4: 220 9% 62%;
+    --chart-5: 351 95% 71%;
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / .12), 0 2px 6px -1px hsl(0 0% 0% / .15);
+    --shadow-md: 0 2px 6px 0 hsl(0 0% 0% / .14), 0 8px 20px -4px hsl(0 0% 0% / .18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; border-color: hsl(var(--border)); }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    transition: background .25s, color .25s;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- layout ---------- */
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 80px; }
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: hsl(var(--background) / .85);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+  .logo-chip { background: #fff; border-radius: 10px; padding: 6px 12px; box-shadow: var(--shadow-sm); border: 1px solid hsl(var(--border)); display: flex; align-items: center; }
+  .logo-chip img { height: 38px; display: block; }
+  .topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .topbar p { font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .spacer { flex: 1; }
+  .toggle-btn {
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    font: 600 12px 'Inter'; color: hsl(var(--foreground));
+    background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+    border-radius: 999px; padding: 8px 16px; box-shadow: var(--shadow-sm);
+    transition: border-color .2s, background .2s;
+  }
+  .toggle-btn:hover { border-color: hsl(var(--primary) / .5); }
+
+  section { margin-top: 56px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .sec-num {
+    font: 700 11px 'IBM Plex Mono'; color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / .35); border-radius: 6px; padding: 2px 7px;
+  }
+  .sec-head h2 { font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
+  .sec-desc { font-size: 13px; color: hsl(var(--muted-foreground)); margin-bottom: 20px; max-width: 760px; line-height: 1.55; }
+
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .ba-grid { grid-template-columns: 1fr; } }
+  .ba-label { display: inline-flex; align-items: center; gap: 6px; font: 700 10px 'Inter'; letter-spacing: .1em; text-transform: uppercase; border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
+  .ba-label.before { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  .ba-label.after { background: hsl(var(--primary) / .1); color: hsl(var(--primary)); }
+
+  .card {
+    background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+    border-radius: 14px; box-shadow: var(--shadow-sm); padding: 20px;
+    transition: background .25s, border-color .25s;
+  }
+  .card.after-card { border-top: 2px solid hsl(var(--primary)); }
+  .card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+  .card-title svg { width: 16px; height: 16px; color: hsl(var(--primary)); flex: none; }
+  .card-sub { font-size: 12px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
+  .chart-box { position: relative; height: 230px; margin-top: 14px; }
+  .chart-box.tall { height: 260px; }
+  .chart-box.short { height: 190px; }
+
+  /* ---------- KPI ---------- */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .kpi-old { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 10px; padding: 10px; }
+  .kpi-old .t { font-size: 11px; color: hsl(var(--muted-foreground)); }
+  .kpi-old .v { font-size: 17px; font-weight: 700; margin-top: 2px; }
+  .kpi-old .d { font-size: 10px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
+
+  .kpi-new {
+    background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+    border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden; transition: border-color .2s, transform .2s;
+  }
+  .kpi-new:hover { border-color: hsl(var(--primary) / .45); }
+  .kpi-new .head { display: flex; align-items: center; justify-content: space-between; }
+  .kpi-new .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; }
+  .kpi-new .ic svg { width: 16px; height: 16px; }
+  .ic.red { background: hsl(var(--primary) / .12); color: hsl(var(--primary)); }
+  .ic.green { background: hsl(var(--success) / .14); color: hsl(var(--success)); }
+  .ic.amber { background: hsl(var(--warning) / .16); color: hsl(var(--warning)); }
+  .trend { display: inline-flex; align-items: center; gap: 3px; font: 700 11px 'Inter'; border-radius: 999px; padding: 3px 8px; }
+  .trend.up { background: hsl(var(--success) / .13); color: hsl(var(--success)); }
+  .trend.down { background: hsl(var(--destructive) / .12); color: hsl(var(--destructive)); }
+  .trend svg { width: 11px; height: 11px; }
+  .kpi-new .label { font: 600 10.5px 'Inter'; letter-spacing: .09em; text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-top: 12px; }
+  .kpi-new .value { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .kpi-new .desc { font-size: 11.5px; color: hsl(var(--muted-foreground)); margin-top: 3px; }
+  .spark { position: absolute; right: 12px; bottom: 12px; opacity: .9; }
+
+  /* ---------- summary chips no header do gráfico ---------- */
+  .stat-strip { display: flex; gap: 18px; margin-left: auto; }
+  .stat-strip .s { text-align: right; }
+  .stat-strip .s b { display: block; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .stat-strip .s span { font-size: 10.5px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+
+  /* ---------- sentimento / idiomas ---------- */
+  .emoji-old { display: flex; align-items: flex-end; justify-content: center; gap: 28px; height: 150px; padding-top: 10px; }
+  .emoji-old .e { text-align: center; }
+  .emoji-old .big { font-size: 76px; line-height: 1; animation: pulse 2s infinite; display: block; }
+  .emoji-old .mid { font-size: 44px; line-height: 1; display: block; }
+  .emoji-old .sml { font-size: 34px; line-height: 1; display: block; }
+  @keyframes pulse { 0%,100% { transform: scale(1);} 50% { transform: scale(1.1);} }
+  .emoji-old .n { font-size: 12px; color: hsl(var(--muted-foreground)); margin-top: 8px; }
+
+  .meter-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .meter-row .mi { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; }
+  .meter-row .mi svg { width: 17px; height: 17px; }
+  .meter-row .mlabel { width: 76px; font-size: 12.5px; font-weight: 600; flex: none; }
+  .meter-track { flex: 1; height: 10px; border-radius: 999px; background: hsl(var(--muted)); overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 999px; transition: width .8s cubic-bezier(.22,1,.36,1); }
+  .meter-val { width: 86px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; flex: none; }
+  .meter-val b { font-size: 13.5px; }
+  .meter-val span { color: hsl(var(--muted-foreground)); font-size: 11.5px; }
+  .chip { display: inline-flex; align-items: center; justify-content: center; font: 700 10px 'IBM Plex Mono'; border-radius: 6px; padding: 4px 0; width: 60px; flex: none; background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+  .flag-old { display: flex; align-items: flex-end; justify-content: center; gap: 22px; height: 130px; }
+  .flag-old span { line-height: 1; }
+
+  /* ---------- donut ---------- */
+  .donut-wrap { position: relative; height: 190px; margin-top: 14px; }
+  .donut-center { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .donut-center .in { text-align: center; }
+  .donut-center b { font-size: 26px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; display: block; }
+  .donut-center span { font-size: 10.5px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .legend { margin-top: 16px; display: grid; gap: 9px; }
+  .legend .li { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .legend .nm { flex: 1; color: hsl(var(--foreground)); font-weight: 500; }
+  .legend .vl { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .legend .pc { font-variant-numeric: tabular-nums; color: hsl(var(--muted-foreground)); width: 78px; text-align: right; font-size: 11.5px; }
+
+  /* ---------- tabela ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 14px; }
+  th { text-align: left; font-size: 10.5px; color: hsl(var(--muted-foreground)); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid hsl(var(--border)); }
+  td { padding: 9px 10px; border-bottom: 1px solid hsl(var(--border)); }
+  .tbl-new th { text-transform: uppercase; letter-spacing: .07em; }
+  .tbl-new th.num, .tbl-new td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl-new td.num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .tbl-new tbody tr:nth-child(odd) { background: hsl(var(--muted) / .45); }
+  .tbl-new tbody tr { transition: background .15s; }
+  .tbl-new tbody tr:hover { background: hsl(var(--primary) / .06); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font: 700 10.5px 'Inter'; border-radius: 999px; padding: 3px 10px; }
+  .badge .bd { width: 6px; height: 6px; border-radius: 999px; }
+  .badge.on { background: hsl(var(--success) / .13); color: hsl(var(--success)); }
+  .badge.on .bd { background: hsl(var(--success)); }
+  .badge.off { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  .badge.off .bd { background: hsl(var(--muted-foreground)); }
+  .badge.roas-hi { background: hsl(var(--success) / .13); color: hsl(var(--success)); }
+  .badge.roas-lo { background: hsl(var(--warning) / .15); color: hsl(38 80% 35%); }
+  .dark .badge.roas-lo { color: hsl(var(--warning)); }
+  .badge-old-green { background: #16a34a; color: #fff; border-radius: 6px; font: 600 10.5px 'Inter'; padding: 3px 8px; }
+
+  /* ---------- TV ---------- */
+  .tv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .tv-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md); }
+  .tv-card .h { display: flex; align-items: center; gap: 10px; }
+  .tv-card .h .ic { width: 38px; height: 38px; border-radius: 11px; }
+  .tv-card .h .ic svg { width: 19px; height: 19px; }
+  .tv-card .t { font-size: 12px; font-weight: 600; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: .08em; }
+  .tv-card .v { font-size: 46px; font-weight: 800; letter-spacing: -.03em; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .tv-card .f { margin-top: 6px; font-size: 12.5px; color: hsl(var(--muted-foreground)); }
+
+  /* ---------- paleta ---------- */
+  .pal { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 16px; }
+  .sw { border-radius: 12px; border: 1px solid hsl(var(--border)); overflow: hidden; background: hsl(var(--card)); }
+  .sw .c { height: 52px; }
+  .sw .i { padding: 8px 10px; }
+  .sw .i b { font-size: 11.5px; display: block; }
+  .sw .i span { font: 500 10px 'IBM Plex Mono'; color: hsl(var(--muted-foreground)); }
+
+  .note { font-size: 11.5px; color: hsl(var(--muted-foreground)); margin-top: 12px; line-height: 1.5; }
+  .note b { color: hsl(var(--primary)); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo-chip"><img src="procar-logo.avif" alt="ProCar Sound & Security"></div>
+    <div>
+      <h1>Preview do Redesign — Dashboard</h1>
+      <p>Identidade ProCar · mesma posição dos cards, novo modelo de apresentação dos dados</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="toggle-btn" id="themeToggle">
+      <svg id="iconSun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg>
+      <span id="themeLabel">Modo escuro</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 0 · PALETA -->
+  <section>
+    <div class="sec-head"><span class="sec-num">00</span><h2>Nova paleta — identidade ProCar</h2></div>
+    <p class="sec-desc">O vermelho <b>#E4002B</b> do site vira a cor primária e a <b>chart-1</b>. Grafite, âmbar e aço completam as séries de dados; verde e âmbar continuam reservados para semântica (sucesso/alerta). Tudo vira token CSS — nada de cor hardcoded nos componentes.</p>
+    <div class="pal">
+      <div class="sw"><div class="c" style="background:hsl(var(--primary))"></div><div class="i"><b>Primária</b><span>#E4002B · marca</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--chart-2))"></div><div class="i"><b>Grafite</b><span>chart-2 · séries</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--chart-3))"></div><div class="i"><b>Âmbar</b><span>chart-3 · séries</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--chart-4))"></div><div class="i"><b>Aço</b><span>chart-4 · séries</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--chart-5))"></div><div class="i"><b>Rosa</b><span>chart-5 · séries</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--success))"></div><div class="i"><b>Sucesso</b><span>semântica</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--warning))"></div><div class="i"><b>Alerta</b><span>semântica</span></div></div>
+      <div class="sw"><div class="c" style="background:hsl(var(--destructive))"></div><div class="i"><b>Perda</b><span>semântica</span></div></div>
+    </div>
+  </section>
+
+  <!-- 1 · LEADS NOVOS POR PERÍODO -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Leads Novos por Período</h2></div>
+    <p class="sec-desc">O gráfico que você citou. Antes: estilo default do Tremor, datas crus, linha azul genérica, nenhum contexto. Depois: gradiente da marca, resumo do período no header (total · média/dia · pico), linha tracejada da média e datas curtas em pt-BR.</p>
+    <div class="ba-grid">
+      <div>
+        <span class="ba-label before">Antes</span>
+        <div class="card">
+          <div class="card-title" style="color:hsl(var(--foreground))">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:#3b82f6"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+            Leads Novos por Período
+          </div>
+          <div class="chart-box"><canvas id="chTimelineOld"></canvas></div>
+        </div>
+      </div>
+      <div>
+        <span class="ba-label after">Depois</span>
+        <div class="card after-card">
+          <div style="display:flex; align-items:flex-start;">
+            <div>
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+                Leads Novos por Período
+              </div>
+              <div class="card-sub">últimos 30 dias · fuso da loja</div>
+            </div>
+            <div class="stat-strip">
+              <div class="s"><b id="statTotal">—</b><span>total</span></div>
+              <div class="s"><b id="statAvg">—</b><span>média/dia</span></div>
+              <div class="s"><b id="statPeak">—</b><span>pico</span></div>
+            </div>
+          </div>
+          <div class="chart-box"><canvas id="chTimelineNew"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · KPI CARDS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>KPI Cards</h2></div>
+    <p class="sec-desc">Hierarquia invertida: o número é a estrela (26px, tabular), título em uppercase discreto, badge de tendência com token semântico e sparkline de contexto dos últimos 14 dias.</p>
+    <span class="ba-label before">Antes</span>
+    <div class="kpi-row" style="margin-bottom:22px">
+      <div class="kpi-old"><div class="t">Conversão de Venda</div><div class="v">18.4%</div><div class="d">73 de 397 leads</div></div>
+      <div class="kpi-old"><div class="t">Leads Novos Hoje</div><div class="v">14</div><div class="d">vs 11 ontem</div></div>
+      <div class="kpi-old"><div class="t">Valor Médio Cotado</div><div class="v">$842.50</div><div class="d">presenciais e remotos</div></div>
+      <div class="kpi-old"><div class="t">Tempo 1ª Resposta</div><div class="v">26 min</div><div class="d">mediana do período</div></div>
+    </div>
+    <span class="ba-label after">Depois</span>
+    <div class="kpi-row">
+      <div class="kpi-new">
+        <div class="head">
+          <div class="ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+2.1pp</span>
+        </div>
+        <div class="label">Conversão de Venda</div>
+        <div class="value">18,4%</div>
+        <div class="desc">73 de 397 leads</div>
+        <svg class="spark" width="72" height="26" viewBox="0 0 72 26"><polyline fill="none" stroke="hsl(152 60% 40%)" stroke-width="2" stroke-linecap="round" points="0,20 8,18 16,19 24,15 32,16 40,12 48,13 56,9 64,10 72,6"/></svg>
+      </div>
+      <div class="kpi-new">
+        <div class="head">
+          <div class="ic red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+          <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+27%</span>
+        </div>
+        <div class="label">Leads Novos Hoje</div>
+        <div class="value">14</div>
+        <div class="desc">vs 11 ontem</div>
+        <svg class="spark" width="72" height="26" viewBox="0 0 72 26"><polyline fill="none" stroke="hsl(349 100% 50%)" stroke-width="2" stroke-linecap="round" points="0,16 8,18 16,14 24,17 32,12 40,15 48,10 56,13 64,8 72,5"/></svg>
+      </div>
+      <div class="kpi-new">
+        <div class="head">
+          <div class="ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <span class="trend down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg>−4%</span>
+        </div>
+        <div class="label">Valor Médio Cotado</div>
+        <div class="value">$842</div>
+        <div class="desc">presenciais e remotos</div>
+        <svg class="spark" width="72" height="26" viewBox="0 0 72 26"><polyline fill="none" stroke="hsl(38 92% 48%)" stroke-width="2" stroke-linecap="round" points="0,8 8,10 16,9 24,12 32,11 40,14 48,12 56,16 64,15 72,17"/></svg>
+      </div>
+      <div class="kpi-new">
+        <div class="head">
+          <div class="ic red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>−8 min</span>
+        </div>
+        <div class="label">Tempo 1ª Resposta</div>
+        <div class="value">26 min</div>
+        <div class="desc">mediana do período</div>
+        <svg class="spark" width="72" height="26" viewBox="0 0 72 26"><polyline fill="none" stroke="hsl(349 100% 50%)" stroke-width="2" stroke-linecap="round" points="0,6 8,9 16,8 24,12 32,10 40,14 48,13 56,16 64,18 72,20"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · SENTIMENTO -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Sentimento dos Leads</h2></div>
+    <p class="sec-desc">Os emojis pulsando dão lugar a ícones SVG com barras de progresso — a mesma informação, lida em 2 segundos, com percentual e contagem em números tabulares. Animação respeita <span class="mono" style="font-size:11px">prefers-reduced-motion</span>.</p>
+    <div class="ba-grid">
+      <div>
+        <span class="ba-label before">Antes</span>
+        <div class="card">
+          <div class="card-title" style="color:hsl(var(--foreground))">Sentimento</div>
+          <div class="emoji-old">
+            <div class="e"><span class="big">😊</span><div class="n">182</div></div>
+            <div class="e"><span class="mid">😐</span><div class="n">147</div></div>
+            <div class="e"><span class="sml">😞</span><div class="n">68</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="ba-label after">Depois</span>
+        <div class="card after-card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            Sentimento dos Leads
+          </div>
+          <div class="card-sub">397 conversas analisadas pela IA</div>
+          <div class="meter-row">
+            <div class="mi" style="background:hsl(var(--success)/.14); color:hsl(var(--success))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+            <div class="mlabel">Positivo</div>
+            <div class="meter-track"><div class="meter-fill" style="width:46%; background:hsl(var(--success))"></div></div>
+            <div class="meter-val"><b>46%</b> <span>· 182</span></div>
+          </div>
+          <div class="meter-row">
+            <div class="mi" style="background:hsl(var(--warning)/.16); color:hsl(var(--warning))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+            <div class="mlabel">Neutro</div>
+            <div class="meter-track"><div class="meter-fill" style="width:37%; background:hsl(var(--warning))"></div></div>
+            <div class="meter-val"><b>37%</b> <span>· 147</span></div>
+          </div>
+          <div class="meter-row">
+            <div class="mi" style="background:hsl(var(--destructive)/.12); color:hsl(var(--destructive))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+            <div class="mlabel">Negativo</div>
+            <div class="meter-track"><div class="meter-fill" style="width:17%; background:hsl(var(--destructive))"></div></div>
+            <div class="meter-val"><b>17%</b> <span>· 68</span></div>
+          </div>
+          <p class="note">Leitura instantânea: <b>predomínio positivo</b>, com 17% das conversas precisando de atenção.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · IDIOMAS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Leads por Idioma</h2></div>
+    <p class="sec-desc">Bandeiras gigantes viram chips monoespaçados + barras proporcionais — compara-se de relance, sem depender de emoji.</p>
+    <div class="ba-grid">
+      <div>
+        <span class="ba-label before">Antes</span>
+        <div class="card">
+          <div class="card-title" style="color:hsl(var(--foreground))">Idiomas</div>
+          <div class="flag-old">
+            <div style="text-align:center"><span style="font-size:74px">🇧🇷</span><div class="card-sub">214</div></div>
+            <div style="text-align:center"><span style="font-size:52px">🇺🇸</span><div class="card-sub">121</div></div>
+            <div style="text-align:center"><span style="font-size:38px">🇪🇸</span><div class="card-sub">47</div></div>
+            <div style="text-align:center"><span style="font-size:30px">🌐</span><div class="card-sub">15</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="ba-label after">Depois</span>
+        <div class="card after-card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Leads por Idioma
+          </div>
+          <div class="card-sub">397 leads no período</div>
+          <div class="meter-row"><span class="chip">PT-BR</span><div class="meter-track"><div class="meter-fill" style="width:54%; background:hsl(var(--chart-1))"></div></div><div class="meter-val"><b>54%</b> <span>· 214</span></div></div>
+          <div class="meter-row"><span class="chip">EN-US</span><div class="meter-track"><div class="meter-fill" style="width:30%; background:hsl(var(--chart-2))"></div></div><div class="meter-val"><b>30%</b> <span>· 121</span></div></div>
+          <div class="meter-row"><span class="chip">ES</span><div class="meter-track"><div class="meter-fill" style="width:12%; background:hsl(var(--chart-3))"></div></div><div class="meter-val"><b>12%</b> <span>· 47</span></div></div>
+          <div class="meter-row"><span class="chip">N/D</span><div class="meter-track"><div class="meter-fill" style="width:4%; background:hsl(var(--chart-4))"></div></div><div class="meter-val"><b>4%</b> <span>· 15</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · DONUTS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Canais &amp; Compliance — donuts com rótulo central</h2></div>
+    <p class="sec-desc">Todo donut ganha o número-resumo no centro e legenda padronizada (dot + nome + valor + %). Cores de marca dos canais são mantidas — é a única exceção legítima à paleta.</p>
+    <div class="ba-grid">
+      <div class="card after-card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          Leads por Canal
+        </div>
+        <div class="donut-wrap">
+          <canvas id="chChannels"></canvas>
+          <div class="donut-center"><div class="in"><b>397</b><span>leads</span></div></div>
+        </div>
+        <div class="legend">
+          <div class="li"><span class="dot" style="background:#25D366"></span><span class="nm">WhatsApp</span><span class="vl tnum">268</span><span class="pc">21% conv.</span></div>
+          <div class="li"><span class="dot" style="background:#1877F2"></span><span class="nm">Facebook</span><span class="vl tnum">82</span><span class="pc">14% conv.</span></div>
+          <div class="li"><span class="dot" style="background:#E4405F"></span><span class="nm">Instagram</span><span class="vl tnum">39</span><span class="pc">11% conv.</span></div>
+          <div class="li"><span class="dot" style="background:hsl(var(--chart-4))"></span><span class="nm">Outros</span><span class="vl tnum">8</span><span class="pc">—</span></div>
+        </div>
+      </div>
+      <div class="card after-card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          Compliance do Atendimento
+        </div>
+        <div class="donut-wrap">
+          <canvas id="chCompliance"></canvas>
+          <div class="donut-center"><div class="in"><b style="color:hsl(var(--success))">78%</b><span>score médio</span></div></div>
+        </div>
+        <div class="legend">
+          <div class="li"><span class="dot" style="background:hsl(var(--success))"></span><span class="nm">Excelente</span><span class="vl tnum">156</span><span class="pc">39%</span></div>
+          <div class="li"><span class="dot" style="background:hsl(80 60% 45%)"></span><span class="nm">Bom</span><span class="vl tnum">134</span><span class="pc">34%</span></div>
+          <div class="li"><span class="dot" style="background:hsl(var(--warning))"></span><span class="nm">Regular</span><span class="vl tnum">71</span><span class="pc">18%</span></div>
+          <div class="li"><span class="dot" style="background:hsl(var(--destructive))"></span><span class="nm">Baixo</span><span class="vl tnum">36</span><span class="pc">9%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · BARRAS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Top Produtos &amp; Funil Meta Ads</h2></div>
+    <p class="sec-desc">Barras horizontais ordenadas, cantos arredondados, rótulo de valor na ponta (abreviado: 12k) e grade só no eixo necessário. No funil, cada etapa mostra a taxa de passagem.</p>
+    <div class="ba-grid">
+      <div class="card after-card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
+          Top Produtos Desejados
+        </div>
+        <div class="card-sub">5 mais citados no período</div>
+        <div class="chart-box"><canvas id="chProducts"></canvas></div>
+      </div>
+      <div class="card after-card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
+          Funil Meta Ads
+        </div>
+        <div class="card-sub">impressões → compras · taxa de passagem por etapa</div>
+        <div class="chart-box"><canvas id="chFunnel"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · CONVERSÃO EMPILHADA -->
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Conversão por Faixa de Cotação</h2></div>
+    <p class="sec-desc">Barras 100% empilhadas com a paleta semântica (verde = pago, âmbar = em aberto, cinza = perdido), percentuais direto na barra e total da faixa no eixo.</p>
+    <div class="card after-card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 16V8M12 16v-5M17 16v-2"/></svg>
+        Conversão por Cotação (ShopMonkey)
+      </div>
+      <div class="card-sub">orçamentos gerados x pagos por faixa de valor</div>
+      <div class="chart-box short"><canvas id="chStacked"></canvas></div>
+      <div class="legend" style="grid-template-columns: repeat(3, max-content); gap: 20px;">
+        <div class="li"><span class="dot" style="background:hsl(var(--success))"></span><span class="nm">Pago</span></div>
+        <div class="li"><span class="dot" style="background:hsl(var(--warning))"></span><span class="nm">Em aberto</span></div>
+        <div class="li"><span class="dot" style="background:hsl(var(--chart-4))"></span><span class="nm">Perdido</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · TABELA -->
+  <section>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Tabela de Campanhas</h2></div>
+    <p class="sec-desc">Numéricos à direita em fonte mono tabular, zebra sutil, hover de linha e badges com token semântico no lugar do verde cru.</p>
+    <div class="ba-grid">
+      <div>
+        <span class="ba-label before">Antes</span>
+        <div class="card">
+          <table>
+            <thead><tr><th>Campanha</th><th>Status</th><th>Gasto</th><th>Conv.</th><th>ROAS</th></tr></thead>
+            <tbody>
+              <tr><td>Remote Start — Inverno</td><td><span class="badge-old-green">ENABLED</span></td><td>$1,240.55</td><td>38</td><td>4.2</td></tr>
+              <tr><td>Window Tint Promo</td><td><span class="badge-old-green">ENABLED</span></td><td>$890.10</td><td>21</td><td>2.1</td></tr>
+              <tr><td>Audio Upgrade EN</td><td><span class="badge-old-green">ENABLED</span></td><td>$2,114.00</td><td>54</td><td>3.8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <span class="ba-label after">Depois</span>
+        <div class="card after-card">
+          <table class="tbl-new">
+            <thead><tr><th>Campanha</th><th>Status</th><th class="num">Gasto</th><th class="num">Conv.</th><th class="num">ROAS</th></tr></thead>
+            <tbody>
+              <tr><td>Remote Start — Inverno</td><td><span class="badge on"><span class="bd"></span>Ativa</span></td><td class="num">$1,240.55</td><td class="num">38</td><td class="num"><span class="badge roas-hi">4.2×</span></td></tr>
+              <tr><td>Window Tint Promo</td><td><span class="badge on"><span class="bd"></span>Ativa</span></td><td class="num">$890.10</td><td class="num">21</td><td class="num"><span class="badge roas-lo">2.1×</span></td></tr>
+              <tr><td>Audio Upgrade EN</td><td><span class="badge off"><span class="bd"></span>Pausada</span></td><td class="num">$2,114.00</td><td class="num">54</td><td class="num"><span class="badge roas-hi">3.8×</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · TV -->
+  <section>
+    <div class="sec-head"><span class="sec-num">09</span><h2>Painel de TV</h2></div>
+    <p class="sec-desc">Os cards de TV passam a usar os mesmos tokens (hoje são branco/verde/laranja hardcoded e ignoram o dark mode). Valor gigante mantido — é TV — mas com a marca presente.</p>
+    <div class="tv-grid">
+      <div class="tv-card">
+        <div class="h"><div class="ic red" style="display:grid;place-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span class="t">Leads Hoje</span></div>
+        <div class="v">14</div>
+        <div class="f"><span class="trend up" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+27%</span>vs ontem</div>
+      </div>
+      <div class="tv-card">
+        <div class="h"><div class="ic green" style="display:grid;place-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="t">Vendas Hoje</span></div>
+        <div class="v">$3,418</div>
+        <div class="f"><span class="trend up" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+12%</span>vs média 7d</div>
+      </div>
+      <div class="tv-card">
+        <div class="h"><div class="ic amber" style="display:grid;place-items:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="t">1ª Resposta</span></div>
+        <div class="v">26<span style="font-size:22px;font-weight:700;color:hsl(var(--muted-foreground))"> min</span></div>
+        <div class="f"><span class="trend down" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg>meta 15</span>acima da meta</div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note" style="margin-top:48px; text-align:center">Preview estático · cards na mesma posição do dashboard real · toggle claro/escuro no topo reproduz os tokens dos dois temas</p>
+</div>
+
+<script>
+/* ===================== helpers ===================== */
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const hsl = (v, a) => a === undefined ? `hsl(${css(v)})` : `hsl(${css(v)} / ${a})`;
+const fmtK = (v) => v >= 1000 ? (v/1000).toFixed(v >= 10000 ? 0 : 1).replace('.', ',') + 'k' : v.toLocaleString('pt-BR');
+
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.datalabels.display = false;
+
+function baseTooltip() {
+  return {
+    backgroundColor: hsl('--card'),
+    titleColor: hsl('--foreground'),
+    bodyColor: hsl('--foreground'),
+    borderColor: hsl('--border'),
+    borderWidth: 1,
+    cornerRadius: 8,
+    padding: 10,
+    titleFont: { weight: '600', size: 12 },
+    bodyFont: { family: "'IBM Plex Mono', monospace", size: 12 },
+    displayColors: true,
+    boxWidth: 8, boxHeight: 8, boxPadding: 4,
+    usePointStyle: true,
+  };
+}
+function axisColor() { return hsl('--muted-foreground'); }
+function gridColor() { return hsl('--border', 0.5); }
+
+/* ===================== dados ===================== */
+const days = ['1 jun','2 jun','3 jun','4 jun','5 jun','6 jun','7 jun','8 jun','9 jun','10 jun','11 jun','12 jun','13 jun','14 jun','15 jun','16 jun','17 jun','18 jun','19 jun','20 jun','21 jun','22 jun','23 jun','24 jun','25 jun','26 jun','27 jun','28 jun','29 jun','30 jun'];
+const leads = [9,12,8,15,11,6,4,13,17,14,12,9,5,3,16,19,14,11,13,8,6,18,21,15,12,14,9,7,17,14];
+const totalLeads = leads.reduce((a,b)=>a+b,0);
+const avgLeads = totalLeads / leads.length;
+const peakLeads = Math.max(...leads);
+document.getElementById('statTotal').textContent = totalLeads.toLocaleString('pt-BR');
+document.getElementById('statAvg').textContent = avgLeads.toFixed(1).replace('.', ',');
+document.getElementById('statPeak').textContent = peakLeads;
+
+/* linha tracejada na média */
+const avgLinePlugin = {
+  id: 'avgLine',
+  afterDatasetsDraw(chart, args, opts) {
+    if (!opts.value) return;
+    const { ctx, chartArea, scales } = chart;
+    const y = scales.y.getPixelForValue(opts.value);
+    ctx.save();
+    ctx.strokeStyle = opts.color;
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "600 10px 'Inter'";
+    ctx.fillStyle = opts.color;
+    ctx.fillText('média ' + opts.value.toFixed(1).replace('.', ','), chartArea.right - 64, y - 6);
+    ctx.restore();
+  }
+};
+
+/* ===================== charts ===================== */
+const registry = [];
+function makeChart(id, factory) { registry.push({ id, factory }); }
+function renderAll() {
+  registry.forEach(r => {
+    if (r.instance) r.instance.destroy();
+    r.instance = r.factory(document.getElementById(r.id).getContext('2d'));
+  });
+}
+
+/* --- 01 ANTES: tremor default --- */
+makeChart('chTimelineOld', (ctx) => new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: days.map((d,i) => '2026-06-' + String(i+1).padStart(2,'0')),
+    datasets: [{ data: leads, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.18)', fill: true, tension: .4, pointRadius: 0, borderWidth: 1.5 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    scales: {
+      x: { ticks: { color: axisColor(), maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 12, font: { size: 9 } }, grid: { color: gridColor() } },
+      y: { ticks: { color: axisColor() }, grid: { color: gridColor() } }
+    }
+  }
+}));
+
+/* --- 01 DEPOIS: área com gradiente da marca + média --- */
+makeChart('chTimelineNew', (ctx) => {
+  const g = ctx.createLinearGradient(0, 0, 0, 230);
+  const c1 = css('--chart-1');
+  g.addColorStop(0, `hsl(${c1} / .32)`);
+  g.addColorStop(1, `hsl(${c1} / 0)`);
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [{
+        label: 'Leads novos',
+        data: leads,
+        borderColor: hsl('--chart-1'),
+        backgroundColor: g,
+        fill: true, tension: .4,
+        pointRadius: 0, pointHoverRadius: 5,
+        pointHoverBackgroundColor: hsl('--chart-1'),
+        pointHoverBorderColor: hsl('--card'),
+        pointHoverBorderWidth: 2,
+        borderWidth: 2.5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.parsed.y} leads` } },
+        avgLine: { value: avgLeads, color: hsl('--muted-foreground') },
+      },
+      scales: {
+        x: { ticks: { color: axisColor(), autoSkip: true, maxTicksLimit: 7, maxRotation: 0 }, grid: { display: false }, border: { display: false } },
+        y: { beginAtZero: true, ticks: { color: axisColor(), maxTicksLimit: 5 }, grid: { color: gridColor(), drawTicks: false }, border: { display: false, dash: [4,4] } }
+      }
+    },
+    plugins: [avgLinePlugin]
+  });
+});
+
+/* --- 05 canais --- */
+makeChart('chChannels', (ctx) => new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['WhatsApp','Facebook','Instagram','Outros'],
+    datasets: [{ data: [268,82,39,8], backgroundColor: ['#25D366','#1877F2','#E4405F', hsl('--chart-4')], borderColor: hsl('--card'), borderWidth: 3, hoverOffset: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.label}: ${c.parsed} leads` } } }
+  }
+}));
+
+/* --- 05 compliance --- */
+makeChart('chCompliance', (ctx) => new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Excelente','Bom','Regular','Baixo'],
+    datasets: [{ data: [156,134,71,36], backgroundColor: [hsl('--success'), 'hsl(80 60% 45%)', hsl('--warning'), hsl('--destructive')], borderColor: hsl('--card'), borderWidth: 3, hoverOffset: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.label}: ${c.parsed} leads` } } }
+  }
+}));
+
+/* --- 06 top produtos --- */
+makeChart('chProducts', (ctx) => new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Remote Start','Window Tint','Som / Áudio','Alarme','Câmera de Ré'],
+    datasets: [{ data: [96,74,61,38,24], backgroundColor: [hsl('--chart-1'), hsl('--chart-1', .85), hsl('--chart-1', .7), hsl('--chart-1', .55), hsl('--chart-1', .4)], borderRadius: 6, borderSkipped: false, barThickness: 22 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.parsed.x} menções` } },
+      datalabels: { display: true, anchor: 'end', align: 'end', color: axisColor(), font: { weight: '700', size: 11, family: "'IBM Plex Mono', monospace" }, formatter: (v) => v }
+    },
+    scales: {
+      x: { display: false, grace: '12%' },
+      y: { ticks: { color: hsl('--foreground'), font: { weight: '500', size: 12 } }, grid: { display: false }, border: { display: false } }
+    }
+  }
+}));
+
+/* --- 06 funil --- */
+makeChart('chFunnel', (ctx) => {
+  const vals = [184200, 9240, 1240, 318];
+  const pct = ['', '5,0%', '13,4%', '25,6%'];
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Impressões','Cliques','Leads','Compras'],
+      datasets: [{ data: vals.map(v => Math.log10(v)), backgroundColor: [hsl('--chart-4', .55), hsl('--chart-3'), hsl('--chart-1', .8), hsl('--chart-1')], borderRadius: 6, borderSkipped: false, barThickness: 26 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${fmtK(vals[c.dataIndex])}` } },
+        datalabels: {
+          display: true, anchor: 'end', align: 'end', color: hsl('--foreground'),
+          font: { weight: '700', size: 11, family: "'IBM Plex Mono', monospace" },
+          formatter: (v, c) => fmtK(vals[c.dataIndex]) + (pct[c.dataIndex] ? '  ·  ' + pct[c.dataIndex] : '')
+        }
+      },
+      scales: {
+        x: { display: false, grace: '28%' },
+        y: { ticks: { color: hsl('--foreground'), font: { weight: '500', size: 12 } }, grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+});
+
+/* --- 07 stacked 100% --- */
+makeChart('chStacked', (ctx) => {
+  const faixas = ['até $250\n(214 orç.)','$250–500\n(96 orç.)','$500–1k\n(58 orç.)','$1k–2k\n(31 orç.)','$2k+\n(12 orç.)'];
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['até $250','$250–500','$500–1k','$1k–2k','$2k+'],
+      datasets: [
+        { label: 'Pago', data: [38,31,26,19,8], backgroundColor: hsl('--success'), borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 6, bottomRight: 6 }, borderSkipped: false },
+        { label: 'Em aberto', data: [34,38,41,42,50], backgroundColor: hsl('--warning') },
+        { label: 'Perdido', data: [28,31,33,39,42], backgroundColor: hsl('--chart-4', .5), borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 }, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.dataset.label}: ${c.parsed.y}%` } },
+        datalabels: {
+          display: (c) => c.datasetIndex === 0,
+          color: '#fff', font: { weight: '700', size: 11 },
+          formatter: (v) => v + '%'
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { color: hsl('--foreground'), font: { weight: '500' } }, grid: { display: false }, border: { display: false } },
+        y: { stacked: true, max: 100, ticks: { color: axisColor(), callback: (v) => v + '%' , maxTicksLimit: 5 }, grid: { color: gridColor(), drawTicks: false }, border: { display: false } }
+      }
+    }
+  });
+});
+
+/* ===================== render + toggle ===================== */
+renderAll();
+const btn = document.getElementById('themeToggle');
+const lbl = document.getElementById('themeLabel');
+btn.addEventListener('click', () => {
+  const dark = document.documentElement.classList.toggle('dark');
+  lbl.textContent = dark ? 'Modo claro' : 'Modo escuro';
+  renderAll();
+});
+</script>
+</body>
+</html>

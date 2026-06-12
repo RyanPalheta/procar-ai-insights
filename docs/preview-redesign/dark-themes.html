@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="a">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temas Escuro-Metálico — Dashboard ProCar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* ============ TEMA A — GRAFITE ESCOVADO (neutro, sóbrio) ============ */
+  [data-theme="a"] {
+    --background: 220 7% 9%;
+    --card: 220 7% 12%;
+    --card-grad-top: 220 7% 14%;
+    --card-grad-bottom: 220 8% 11%;
+    --foreground: 220 14% 88%;
+    --muted: 220 6% 16%;
+    --muted-foreground: 220 8% 58%;
+    --border: 220 6% 20%;
+    --primary: 349 100% 58%;
+    --success: 152 55% 45%;
+    --warning: 40 90% 55%;
+    --chart-1: 349 100% 60%;
+    --chart-2: 220 14% 86%;
+    --chart-3: 40 95% 55%;
+    --chart-4: 220 8% 55%;
+    --edge-highlight: rgba(255, 255, 255, 0.06);
+    --card-glow: none;
+    --metal-texture: none;
+  }
+  /* ============ TEMA B — AÇO AZULADO (frio, escovado) ============ */
+  [data-theme="b"] {
+    --background: 214 24% 9%;
+    --card: 214 20% 13%;
+    --card-grad-top: 213 19% 16%;
+    --card-grad-bottom: 215 21% 11%;
+    --foreground: 210 28% 88%;
+    --muted: 214 16% 17%;
+    --muted-foreground: 212 14% 60%;
+    --border: 213 16% 24%;
+    --primary: 349 100% 58%;
+    --success: 158 50% 46%;
+    --warning: 42 92% 56%;
+    --chart-1: 349 95% 61%;
+    --chart-2: 207 30% 80%;
+    --chart-3: 42 95% 58%;
+    --chart-4: 212 14% 56%;
+    --edge-highlight: rgba(190, 215, 240, 0.09);
+    --card-glow: none;
+    --metal-texture: repeating-linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 5px
+    );
+  }
+  /* ============ TEMA C — CARBONO RACING (quase-preto, vermelho aceso) ============ */
+  [data-theme="c"] {
+    --background: 240 6% 6%;
+    --card: 240 5% 10%;
+    --card-grad-top: 240 5% 12%;
+    --card-grad-bottom: 240 6% 8%;
+    --foreground: 220 12% 86%;
+    --muted: 240 5% 14%;
+    --muted-foreground: 230 7% 56%;
+    --border: 240 5% 18%;
+    --primary: 350 100% 56%;
+    --success: 152 58% 44%;
+    --warning: 38 95% 54%;
+    --chart-1: 350 100% 58%;
+    --chart-2: 0 0% 84%;
+    --chart-3: 38 95% 56%;
+    --chart-4: 230 6% 52%;
+    --edge-highlight: rgba(255, 255, 255, 0.05);
+    --card-glow: 0 0 28px hsl(350 100% 56% / 0.05);
+    --metal-texture: repeating-conic-gradient(
+      rgba(255, 255, 255, 0.012) 0% 25%,
+      transparent 0% 50%
+    );
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; border-color: hsl(var(--border)); }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    transition: background .3s, color .3s;
+  }
+  /* fundo com vinheta sutil pra dar profundidade de "cabine" */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(1200px 600px at 50% -100px, hsl(var(--card-grad-top) / .55), transparent 70%);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 70px; position: relative; z-index: 1; }
+
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: hsl(var(--background) / .82);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 13px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .logo-chip { background: #0d0e11; border: 1px solid hsl(var(--border)); border-radius: 10px; padding: 7px 12px; display: flex; align-items: center; box-shadow: inset 0 1px 0 var(--edge-highlight); }
+  .logo-chip img { height: 34px; display: block; }
+  .topbar h1 { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; }
+  .topbar p { font-size: 11.5px; color: hsl(var(--muted-foreground)); }
+  .spacer { flex: 1; }
+
+  .tabs { display: flex; gap: 8px; }
+  .tab {
+    cursor: pointer; font: 600 12px 'Inter'; padding: 9px 18px; border-radius: 999px;
+    color: hsl(var(--muted-foreground));
+    background: linear-gradient(180deg, hsl(var(--card-grad-top)), hsl(var(--card-grad-bottom)));
+    border: 1px solid hsl(var(--border));
+    box-shadow: inset 0 1px 0 var(--edge-highlight);
+    transition: color .2s, border-color .2s, box-shadow .2s;
+  }
+  .tab:hover { color: hsl(var(--foreground)); border-color: hsl(var(--primary) / .4); }
+  .tab.active {
+    color: #fff;
+    background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / .82));
+    border-color: hsl(var(--primary));
+    box-shadow: 0 2px 14px hsl(var(--primary) / .35), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+
+  .theme-title { margin-top: 36px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .theme-title h2 { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+  .theme-title p { font-size: 12.5px; color: hsl(var(--muted-foreground)); }
+
+  /* paleta */
+  .pal { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .sw { display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; border-radius: 10px; border: 1px solid hsl(var(--border)); background: linear-gradient(180deg, hsl(var(--card-grad-top)), hsl(var(--card-grad-bottom))); box-shadow: inset 0 1px 0 var(--edge-highlight); }
+  .sw .c { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,.12); }
+  .sw span { font: 600 10.5px 'IBM Plex Mono'; color: hsl(var(--muted-foreground)); }
+
+  /* cards metálicos */
+  .grid { display: grid; gap: 16px; margin-top: 22px; }
+  .g-kpi { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .g-2 { grid-template-columns: 1.45fr 1fr; }
+  @media (max-width: 880px) { .g-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    position: relative;
+    border-radius: 14px;
+    border: 1px solid hsl(var(--border));
+    background: linear-gradient(180deg, hsl(var(--card-grad-top)), hsl(var(--card-grad-bottom)));
+    background-blend-mode: normal;
+    box-shadow: inset 0 1px 0 var(--edge-highlight), 0 8px 24px rgba(0,0,0,.28), var(--card-glow);
+    padding: 18px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .card::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: var(--metal-texture);
+    border-radius: inherit;
+  }
+  .card:hover { border-color: hsl(var(--primary) / .45); }
+  /* friso superior do tema C (cromo) */
+  [data-theme="c"] .card::after {
+    content: ''; position: absolute; top: 0; left: 12px; right: 12px; height: 1.5px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / .65) 30%, rgba(255,255,255,.45) 50%, hsl(var(--primary) / .65) 70%, transparent);
+    opacity: .55;
+  }
+
+  .card-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+  .card-title svg { width: 15px; height: 15px; color: hsl(var(--primary)); flex: none; }
+  .card-sub { font-size: 11.5px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
+  .chart-box { position: relative; height: 210px; margin-top: 14px; }
+  .chart-box.short { height: 185px; }
+
+  /* KPI */
+  .kpi .head { display: flex; align-items: center; justify-content: space-between; }
+  .kpi .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: hsl(var(--primary) / .14); color: hsl(var(--primary)); box-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  .kpi .ic.green { background: hsl(var(--success) / .15); color: hsl(var(--success)); }
+  .kpi .ic.amber { background: hsl(var(--warning) / .15); color: hsl(var(--warning)); }
+  .kpi .ic svg { width: 15px; height: 15px; }
+  .trend { display: inline-flex; align-items: center; gap: 3px; font: 700 11px 'Inter'; border-radius: 999px; padding: 3px 9px; }
+  .trend.up { background: hsl(var(--success) / .14); color: hsl(var(--success)); }
+  .trend.down { background: hsl(var(--warning) / .15); color: hsl(var(--warning)); }
+  .trend svg { width: 11px; height: 11px; }
+  .kpi .label { font: 600 10px 'Inter'; letter-spacing: .09em; text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-top: 12px; }
+  .kpi .value { font-size: 27px; font-weight: 800; letter-spacing: -.02em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .kpi .desc { font-size: 11.5px; color: hsl(var(--muted-foreground)); margin-top: 3px; }
+
+  .stat-strip { display: flex; gap: 18px; margin-left: auto; }
+  .stat-strip .s { text-align: right; }
+  .stat-strip .s b { display: block; font-size: 16.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat-strip .s span { font-size: 9.5px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+
+  /* legenda donut */
+  .donut-wrap { position: relative; height: 175px; margin-top: 12px; }
+  .donut-center { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .donut-center b { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; display: block; text-align: center; }
+  .donut-center span { font-size: 9.5px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .legend { margin-top: 12px; display: grid; gap: 7px; }
+  .legend .li { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 3px; flex: none; }
+  .legend .nm { flex: 1; font-weight: 500; }
+  .legend .vl { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .legend .pc { font-variant-numeric: tabular-nums; color: hsl(var(--muted-foreground)); width: 44px; text-align: right; font-size: 11px; }
+
+  /* tabela */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 12px; }
+  th { text-align: left; font-size: 10px; color: hsl(var(--muted-foreground)); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; padding: 8px 10px; border-bottom: 1px solid hsl(var(--border)); }
+  td { padding: 9px 10px; border-bottom: 1px solid hsl(var(--border) / .6); }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+  tbody tr:nth-child(odd) { background: hsl(var(--muted) / .4); }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: hsl(var(--primary) / .07); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font: 700 10.5px 'Inter'; border-radius: 999px; padding: 3px 10px; }
+  .badge .bd { width: 6px; height: 6px; border-radius: 999px; }
+  .badge.on { background: hsl(var(--success) / .14); color: hsl(var(--success)); }
+  .badge.on .bd { background: hsl(var(--success)); }
+  .badge.roas-hi { background: hsl(var(--success) / .14); color: hsl(var(--success)); }
+  .badge.roas-lo { background: hsl(var(--warning) / .15); color: hsl(var(--warning)); }
+
+  .note { font-size: 11.5px; color: hsl(var(--muted-foreground)); margin-top: 34px; text-align: center; line-height: 1.6; }
+  .note b { color: hsl(var(--primary)); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo-chip"><img src="procar-logo.avif" alt="ProCar Sound & Security"></div>
+    <div>
+      <h1>Tema Escuro-Metálico — 3 opções</h1>
+      <p>mesmos componentes do redesign · alterne as abas para comparar</p>
+    </div>
+    <div class="spacer"></div>
+    <div class="tabs">
+      <button class="tab active" data-pick="a">A · Grafite Escovado</button>
+      <button class="tab" data-pick="b">B · Aço Azulado</button>
+      <button class="tab" data-pick="c">C · Carbono Racing</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="theme-title">
+    <h2 id="themeName">A · Grafite Escovado</h2>
+    <p id="themeDesc">neutro e sóbrio — grafite uniforme, brilho de borda sutil, o vermelho ProCar como único acento</p>
+  </div>
+
+  <div class="pal" id="palStrip"></div>
+
+  <!-- KPIs -->
+  <div class="grid g-kpi">
+    <div class="card kpi">
+      <div class="head">
+        <div class="ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+2.1pp</span>
+      </div>
+      <div class="label">Conversão de Venda</div>
+      <div class="value">18,4%</div>
+      <div class="desc">73 de 397 leads</div>
+    </div>
+    <div class="card kpi">
+      <div class="head">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>+27%</span>
+      </div>
+      <div class="label">Leads Novos Hoje</div>
+      <div class="value">14</div>
+      <div class="desc">vs 11 ontem</div>
+    </div>
+    <div class="card kpi">
+      <div class="head">
+        <div class="ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <span class="trend down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg>−4%</span>
+      </div>
+      <div class="label">Valor Médio Cotado</div>
+      <div class="value">$842</div>
+      <div class="desc">presenciais e remotos</div>
+    </div>
+    <div class="card kpi">
+      <div class="head">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <span class="trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>−8 min</span>
+      </div>
+      <div class="label">Tempo 1ª Resposta</div>
+      <div class="value">26 min</div>
+      <div class="desc">mediana do período</div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="grid">
+    <div class="card">
+      <div style="display:flex; align-items:flex-start;">
+        <div>
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+            Leads Novos por Período
+          </div>
+          <div class="card-sub">últimos 30 dias · fuso da loja</div>
+        </div>
+        <div class="stat-strip">
+          <div class="s"><b>352</b><span>total</span></div>
+          <div class="s"><b>11,7</b><span>média/dia</span></div>
+          <div class="s"><b>21</b><span>pico</span></div>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chTimeline"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Donut + Barras -->
+  <div class="grid g-2">
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
+        Top Produtos Desejados
+      </div>
+      <div class="card-sub">5 mais citados no período</div>
+      <div class="chart-box short"><canvas id="chProducts"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Leads por Canal
+      </div>
+      <div class="donut-wrap">
+        <canvas id="chChannels"></canvas>
+        <div class="donut-center"><div><b>397</b><span>leads</span></div></div>
+      </div>
+      <div class="legend">
+        <div class="li"><span class="dot" style="background:#25D366"></span><span class="nm">WhatsApp</span><span class="vl">268</span><span class="pc">68%</span></div>
+        <div class="li"><span class="dot" style="background:#1877F2"></span><span class="nm">Facebook</span><span class="vl">82</span><span class="pc">21%</span></div>
+        <div class="li"><span class="dot" style="background:#E4405F"></span><span class="nm">Instagram</span><span class="vl">39</span><span class="pc">10%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+        Campanhas
+      </div>
+      <table>
+        <thead><tr><th>Campanha</th><th>Status</th><th class="num">Gasto</th><th class="num">Conv.</th><th class="num">ROAS</th></tr></thead>
+        <tbody>
+          <tr><td>Remote Start — Inverno</td><td><span class="badge on"><span class="bd"></span>Ativa</span></td><td class="num">$1,240.55</td><td class="num">38</td><td class="num"><span class="badge roas-hi">4.2×</span></td></tr>
+          <tr><td>Window Tint Promo</td><td><span class="badge on"><span class="bd"></span>Ativa</span></td><td class="num">$890.10</td><td class="num">21</td><td class="num"><span class="badge roas-lo">2.1×</span></td></tr>
+          <tr><td>Audio Upgrade EN</td><td><span class="badge on"><span class="bd"></span>Ativa</span></td><td class="num">$2,114.00</td><td class="num">54</td><td class="num"><span class="badge roas-hi">3.8×</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="note">Preview estático com os mesmos componentes do redesign aprovado · <b>A</b> = neutro corporativo · <b>B</b> = metal frio com textura escovada · <b>C</b> = quase-preto com friso cromado e leve glow vermelho</p>
+</div>
+
+<script>
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const hsl = (v, a) => a === undefined ? `hsl(${css(v)})` : `hsl(${css(v)} / ${a})`;
+
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+
+const THEMES = {
+  a: { name: "A · Grafite Escovado", desc: "neutro e sóbrio — grafite uniforme, brilho de borda sutil, o vermelho ProCar como único acento" },
+  b: { name: "B · Aço Azulado", desc: "metal frio — fundo com temperatura azulada e textura escovada diagonal nos cards" },
+  c: { name: "C · Carbono Racing", desc: "automotivo — quase-preto com trama de carbono, friso cromado no topo dos cards e glow vermelho discreto" },
+};
+
+const days = ['1 jun','2 jun','3 jun','4 jun','5 jun','6 jun','7 jun','8 jun','9 jun','10 jun','11 jun','12 jun','13 jun','14 jun','15 jun','16 jun','17 jun','18 jun','19 jun','20 jun','21 jun','22 jun','23 jun','24 jun','25 jun','26 jun','27 jun','28 jun','29 jun','30 jun'];
+const leads = [9,12,8,15,11,6,4,13,17,14,12,9,5,3,16,19,14,11,13,8,6,18,21,15,12,14,9,7,17,14];
+const avgLeads = leads.reduce((a,b)=>a+b,0) / leads.length;
+
+const avgLinePlugin = {
+  id: 'avgLine',
+  afterDatasetsDraw(chart, args, opts) {
+    if (!opts.value) return;
+    const { ctx, chartArea, scales } = chart;
+    const y = scales.y.getPixelForValue(opts.value);
+    ctx.save();
+    ctx.strokeStyle = opts.color; ctx.setLineDash([5, 5]); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(chartArea.left, y); ctx.lineTo(chartArea.right, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "600 10px 'Inter'"; ctx.fillStyle = opts.color;
+    ctx.fillText('média ' + opts.value.toFixed(1).replace('.', ','), chartArea.right - 62, y - 6);
+    ctx.restore();
+  }
+};
+
+function baseTooltip() {
+  return {
+    backgroundColor: hsl('--card'), titleColor: hsl('--foreground'), bodyColor: hsl('--foreground'),
+    borderColor: hsl('--border'), borderWidth: 1, cornerRadius: 8, padding: 10,
+    titleFont: { weight: '600', size: 12 }, bodyFont: { family: "'IBM Plex Mono', monospace", size: 12 },
+    displayColors: true, boxWidth: 8, boxHeight: 8, boxPadding: 4, usePointStyle: true,
+  };
+}
+
+const registry = [];
+function makeChart(id, factory) { registry.push({ id, factory }); }
+function renderAll() {
+  registry.forEach(r => {
+    if (r.instance) r.instance.destroy();
+    r.instance = r.factory(document.getElementById(r.id).getContext('2d'));
+  });
+}
+
+makeChart('chTimeline', (ctx) => {
+  const g = ctx.createLinearGradient(0, 0, 0, 210);
+  g.addColorStop(0, hsl('--chart-1', .30));
+  g.addColorStop(1, hsl('--chart-1', 0));
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels: days, datasets: [{ label: 'Leads novos', data: leads, borderColor: hsl('--chart-1'), backgroundColor: g, fill: true, tension: .4, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: hsl('--chart-1'), pointHoverBorderColor: hsl('--card'), pointHoverBorderWidth: 2, borderWidth: 2.5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.parsed.y} leads` } },
+        avgLine: { value: avgLeads, color: hsl('--muted-foreground') },
+      },
+      scales: {
+        x: { ticks: { color: hsl('--muted-foreground'), autoSkip: true, maxTicksLimit: 7, maxRotation: 0 }, grid: { display: false }, border: { display: false } },
+        y: { beginAtZero: true, ticks: { color: hsl('--muted-foreground'), maxTicksLimit: 5 }, grid: { color: hsl('--border', .5), drawTicks: false }, border: { display: false } }
+      }
+    },
+    plugins: [avgLinePlugin]
+  });
+});
+
+makeChart('chProducts', (ctx) => new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Remote Start','Window Tint','Som / Áudio','Alarme','Câmera de Ré'],
+    datasets: [{ data: [96,74,61,38,24], backgroundColor: [hsl('--chart-1'), hsl('--chart-1', .85), hsl('--chart-1', .68), hsl('--chart-1', .52), hsl('--chart-1', .38)], borderRadius: 5, borderSkipped: false, barThickness: 19 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.parsed.x} menções` } } },
+    scales: {
+      x: { display: false, grace: '10%' },
+      y: { ticks: { color: hsl('--foreground'), font: { weight: '500', size: 12 } }, grid: { display: false }, border: { display: false } }
+    }
+  }
+}));
+
+makeChart('chChannels', (ctx) => new Chart(ctx, {
+  type: 'doughnut',
+  data: { labels: ['WhatsApp','Facebook','Instagram'], datasets: [{ data: [268,82,39], backgroundColor: ['#25D366','#1877F2','#E4405F'], borderColor: hsl('--card'), borderWidth: 3, hoverOffset: 6 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { ...baseTooltip(), callbacks: { label: (c) => ` ${c.label}: ${c.parsed} leads` } } }
+  }
+}));
+
+/* paleta do tema ativo */
+function renderPalette() {
+  const tokens = [
+    ['fundo', '--background'], ['card', '--card'], ['primária', '--primary'],
+    ['grafite', '--chart-2'], ['âmbar', '--chart-3'], ['sucesso', '--success'],
+  ];
+  document.getElementById('palStrip').innerHTML = tokens.map(([n, v]) =>
+    `<div class="sw"><div class="c" style="background:hsl(${css(v)})"></div><span>${n}</span></div>`
+  ).join('');
+}
+
+/* troca de tema */
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const key = btn.dataset.pick;
+    document.documentElement.dataset.theme = key;
+    document.getElementById('themeName').textContent = THEMES[key].name;
+    document.getElementById('themeDesc').textContent = THEMES[key].desc;
+    renderPalette();
+    renderAll();
+  });
+});
+
+renderPalette();
+renderAll();
+</script>
+</body>
+</html>

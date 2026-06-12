@@ -11,9 +11,9 @@ const getStatusTremorColor = (statusName: string): string => {
   const lowerName = statusName.toLowerCase();
   if (lowerName.includes('ganha') || lowerName.includes('fechad') || lowerName.includes('won')) return "emerald";
   if (lowerName.includes('perdida') || lowerName.includes('cancel') || lowerName.includes('lost')) return "red";
-  if (lowerName.includes('atendimento') || lowerName.includes('qualificação')) return "blue";
+  if (lowerName.includes('atendimento') || lowerName.includes('qualificação')) return "rose";
   if (lowerName.includes('negociação') || lowerName.includes('proposta') || lowerName.includes('decisão')) return "amber";
-  if (lowerName.includes('agendamento') || lowerName.includes('confirmad')) return "cyan";
+  if (lowerName.includes('agendamento') || lowerName.includes('confirmad')) return "emerald";
   if (lowerName.includes('faltou')) return "red";
   if (lowerName.includes('follow') || lowerName.includes('recuperação')) return "orange";
   if (lowerName.includes('aguardando') || lowerName.includes('inicial') || lowerName.includes('contato')) return "slate";
@@ -30,7 +30,7 @@ export function LeadsStatusChart({ data }: LeadsStatusChartProps) {
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

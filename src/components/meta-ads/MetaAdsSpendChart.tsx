@@ -25,7 +25,7 @@ export function MetaAdsSpendChart({ data }: MetaAdsSpendChartProps) {
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="59, 130, 246">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">

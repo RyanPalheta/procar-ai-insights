@@ -28,8 +28,8 @@ const iconMap = {
 
 export function TVEfficiencySection({ metrics, info }: TVEfficiencySectionProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-100 h-full">
-      <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
+    <div className="app-card relative bg-card rounded-2xl shadow-md p-6 border border-border h-full">
+      <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
         Eficiência Comercial
         {info && (
           <ChartInfoTooltip
@@ -46,38 +46,32 @@ export function TVEfficiencySection({ metrics, info }: TVEfficiencySectionProps)
           const isGood = metric.value >= 50;
           
           return (
-            <div 
+            <div
               key={index}
-              className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-xl transition-all",
-                isGood ? "bg-green-50" : "bg-orange-50"
-              )}
+              className="flex flex-col items-center justify-center p-4 rounded-xl transition-all bg-muted/40"
             >
               <div className={cn(
-                "p-4 rounded-full mb-3",
-                isGood ? "bg-green-100" : "bg-orange-100"
+                "p-4 rounded-full mb-3 bg-muted",
+                isGood ? "text-success" : "text-warning"
               )}>
-                <Icon className={cn(
-                  "h-8 w-8",
-                  isGood ? "text-green-600" : "text-orange-600"
-                )} />
+                <Icon className="h-8 w-8" />
               </div>
-              
-              <span className="text-slate-700 font-medium text-center text-sm mb-2">
+
+              <span className="text-foreground font-medium text-center text-sm mb-2">
                 {metric.label}
               </span>
-              
+
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "text-2xl font-bold",
-                  isGood ? "text-green-600" : "text-orange-600"
+                  "text-2xl font-bold tabular-nums",
+                  isGood ? "text-success" : "text-warning"
                 )}>
                   {metric.value}%
                 </span>
                 {isGood ? (
-                  <Check className="h-5 w-5 text-green-600" />
+                  <Check className="h-5 w-5 text-success" />
                 ) : (
-                  <X className="h-5 w-5 text-orange-600" />
+                  <X className="h-5 w-5 text-warning" />
                 )}
               </div>
             </div>

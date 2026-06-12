@@ -32,9 +32,20 @@ import { resolvePeriod, previousResolved, type PeriodValue } from "@/lib/period"
 
 /* ----------------- helpers ----------------- */
 const SENTIMENT_COLORS: Record<string, string> = {
-  Positivo: "#22c55e",
-  Neutro: "#94a3b8",
-  Negativo: "#ef4444",
+  Positivo: "hsl(var(--success))",
+  Neutro: "hsl(var(--chart-4))",
+  Negativo: "hsl(var(--destructive-foreground))",
+};
+
+// Anatomia padrão dos gráficos (identidade ProCar)
+const AXIS_TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
+const GRID_STROKE = "hsl(var(--border) / 0.5)";
+const TOOLTIP_STYLE = {
+  backgroundColor: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "hsl(var(--foreground))",
 };
 
 const OBJECTION_LABELS: Record<string, string> = {
@@ -48,25 +59,26 @@ const OBJECTION_LABELS: Record<string, string> = {
   indecisao: "Indecisão",
 };
 
+// Escala ordinal ruim→bom; extremos usam tokens, intermediários são degraus fixos
 const SCORE_BUCKETS = [
-  { range: "0–20", min: 0, max: 20, color: "#ef4444" },
+  { range: "0–20", min: 0, max: 20, color: "hsl(var(--destructive-foreground))" },
   { range: "20–40", min: 20, max: 40, color: "#f97316" },
-  { range: "40–60", min: 40, max: 60, color: "#eab308" },
+  { range: "40–60", min: 40, max: 60, color: "hsl(var(--warning))" },
   { range: "60–80", min: 60, max: 80, color: "#84cc16" },
-  { range: "80–100", min: 80, max: 101, color: "#22c55e" },
+  { range: "80–100", min: 80, max: 101, color: "hsl(var(--success))" },
 ];
 
 const scoreColor = (s: number | null | undefined) => {
   if (s == null) return "text-muted-foreground";
-  if (s >= 70) return "text-green-500";
-  if (s >= 40) return "text-yellow-500";
-  return "text-red-500";
+  if (s >= 70) return "text-success";
+  if (s >= 40) return "text-warning";
+  return "text-destructive-foreground";
 };
 
 const sentimentIcon = (s?: string) => {
-  if (s === "Positivo") return <Smile className="h-4 w-4 text-green-500" />;
-  if (s === "Negativo") return <Frown className="h-4 w-4 text-red-500" />;
-  return <Meh className="h-4 w-4 text-slate-400" />;
+  if (s === "Positivo") return <Smile className="h-4 w-4 text-success" />;
+  if (s === "Negativo") return <Frown className="h-4 w-4 text-destructive-foreground" />;
+  return <Meh className="h-4 w-4 text-muted-foreground" />;
 };
 
 /* ----------------- page ----------------- */
@@ -466,14 +478,14 @@ export default function Calls() {
       </div>
 
       {/* 9 KPIs */}
-      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5" glowColor="59, 130, 246">
-        <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoGrid className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5" glowColor="228, 0, 43">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Total de Chamadas <ChartInfoTooltip description="Quantas chamadas aconteceram no período e nos filtros escolhidos, com a variação em % em relação ao período anterior." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Conta todas as chamadas, tendo sido analisadas pela IA ou não." calculation="conta todas as chamadas que passam pelos filtros ativos. A variação compara esse total com o número de chamadas do período logo antes." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
               {stats.totalDelta !== null && (
-                <div className={`text-xs flex items-center gap-1 ${stats.totalDelta >= 0 ? "text-green-500" : "text-red-500"}`}>
+                <div className={`text-xs flex items-center gap-1 ${stats.totalDelta >= 0 ? "text-success" : "text-destructive-foreground"}`}>
                   {stats.totalDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {stats.totalDelta > 0 ? "+" : ""}{stats.totalDelta}% vs período anterior
                 </div>
@@ -482,7 +494,7 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -493,18 +505,18 @@ export default function Calls() {
             <CardContent>
               <div className="flex items-baseline gap-3">
                 <div className="flex items-center gap-1.5" title="Ativas: vendedor ligou">
-                  <PhoneOutgoing className="h-4 w-4 text-blue-500" />
-                  <span className="text-xl font-bold text-blue-500">{stats.activeCalls}</span>
+                  <PhoneOutgoing className="h-4 w-4 text-[hsl(var(--chart-2))]" />
+                  <span className="text-xl font-bold text-[hsl(var(--chart-2))]">{stats.activeCalls}</span>
                 </div>
                 <span className="text-muted-foreground/40">/</span>
                 <div className="flex items-center gap-1.5" title="Passivas: cliente ligou">
-                  <PhoneIncoming className="h-4 w-4 text-emerald-500" />
-                  <span className="text-xl font-bold text-emerald-500">{stats.passiveCalls}</span>
+                  <PhoneIncoming className="h-4 w-4 text-success" />
+                  <span className="text-xl font-bold text-success">{stats.passiveCalls}</span>
                 </div>
               </div>
               <div className="flex h-1.5 mt-2 rounded-full overflow-hidden bg-muted">
-                <div className="bg-blue-500" style={{ width: `${stats.pctActive}%` }} />
-                <div className="bg-emerald-500" style={{ width: `${stats.pctPassive}%` }} />
+                <div className="bg-[hsl(var(--chart-2))]" style={{ width: `${stats.pctActive}%` }} />
+                <div className="bg-success" style={{ width: `${stats.pctPassive}%` }} />
                 <div className="bg-muted-foreground/30 flex-1" />
               </div>
               <div className="text-xs text-muted-foreground mt-1">
@@ -515,7 +527,7 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Score Médio <ChartInfoTooltip description="A nota média de qualidade (de 0 a 100) das chamadas que a IA já analisou no período." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e deu uma nota de qualidade." calculation="a média das notas de qualidade das chamadas analisadas, arredondada. Embaixo aparece quantas chamadas já foram analisadas." /></CardTitle></CardHeader>
             <CardContent>
@@ -525,9 +537,9 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-green-500" />% Positivo <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA achou que o clima da conversa foi Positivo. Clima é subjetivo — para resultado concreto, use o cartão '% Convertidas' ao lado." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que a IA já avaliou o clima da conversa." calculation="chamadas com clima Positivo divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Smile className="h-3 w-3 text-success" />% Positivo <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA achou que o clima da conversa foi Positivo. Clima é subjetivo — para resultado concreto, use o cartão '% Convertidas' ao lado." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que a IA já avaliou o clima da conversa." calculation="chamadas com clima Positivo divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctPositive}%</div>
               <div className="text-xs text-muted-foreground">{stats.sentimentCounts.Positivo} chamadas positivas</div>
@@ -535,9 +547,9 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="h-3 w-3 text-emerald-500" />% Convertidas <ChartInfoTooltip description="O percentual das ligações analisadas em que a transcrição mostra um RESULTADO concreto: agendou visita/instalação, fechou a compra ou pediu orçamento. É a métrica objetiva pedida na auditoria — não depende de 'clima'." source="as ligações telefônicas registradas (com transcrição feita por IA). A IA lê a transcrição e marca o desfecho (agendou, comprou, pediu orçamento, follow-up, sem avanço). Só conta as ligações analisadas após 11/06/2026 — as anteriores não têm o desfecho marcado." calculation="ligações com desfecho 'agendou', 'comprou' ou 'pediu orçamento' divididas pelas ligações com desfecho marcado, vezes 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="h-3 w-3 text-success" />% Convertidas <ChartInfoTooltip description="O percentual das ligações analisadas em que a transcrição mostra um RESULTADO concreto: agendou visita/instalação, fechou a compra ou pediu orçamento. É a métrica objetiva pedida na auditoria — não depende de 'clima'." source="as ligações telefônicas registradas (com transcrição feita por IA). A IA lê a transcrição e marca o desfecho (agendou, comprou, pediu orçamento, follow-up, sem avanço). Só conta as ligações analisadas após 11/06/2026 — as anteriores não têm o desfecho marcado." calculation="ligações com desfecho 'agendou', 'comprou' ou 'pediu orçamento' divididas pelas ligações com desfecho marcado, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctConverted != null ? `${stats.pctConverted}%` : "—"}</div>
               <div className="text-xs text-muted-foreground">
@@ -549,7 +561,7 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Duração Média <ChartInfoTooltip description="Quanto tempo durou, em média, cada chamada do período, em segundos (e o valor aproximado em minutos)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Usa o tempo de todas as chamadas do período, não só as analisadas pela IA." calculation="a média do tempo de todas as chamadas filtradas, arredondada. Embaixo, o valor é convertido em minutos (segundos divididos por 60)." /></CardTitle></CardHeader>
             <CardContent>
@@ -559,9 +571,9 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-orange-500" />Com Objeção <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA percebeu que o cliente levantou alguma objeção." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve objeção." calculation="chamadas em que o cliente levantou alguma objeção divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-warning" />Com Objeção <ChartInfoTooltip description="O percentual das chamadas analisadas em que a IA percebeu que o cliente levantou alguma objeção." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve objeção." calculation="chamadas em que o cliente levantou alguma objeção divididas pelo total de chamadas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctObjection}%</div>
               <Progress value={stats.pctObjection} className="h-1 mt-1" />
@@ -569,9 +581,9 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-3 w-3 text-green-500" />Contornadas <ChartInfoTooltip description="Entre as chamadas em que o cliente levantou objeção, o percentual em que o vendedor conseguiu contornar." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que o cliente levantou alguma objeção." calculation="objeções que foram contornadas divididas pelas chamadas com objeção, vezes 100. A conta usa só as chamadas com objeção, não o total." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Target className="h-3 w-3 text-success" />Contornadas <ChartInfoTooltip description="Entre as chamadas em que o cliente levantou objeção, o percentual em que o vendedor conseguiu contornar." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas em que o cliente levantou alguma objeção." calculation="objeções que foram contornadas divididas pelas chamadas com objeção, vezes 100. A conta usa só as chamadas com objeção, não o total." /></CardTitle></CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${scoreColor(stats.pctOvercome)}`}>{stats.pctOvercome}%</div>
               <Progress value={stats.pctOvercome} className="h-1 mt-1" />
@@ -579,7 +591,7 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2">Compliance Médio <ChartInfoTooltip description="A nota média (de 0 a 100) de quanto o vendedor seguiu o roteiro de vendas, segundo a análise da IA." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e deu essa nota de roteiro." calculation="a média das notas de roteiro das chamadas analisadas, arredondada. Mostra um traço quando nenhuma chamada tem essa nota." /></CardTitle></CardHeader>
             <CardContent>
@@ -591,9 +603,9 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Sparkles className="h-3 w-3 text-purple-500" />Usou Oferta <ChartInfoTooltip description="O percentual das chamadas analisadas em que o vendedor apresentou uma oferta; embaixo aparece o % em que ele usou ancoragem de preço." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve oferta e ancoragem." calculation="Oferta = chamadas em que o vendedor apresentou oferta divididas pelas analisadas, vezes 100. Ancoragem = chamadas com ancoragem de preço divididas pelas analisadas, vezes 100." /></CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Sparkles className="h-3 w-3 text-primary" />Usou Oferta <ChartInfoTooltip description="O percentual das chamadas analisadas em que o vendedor apresentou uma oferta; embaixo aparece o % em que ele usou ancoragem de preço." source="as ligações telefônicas registradas (com transcrição feita por IA). Não passa pelo Kommo. Considera só as chamadas que a IA já analisou e marcou se houve oferta e ancoragem." calculation="Oferta = chamadas em que o vendedor apresentou oferta divididas pelas analisadas, vezes 100. Ancoragem = chamadas com ancoragem de preço divididas pelas analisadas, vezes 100." /></CardTitle></CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pctOffer}%</div>
               <div className="text-xs text-muted-foreground">{stats.pctAnchoring}% com ancoragem</div>
@@ -604,20 +616,20 @@ export default function Calls() {
 
       {/* Visão Geral: 3 charts */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Sentimentos <ChartInfoTooltip description="Mostra como as chamadas analisadas se dividem entre clima Positivo, Neutro e Negativo." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas que a IA já analisou e classificou o clima da conversa." calculation="conta quantas chamadas tiveram cada tipo de clima e mostra a fatia de cada um no total." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               {sentimentChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={sentimentChartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
+                    <Pie data={sentimentChartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2} strokeWidth={0}>
                       {sentimentChartData.map((entry, i) => (
                         <Cell key={i} fill={SENTIMENT_COLORS[entry.name]} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -627,16 +639,16 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader><CardTitle className="flex items-center gap-2">Distribuição de Scores <ChartInfoTooltip description="No eixo horizontal estão as faixas de nota de qualidade (de 0–20 até 80–100); cada barra mostra quantas chamadas ficaram em cada faixa." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas que a IA já analisou e deu uma nota de qualidade." calculation="cada chamada entra na faixa da sua nota de qualidade e contamos quantas caem em cada faixa." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={scoreHistogram}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="range" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                  <XAxis dataKey="range" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {scoreHistogram.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
@@ -648,20 +660,20 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader><CardTitle className="flex items-center gap-2">Volume & Score por Dia <ChartInfoTooltip description="No eixo horizontal estão os dias; a linha azul mostra quantas chamadas houve no dia; a linha verde mostra a nota média de qualidade do dia (de 0 a 100)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Junta todas as chamadas do período por dia em que aconteceram; a nota usa só as chamadas que já têm nota de qualidade." calculation="por dia: o volume é quantas chamadas houve; a nota média é a média das notas de qualidade das chamadas analisadas daquele dia." /></CardTitle></CardHeader>
             <CardContent className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="volume" name="Volume" stroke="#3b82f6" strokeWidth={2} />
-                  <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Score médio" stroke="#22c55e" strokeWidth={2} connectNulls />
+                  <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="volume" name="Volume" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Score médio" stroke="hsl(var(--success))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -670,17 +682,17 @@ export default function Calls() {
       </div>
 
       {/* Chamadas por hora */}
-      <MagicBentoCard glowColor="139, 92, 246">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader><CardTitle className="flex items-center gap-2">Chamadas por hora <ChartInfoTooltip description="No eixo horizontal estão as horas do dia (de 0h a 23h); cada barra mostra quantas chamadas aconteceram naquela hora, revelando os horários de pico de ligação." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Junta todas as chamadas do período pela hora em que aconteceram." calculation="para cada hora do dia, conta as chamadas que aconteceram naquela hora, somando todos os dias do período." /></CardTitle></CardHeader>
           <CardContent className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={1} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="chamadas" name="Chamadas" fill="rgb(139, 92, 246)" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
+                <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={1} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                <Bar dataKey="chamadas" name="Chamadas" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -689,7 +701,7 @@ export default function Calls() {
 
       {/* Objeções */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <MagicBentoCard glowColor="59, 130, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">Categorias de Objeção <ChartInfoTooltip description="Barras por tipo de objeção (preço, tempo, etc.), separadas entre as que foram contornadas (verde) e as que não foram contornadas (vermelho)." source="as ligações telefônicas registradas (com transcrição feita por IA). Não vem do Kommo. Considera só as chamadas em que o cliente levantou objeção e a IA identificou o tipo dela." calculation="para cada tipo de objeção, conta o total de chamadas e quantas foram contornadas; o que sobra são as não contornadas." /></CardTitle>
@@ -699,13 +711,13 @@ export default function Calls() {
               {objectionStats.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={objectionStats} layout="vertical" margin={{ left: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="category" type="category" width={100} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="overcome" name="Contornada" stackId="a" fill="#22c55e" />
-                    <Bar dataKey="notOvercome" name="Não contornada" stackId="a" fill="#ef4444" />
+                    <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} horizontal={false} />
+                    <XAxis type="number" tickLine={false} axisLine={false} tick={AXIS_TICK} />
+                    <YAxis dataKey="category" type="category" width={100} tickLine={false} axisLine={false} tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="overcome" name="Contornada" stackId="a" fill="hsl(var(--success))" />
+                    <Bar dataKey="notOvercome" name="Não contornada" stackId="a" fill="hsl(var(--destructive-foreground))" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -715,10 +727,10 @@ export default function Calls() {
           </Card>
         </MagicBentoCard>
 
-        <MagicBentoCard glowColor="239, 68, 68">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-500" />Top 5: Objeções Não Contornadas</CardTitle>
+              <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive-foreground" />Top 5: Objeções Não Contornadas</CardTitle>
               <p className="text-xs text-muted-foreground">Casos para revisar com o time</p>
             </CardHeader>
             <CardContent>
@@ -747,11 +759,11 @@ export default function Calls() {
       </div>
 
       {/* Ativas vs Passivas — performance comparativa */}
-      <MagicBentoCard glowColor="14, 165, 233">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4 text-cyan-500" />
+              <ArrowRightLeft className="h-4 w-4 text-primary" />
               Ativas vs Passivas
               <ChartInfoTooltip
                 description="Compara o desempenho das chamadas ativas (a loja liga para o cliente) e passivas (o cliente liga para a loja): nota média, % do total, se pediu permissão, se tentou fechar, qualidade da abertura e quanto o vendedor adaptou a conversa ao tipo de chamada."
@@ -766,10 +778,10 @@ export default function Calls() {
           <CardContent>
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               {/* ATIVAS */}
-              <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5 space-y-3">
+              <div className="p-4 rounded-lg border border-[hsl(var(--chart-2)/0.2)] bg-[hsl(var(--chart-2)/0.05)] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <PhoneOutgoing className="h-5 w-5 text-blue-500" />
+                    <PhoneOutgoing className="h-5 w-5 text-[hsl(var(--chart-2))]" />
                     <span className="font-semibold">Ativas (saída)</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">{stats.activeCalls} chamadas</Badge>
@@ -783,20 +795,20 @@ export default function Calls() {
                   </div>
                   <div>
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">% total</div>
-                    <div className="text-2xl font-bold text-blue-500">{stats.pctActive}%</div>
+                    <div className="text-2xl font-bold text-[hsl(var(--chart-2))]">{stats.pctActive}%</div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Pediu permissão</div>
                     <div className="text-2xl font-bold">{stats.pctActivePermission}%</div>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-blue-500/10 space-y-1">
+                <div className="pt-2 border-t border-[hsl(var(--chart-2)/0.1)] space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3 text-orange-500" />
+                      <AlertTriangle className="h-3 w-3 text-warning" />
                       Abertura fraca (&lt;5/10)
                     </span>
-                    <span className={`font-semibold ${stats.activeWeakOpening > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    <span className={`font-semibold ${stats.activeWeakOpening > 0 ? "text-warning" : "text-muted-foreground"}`}>
                       {stats.activeWeakOpening} / {stats.analyzedActiveCount}
                     </span>
                   </div>
@@ -804,10 +816,10 @@ export default function Calls() {
               </div>
 
               {/* PASSIVAS */}
-              <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 space-y-3">
+              <div className="p-4 rounded-lg border border-success/20 bg-success/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <PhoneIncoming className="h-5 w-5 text-emerald-500" />
+                    <PhoneIncoming className="h-5 w-5 text-success" />
                     <span className="font-semibold">Passivas (entrada)</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">{stats.passiveCalls} chamadas</Badge>
@@ -821,20 +833,20 @@ export default function Calls() {
                   </div>
                   <div>
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">% total</div>
-                    <div className="text-2xl font-bold text-emerald-500">{stats.pctPassive}%</div>
+                    <div className="text-2xl font-bold text-success">{stats.pctPassive}%</div>
                   </div>
                   <div>
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Tentou fechar</div>
                     <div className="text-2xl font-bold">{stats.pctCloseAttempt}%</div>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-emerald-500/10 space-y-1">
+                <div className="pt-2 border-t border-success/10 space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3 text-red-500" />
+                      <AlertTriangle className="h-3 w-3 text-destructive-foreground" />
                       Sem tentativa de fechamento
                     </span>
-                    <span className={`font-semibold ${stats.passiveNoClose > 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                    <span className={`font-semibold ${stats.passiveNoClose > 0 ? "text-destructive-foreground" : "text-muted-foreground"}`}>
                       {stats.passiveNoClose} / {stats.analyzedPassiveCount}
                     </span>
                   </div>
@@ -846,13 +858,13 @@ export default function Calls() {
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mt-4">
               <div className="p-3 rounded-lg bg-muted/50">
                 <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Abertura média (geral)</div>
-                <div className={`text-xl font-bold ${stats.avgOpening !== null && stats.avgOpening >= 7 ? "text-green-500" : stats.avgOpening !== null && stats.avgOpening >= 5 ? "text-yellow-500" : "text-red-500"}`}>
+                <div className={`text-xl font-bold ${stats.avgOpening !== null && stats.avgOpening >= 7 ? "text-success" : stats.avgOpening !== null && stats.avgOpening >= 5 ? "text-warning" : "text-destructive-foreground"}`}>
                   {stats.avgOpening ?? "—"}<span className="text-sm text-muted-foreground">/10</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
                 <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Adaptação à direção</div>
-                <div className={`text-xl font-bold ${stats.avgAdaptScore !== null && stats.avgAdaptScore >= 7 ? "text-green-500" : stats.avgAdaptScore !== null && stats.avgAdaptScore >= 5 ? "text-yellow-500" : "text-red-500"}`}>
+                <div className={`text-xl font-bold ${stats.avgAdaptScore !== null && stats.avgAdaptScore >= 7 ? "text-success" : stats.avgAdaptScore !== null && stats.avgAdaptScore >= 5 ? "text-warning" : "text-destructive-foreground"}`}>
                   {stats.avgAdaptScore ?? "—"}<span className="text-sm text-muted-foreground">/10</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground">vendedor ajustou tom ao tipo?</div>
@@ -869,7 +881,7 @@ export default function Calls() {
 
       {/* Tags */}
       {topTags.length > 0 && (
-        <MagicBentoCard glowColor="139, 92, 246">
+        <MagicBentoCard glowColor="228, 0, 43">
           <Card className="bg-card border-border">
             <CardHeader><CardTitle>Tags Mais Frequentes</CardTitle></CardHeader>
             <CardContent>
@@ -886,7 +898,7 @@ export default function Calls() {
       )}
 
       {/* Tabela */}
-      <MagicBentoCard glowColor="59, 130, 246">
+      <MagicBentoCard glowColor="228, 0, 43">
         <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -930,11 +942,11 @@ export default function Calls() {
                         <TableRow key={call.call_id}>
                           <TableCell>
                             {direction === "active" ? (
-                              <Badge variant="outline" className="text-xs gap-1 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                              <Badge variant="outline" className="text-xs gap-1 border-[hsl(var(--chart-2)/0.4)] text-[hsl(var(--chart-2))]">
                                 <PhoneOutgoing className="h-3 w-3" />Ativa
                               </Badge>
                             ) : direction === "passive" ? (
-                              <Badge variant="outline" className="text-xs gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                              <Badge variant="outline" className="text-xs gap-1 border-success/40 text-success">
                                 <PhoneIncoming className="h-3 w-3" />Passiva
                               </Badge>
                             ) : (

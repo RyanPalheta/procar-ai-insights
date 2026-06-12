@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
-import { DonutChart } from "@tremor/react";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { ClipboardCheck } from "lucide-react";
 
 interface LeadsComplianceChartProps {
@@ -14,34 +15,30 @@ interface LeadsComplianceChartProps {
   totalAudited: number;
 }
 
-const COMPLIANCE_COLORS_MAP: Record<string, string> = {
-  "Excelente": "emerald",
-  "Bom": "yellow",
-  "Regular": "orange",
-  "Baixo": "red",
+// Escala semântica do tema (verde > lima > âmbar > vermelho)
+const COMPLIANCE_COLORS: Record<string, string> = {
+  "Excelente": "hsl(var(--success))",
+  "Bom": "hsl(80 60% 45%)",
+  "Regular": "hsl(var(--warning))",
+  "Baixo": "hsl(var(--destructive-foreground))",
 };
 
-const COMPLIANCE_DOT_COLORS: Record<string, string> = {
-  "Excelente": "#22c55e",
-  "Bom": "#eab308",
-  "Regular": "#f97316",
-  "Baixo": "#ef4444",
+const chartConfig = {
+  value: { label: "Leads" },
 };
 
 export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComplianceChartProps) {
   const hasData = totalAudited > 0;
 
   const getAvgScoreColor = (score: number) => {
-    if (score >= 80) return "#22c55e";
-    if (score >= 60) return "#eab308";
-    if (score >= 40) return "#f97316";
-    return "#ef4444";
+    if (score >= 80) return "hsl(var(--success))";
+    if (score >= 60) return "hsl(80 60% 45%)";
+    if (score >= 40) return "hsl(var(--warning))";
+    return "hsl(var(--destructive-foreground))";
   };
 
-  const colors = data.map(d => COMPLIANCE_COLORS_MAP[d.name] || "gray");
-
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="34, 197, 94">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
@@ -57,48 +54,60 @@ export function LeadsComplianceChart({ data, avgScore, totalAudited }: LeadsComp
         <CardContent>
           {hasData ? (
             <>
-              {/* Donut with center value */}
+              {/* Donut com rótulo central */}
               <div className="relative">
-                <DonutChart
-                  data={data}
-                  category="value"
-                  index="name"
-                  colors={colors}
-                  showAnimation={true}
-                  showTooltip={true}
-                  className="h-[180px]"
-                  showLabel={false}
-                />
-                {/* Center label overlay */}
+                <ChartContainer config={chartConfig} className="h-[180px] w-full aspect-auto">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                      <Pie
+                        data={data}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius="70%"
+                        outerRadius="95%"
+                        paddingAngle={2}
+                        strokeWidth={0}
+                      >
+                        {data.map((entry) => (
+                          <Cell
+                            key={entry.name}
+                            fill={COMPLIANCE_COLORS[entry.name] || "hsl(var(--chart-4))"}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
                     <div
-                      className="text-3xl font-bold"
+                      className="text-2xl font-extrabold tabular-nums leading-none"
                       style={{ color: getAvgScoreColor(avgScore) }}
                     >
                       {avgScore.toFixed(0)}%
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Média
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
+                      score médio
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Legend */}
+              {/* Legenda padrão: dot + nome + valor + % */}
               <div className="mt-4 space-y-2">
-                {data.map((entry, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
+                {data.map((entry) => (
+                  <div key={entry.name} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: COMPLIANCE_DOT_COLORS[entry.name] }}
+                        className="w-2.5 h-2.5 rounded-[3px]"
+                        style={{ backgroundColor: COMPLIANCE_COLORS[entry.name] || "hsl(var(--chart-4))" }}
                       />
-                      <span className="text-muted-foreground">{entry.name}</span>
+                      <span className="font-medium">{entry.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium">{entry.value} leads</span>
-                      <span className="text-muted-foreground w-12 text-right">
+                    <div className="flex items-center gap-3 tabular-nums">
+                      <span className="font-bold">{entry.value}</span>
+                      <span className="text-muted-foreground text-xs w-12 text-right">
                         {entry.percentage.toFixed(0)}%
                       </span>
                     </div>

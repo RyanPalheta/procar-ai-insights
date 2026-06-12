@@ -14,7 +14,7 @@ interface GoogleAdsSpendChartProps {
 const chartConfig = {
   spend: {
     label: "Gasto ($)",
-    color: "hsl(45, 93%, 47%)",
+    color: "hsl(var(--chart-3))",
   },
 };
 
@@ -25,11 +25,11 @@ export function GoogleAdsSpendChart({ data }: GoogleAdsSpendChartProps) {
   }));
 
   return (
-    <MagicBentoCard className="rounded-lg" glowColor="234, 179, 8">
+    <MagicBentoCard className="rounded-lg" glowColor="228, 0, 43">
       <Card className="bg-card border-border h-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-yellow-500" />
+            <DollarSign className="h-4 w-4 text-warning" />
             Gasto Diario
             <ChartInfoTooltip
               description="Mostra a evolucao do investimento diario em anuncios do Google Ads; Eixo X = dia (dd/MM) e Eixo Y = valor gasto na moeda da conta ($)."
@@ -45,8 +45,8 @@ export function GoogleAdsSpendChart({ data }: GoogleAdsSpendChartProps) {
                 <AreaChart data={formatted} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gadsSpendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(45, 93%, 47%)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="hsl(45, 93%, 47%)" stopOpacity={0.05} />
+                      <stop offset="0%" stopColor="hsl(var(--chart-3))" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -70,11 +70,11 @@ export function GoogleAdsSpendChart({ data }: GoogleAdsSpendChartProps) {
                   <Area
                     type="monotone"
                     dataKey="spend"
-                    stroke="hsl(45, 93%, 47%)"
+                    stroke="hsl(var(--chart-3))"
                     strokeWidth={2}
                     fill="url(#gadsSpendGradient)"
-                    dot={{ fill: "hsl(45, 93%, 47%)", strokeWidth: 0, r: 2 }}
-                    activeDot={{ fill: "hsl(45, 93%, 47%)", strokeWidth: 2, stroke: "hsl(var(--background))", r: 5 }}
+                    dot={false}
+                    activeDot={{ fill: "hsl(var(--chart-3))", strokeWidth: 2, stroke: "hsl(var(--card))", r: 5 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

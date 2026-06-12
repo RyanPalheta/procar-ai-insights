@@ -284,7 +284,7 @@ export function LeadsKPICards({
         <MagicBentoGrid
           enableSpotlight={true}
           spotlightRadius={300}
-          glowColor="59, 130, 246"
+          glowColor="228, 0, 43"
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-10 gap-2.5">
             <Tooltip>

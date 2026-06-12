@@ -27,13 +27,13 @@ function StatusTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload
 }
 
 const CHART_COLORS = [
-  "hsl(215, 58%, 39%)",
-  "hsl(245, 76%, 61%)",
-  "hsl(275, 37%, 24%)",
-  "hsl(305, 74%, 66%)",
-  "hsl(335, 87%, 67%)",
-  "hsl(142, 71%, 45%)",
-  "hsl(38, 92%, 50%)",
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--success))",
+  "hsl(var(--warning))",
 ];
 
 interface SellerDetailViewProps {
@@ -238,7 +238,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="hsl(215, 58%, 39%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -276,7 +276,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={80} />
                 <Tooltip />
-                <Bar dataKey="value" fill="hsl(245, 76%, 61%)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

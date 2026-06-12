@@ -55,7 +55,7 @@ export function MetaAdsCampaignTable({ campaigns }: MetaAdsCampaignTableProps) {
   );
 
   return (
-    <MagicBentoCard className="rounded-lg col-span-full" glowColor="59, 130, 246">
+    <MagicBentoCard className="rounded-lg col-span-full" glowColor="228, 0, 43">
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -69,8 +69,8 @@ export function MetaAdsCampaignTable({ campaigns }: MetaAdsCampaignTableProps) {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Campanha</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="min-w-[200px] text-[10px] font-semibold uppercase tracking-wider">Campanha</TableHead>
                     <TableHead className="text-right"><SortButton field="spend">Gasto</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="impressions">Impressoes</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="clicks">Cliques</SortButton></TableHead>
@@ -85,23 +85,28 @@ export function MetaAdsCampaignTable({ campaigns }: MetaAdsCampaignTableProps) {
                 </TableHeader>
                 <TableBody>
                   {sorted.map((campaign) => (
-                    <TableRow key={campaign.campaign_id}>
+                    <TableRow key={campaign.campaign_id} className="odd:bg-muted/30 hover:bg-primary/5">
                       <TableCell className="font-medium max-w-[250px] truncate">
                         {campaign.campaign_name}
                       </TableCell>
-                      <TableCell className="text-right">{formatUSD(campaign.spend)}</TableCell>
-                      <TableCell className="text-right">{campaign.impressions.toLocaleString("en-US")}</TableCell>
-                      <TableCell className="text-right">{campaign.clicks.toLocaleString("en-US")}</TableCell>
-                      <TableCell className="text-right">{campaign.ctr.toFixed(2)}%</TableCell>
-                      <TableCell className="text-right">{formatUSD(campaign.cpc)}</TableCell>
-                      <TableCell className="text-right">{campaign.leads}</TableCell>
-                      <TableCell className="text-right">{campaign.cpl > 0 ? formatUSD(campaign.cpl) : "-"}</TableCell>
-                      <TableCell className="text-right">{campaign.purchases}</TableCell>
-                      <TableCell className="text-right">{campaign.costPerPurchase > 0 ? formatUSD(campaign.costPerPurchase) : "-"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{formatUSD(campaign.spend)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.impressions.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.clicks.toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.ctr.toFixed(2)}%</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{formatUSD(campaign.cpc)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.leads}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.cpl > 0 ? formatUSD(campaign.cpl) : "-"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.purchases}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.costPerPurchase > 0 ? formatUSD(campaign.costPerPurchase) : "-"}</TableCell>
                       <TableCell className="text-right">
                         {campaign.roas > 0 ? (
-                          <Badge variant={campaign.roas >= 3 ? "default" : "outline"}>
-                            {campaign.roas.toFixed(2)}x
+                          <Badge
+                            variant="outline"
+                            className={campaign.roas >= 3
+                              ? "tabular-nums bg-success/10 text-success border-success/25"
+                              : "tabular-nums bg-warning/10 text-warning border-warning/25"}
+                          >
+                            {campaign.roas.toFixed(2)}×
                           </Badge>
                         ) : "-"}
                       </TableCell>
