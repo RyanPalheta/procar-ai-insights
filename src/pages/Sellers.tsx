@@ -129,7 +129,7 @@ export default function Sellers() {
             <ChartInfoTooltip
               description="Visão unificada por vendedor: o que ele PRODUZIU (funil real da loja — leads da Kommo, orçamentos, agendamentos por canal, vendas e receita do ShopMonkey) e COMO atendeu no chat (qualidade avaliada pela IA na amostra de conversas de WhatsApp)."
               source="Funil: leads = oportunidades do vendedor na Kommo; orçamentos, agendamentos, vendas e receita = sistema da loja (ShopMonkey), com o vendedor lido do texto do agendamento (~93%). Qualidade: amostra de conversas de chat auditadas pela IA — é um SUBCONJUNTO, não a atividade total (clientes de telefone/presenciais não passam pelo chat)."
-              calculation="Conversão = vendas pagas ÷ total de leads do vendedor. Taxa de agendamento = agendamentos ÷ leads. Score médio e objeções superadas vêm só das conversas auditadas pela IA."
+              calculation="Conversão (loja) = vendas pagas ÷ total de leads do vendedor. Taxa de conversão (chat/IA) = vendas fechadas ÷ conversas auditadas pela IA (a mesma do detalhe ao clicar no vendedor). Score médio e objeções superadas vêm só das conversas auditadas pela IA."
             />
           </h2>
           <p className="text-muted-foreground">
