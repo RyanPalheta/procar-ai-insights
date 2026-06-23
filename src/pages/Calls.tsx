@@ -19,6 +19,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, Legend,
 } from "recharts";
+import { AXIS_TICK, GRID_STROKE, TOOLTIP_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "@/lib/chart-theme";
 import { MagicBentoCard } from "@/components/ui/magic-bento-card";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
@@ -37,16 +38,7 @@ const SENTIMENT_COLORS: Record<string, string> = {
   Negativo: "hsl(var(--destructive-foreground))",
 };
 
-// Anatomia padrão dos gráficos (identidade ProCar)
-const AXIS_TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
-const GRID_STROKE = "hsl(var(--border) / 0.5)";
-const TOOLTIP_STYLE = {
-  backgroundColor: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: 8,
-  fontSize: 12,
-  color: "hsl(var(--foreground))",
-};
+// Anatomia padrão dos gráficos (identidade ProCar) — ver src/lib/chart-theme.ts
 
 const OBJECTION_LABELS: Record<string, string> = {
   preco: "Preço",
@@ -628,7 +620,7 @@ export default function Calls() {
                         <Cell key={i} fill={SENTIMENT_COLORS[entry.name]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -648,7 +640,7 @@ export default function Calls() {
                   <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                   <XAxis dataKey="range" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                   <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {scoreHistogram.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
@@ -670,7 +662,7 @@ export default function Calls() {
                   <XAxis dataKey="date" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                   <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                   <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Line yAxisId="left" type="monotone" dataKey="volume" name="Volume" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Score médio" stroke="hsl(var(--success))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} connectNulls />
@@ -691,7 +683,7 @@ export default function Calls() {
                 <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                 <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={1} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                 <Bar dataKey="chamadas" name="Chamadas" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -714,7 +706,7 @@ export default function Calls() {
                     <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} horizontal={false} />
                     <XAxis type="number" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                     <YAxis dataKey="category" type="category" width={100} tickLine={false} axisLine={false} tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }} />
-                    <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="overcome" name="Contornada" stackId="a" fill="hsl(var(--success))" />
                     <Bar dataKey="notOvercome" name="Não contornada" stackId="a" fill="hsl(var(--destructive-foreground))" radius={[0, 4, 4, 0]} />

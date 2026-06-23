@@ -19,6 +19,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
   PieChart, Pie,
 } from "recharts";
+import { AXIS_TICK, GRID_STROKE, TOOLTIP_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "@/lib/chart-theme";
 import { MessageSquare, Phone, Users, Gauge, Clock, TrendingUp, Smile, ExternalLink, Instagram, Facebook, BarChart3, Mail, UserPlus } from "lucide-react";
 
 /* ----------------- helpers ----------------- */
@@ -33,16 +34,7 @@ const CHANNEL_META: Record<string, { label: string; color: string; Icon: LucideI
   "indicação": { label: "Indicação", color: "hsl(var(--chart-3))", Icon: UserPlus },
 };
 
-// Anatomia padrão dos gráficos (identidade ProCar)
-const AXIS_TICK = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
-const GRID_STROKE = "hsl(var(--border) / 0.5)";
-const TOOLTIP_STYLE = {
-  backgroundColor: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: 8,
-  fontSize: 12,
-  color: "hsl(var(--foreground))",
-};
+// Anatomia padrão dos gráficos (identidade ProCar) — ver src/lib/chart-theme.ts
 
 // Texto de fonte ESPECÍFICO por canal (auditoria 06/2026: o texto genérico de
 // WhatsApp aparecia repetido nos demais canais, inclusive onde não fazia sentido).
@@ -396,8 +388,8 @@ export default function Channels() {
                           <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                           <XAxis dataKey="meta.label" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                           <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
-                          <Bar dataKey="totalLeads" radius={[4, 4, 0, 0]}>
+                          <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                          <Bar dataKey="totalLeads" name="Leads" radius={[4, 4, 0, 0]}>
                             {comparativeData.map((c, i) => (
                               <Cell key={i} fill={c.meta.color} />
                             ))}
@@ -417,8 +409,8 @@ export default function Channels() {
                           <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                           <XAxis dataKey="meta.label" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                           <YAxis tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
-                          <Bar dataKey="convRate" radius={[4, 4, 0, 0]}>
+                          <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)}%`} contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                          <Bar dataKey="convRate" name="Conversão" radius={[4, 4, 0, 0]}>
                             {comparativeData.map((c, i) => (
                               <Cell key={i} fill={c.meta.color} />
                             ))}
@@ -513,7 +505,7 @@ export default function Channels() {
                           <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                           <XAxis dataKey="channel" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                           <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                          <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           <Bar dataKey="Inglês" stackId="lang" fill="hsl(var(--chart-2))" />
                           <Bar dataKey="Espanhol" stackId="lang" fill="hsl(var(--chart-3))" />
@@ -708,7 +700,7 @@ function ChannelDetail({
                         <Cell key={i} fill={sentimentColors[entry.name]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -732,7 +724,7 @@ function ChannelDetail({
                   <CartesianGrid strokeDasharray="4 4" stroke={GRID_STROKE} vertical={false} />
                   <XAxis dataKey="hour" tickLine={false} axisLine={false} tick={AXIS_TICK} />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
                   <Bar dataKey="count" fill={meta.color} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
