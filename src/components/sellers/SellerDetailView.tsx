@@ -9,6 +9,7 @@ import { SellerGoalStatus, GoalData } from "./SellerGoalStatus";
 import { SellerKPI } from "./SellersRankingTable";
 import { canonSalesStatus } from "@/lib/leadStatus";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid } from "recharts";
+import { TOOLTIP_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "@/lib/chart-theme";
 import { TrendingUp, Users, Target, DollarSign, Clock, Footprints, Shield, Percent } from "lucide-react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -237,7 +238,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                 <Line type="monotone" dataKey="count" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -254,7 +255,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
               <BarChart data={statusData} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                 <XAxis type="number" allowDecimals={false} hide />
                 <YAxis type="category" dataKey="name" width={150} interval={0} tick={<StatusTick />} />
-                <Tooltip formatter={(v: number) => [v, "Leads"]} labelFormatter={(label: string) => label} />
+                <Tooltip formatter={(v: number) => [v, "Leads"]} labelFormatter={(label: string) => label} contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {statusData.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -275,7 +276,7 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
               <BarChart data={objectionData} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={80} />
-                <Tooltip />
+                <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                 <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

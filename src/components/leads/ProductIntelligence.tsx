@@ -5,6 +5,7 @@ import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { TOOLTIP_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "@/lib/chart-theme";
 
 const PIE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#9ca3af"];
 
@@ -78,7 +79,7 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number, n: string) => [`${v} leads`, n]} />
+                  <Tooltip formatter={(v: number, n: string) => [`${v} leads`, n]} contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
