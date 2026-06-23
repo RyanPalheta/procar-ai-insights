@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uniqueCanonicalSellers } from "@/lib/sellers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,8 +54,7 @@ export function SellerGoalsManager() {
         .not("sales_person_id", "is", null)
         .not("sales_person_id", "eq", "");
       if (error) throw error;
-      const unique = [...new Set(data.map(d => d.sales_person_id).filter(Boolean))];
-      return unique.sort();
+      return uniqueCanonicalSellers(data.map(d => d.sales_person_id));
     },
   });
 

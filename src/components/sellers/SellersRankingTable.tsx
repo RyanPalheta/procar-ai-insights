@@ -68,7 +68,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "vendas", label: "Mais Vendas" },
   { value: "conv_loja", label: "Maior Conversão" },
   { value: "agendamentos", label: "Mais Agendamentos" },
-  { value: "orcamentos", label: "Mais Orçamentos" },
+  // Ordenação "Mais Orçamentos" ocultada da UX a pedido (23/06/2026) — SortKey/case mantidos no código.
   { value: "avg_score", label: "Maior Score IA" },
   { value: "seller_id", label: "Nome (A-Z)" },
 ];
@@ -279,7 +279,7 @@ export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateF
                   {sm ? (
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-2">
-                        <Metric icon={<FileText className="h-3.5 w-3.5" />} label="Orçamentos" value={sm.orcamentos} />
+                        {/* Métrica "Orçamentos" ocultada da UX a pedido (23/06/2026) — dado sm.orcamentos mantido. */}
                         <Metric icon={<CalendarCheck className="h-3.5 w-3.5" />} label="Agendamentos" value={sm.agendamentos} />
                         <Metric icon={<CalendarClock className="h-3.5 w-3.5" />} label="Taxa agendamento" value={sm.taxa_agend_pct != null ? `${sm.taxa_agend_pct}%` : "—"} />
                         <Metric icon={<Footprints className="h-3.5 w-3.5" />} label="Presenciais" value={sm.walk_ins} />

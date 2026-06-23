@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign, CalendarCheck } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign, CalendarCheck, CalendarPlus, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
@@ -37,6 +37,8 @@ interface LeadsKPICardsProps {
   appointmentConversionRate: number;
   appointmentConversionRateVariation: number | null;
   appointmentLeadsCount: number;
+  appointmentsBooked: number;
+  appointmentsBookedVariation: number | null;
   totalLeadsCount: number;
   noShowLeads: number;
   avgScore: number;
@@ -92,11 +94,33 @@ const kpiTooltips = {
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
+  // Contagem de agendamentos confirmados (green do ShopMonkey = status "Agendamento
+  // confirmado" na Kommo). Fonte real da loja, pela data do agendamento.
+  appointmentConfirmed: {
+    title: "Agendamentos Confirmados",
+    description: "Quantos agendamentos a loja confirmou no ShopMonkey (agendamento green) no período.",
+    fonte: "Agendamentos = ShopMonkey (agendamento green = \"agendamento confirmado\" na Kommo, fonte real da loja), pela data do agendamento. No-show (vermelho) não entra aqui.",
+    calculo: "conta os agendamentos green do ShopMonkey cuja data do agendamento cai no período selecionado.",
+    comparison: (periodLabel: string, isAll: boolean) => isAll
+      ? "Mostrando dados de todo o período"
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
+  },
+  // Agendamentos MARCADOS no período: green pela data de MARCAÇÃO (created_date).
+  // Mede a produção de agendamentos confirmados do período (só vale se green).
+  appointmentsBooked: {
+    title: "Agendamentos Marcados",
+    description: "Quantos agendamentos confirmados (green) a loja MARCOU no período — pela data em que foram criados.",
+    fonte: "ShopMonkey (agendamento green = \"agendamento confirmado\"), pela data de marcação (created_date). Conta só os green: marcações em outras cores (walk-in azul, outros status) não entram.",
+    calculo: "conta os agendamentos green do ShopMonkey cuja DATA DE MARCAÇÃO (created_date) cai no período. Difere do card de agenda, que conta pela data agendada (start_date).",
+    comparison: (periodLabel: string, isAll: boolean) => isAll
+      ? "Mostrando dados de todo o período"
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
+  },
   appointmentConversion: {
-    title: "Conversão de Agendamento",
-    description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período.",
+    title: "% Agendamentos Confirmados",
+    description: "Quantos agendamentos confirmados a loja marcou no ShopMonkey em relação aos leads do período.",
     fonte: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo). No-show = agendamentos VERMELHOS no ShopMonkey (faltou/cancelou), mostrado separado no cartão.",
-    calculo: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
+    calculo: "Fórmula: (Agendamentos confirmados do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -179,6 +203,8 @@ export function LeadsKPICards({
   appointmentConversionRate,
   appointmentConversionRateVariation,
   appointmentLeadsCount,
+  appointmentsBooked,
+  appointmentsBookedVariation,
   totalLeadsCount,
   noShowLeads,
   avgScore,
@@ -377,11 +403,57 @@ export function LeadsKPICards({
               <TooltipTrigger asChild>
                 <div className="cursor-help">
                   <KPICard
-                    title="Conversão de Agendamento"
-                    value={`${appointmentConversionRate.toFixed(1)}%`}
+                    title="Agendamentos Confirmados"
+                    value={appointmentLeadsCount}
                     icon={CalendarCheck}
+                    variant={appointmentLeadsCount > 0 ? "success" : "default"}
+                    description={isAll ? `Agend. green (ShopMonkey) · ${noShowLeads} no-show` : `${periodLabel} · ${noShowLeads} no-show`}
+                    trend={getTrend(appointmentConversionRateVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.appointmentConfirmed.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.appointmentConfirmed.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.appointmentConfirmed.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.appointmentConfirmed.fonte} calculo={kpiTooltips.appointmentConfirmed.calculo} />
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="Agendamentos Marcados"
+                    value={appointmentsBooked}
+                    icon={CalendarPlus}
+                    variant={appointmentsBooked > 0 ? "success" : "default"}
+                    description={isAll ? "Green marcados (por data de marcação)" : `Marcados no período · ${periodLabel}`}
+                    trend={getTrend(appointmentsBookedVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.appointmentsBooked.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.appointmentsBooked.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.appointmentsBooked.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.appointmentsBooked.fonte} calculo={kpiTooltips.appointmentsBooked.calculo} />
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="% Agendamentos Confirmados"
+                    value={`${appointmentConversionRate.toFixed(1)}%`}
+                    icon={Percent}
                     variant={appointmentConversionRate >= 10 ? "success" : appointmentConversionRate >= 5 ? "warning" : "default"}
-                    description={`(${appointmentLeadsCount} agend. ShopMonkey ÷ ${totalLeadsCount} leads) × 100 · ${noShowLeads} no-show`}
+                    description={`(${appointmentLeadsCount} agend. ÷ ${totalLeadsCount} leads) × 100`}
                     trend={getTrend(appointmentConversionRateVariation)}
                   />
                 </div>
@@ -442,52 +514,9 @@ export function LeadsKPICards({
               </TooltipContent>
             </Tooltip>
             
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Leads com Cotação"
-                    value={leadsWithQuote}
-                    icon={Receipt}
-                    variant="default"
-                    description={isAll ? "Com cotação (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(leadsWithQuoteVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.leadsWithQuote.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.leadsWithQuote.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.leadsWithQuote.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.leadsWithQuote.fonte} calculo={kpiTooltips.leadsWithQuote.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Valor Médio Cotado"
-                    value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
-                    icon={DollarSign}
-                    variant="success"
-                    description={isAll ? "Ticket médio (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(avgQuotedPriceVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.avgQuotedPrice.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.avgQuotedPrice.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.avgQuotedPrice.fonte} calculo={kpiTooltips.avgQuotedPrice.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-            
+            {/* Cards "Leads com Cotação" e "Valor Médio Cotado" ocultos da UX a pedido (23/06/2026).
+                Lógica e props mantidas (não deletar) — só removidos do render. */}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help relative">
@@ -545,51 +574,8 @@ export function LeadsKPICards({
               </TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Oport. Upsell"
-                    value={upsellLeads}
-                    icon={PackagePlus}
-                    variant={upsellLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Chance de venda extra (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(upsellLeadsVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.upsellLeads.fonte} calculo={kpiTooltips.upsellLeads.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Valor Upsell"
-                    value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
-                    icon={BadgeDollarSign}
-                    variant={upsellTotalValue > 0 ? "success" : "default"}
-                    description={isAll ? "Valor estimado (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(upsellTotalValueVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.upsellTotalValue.fonte} calculo={kpiTooltips.upsellTotalValue.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            {/* Cards "Oport. Upsell" e "Valor Upsell" desativados da UX a pedido (23/06/2026).
+                Lógica e props mantidas — só removidos do render. */}
           </div>
         </MagicBentoGrid>
       </TooltipProvider>

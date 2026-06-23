@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatUSD } from "@/lib/utils";
+import { canonicalSeller } from "@/lib/sellers";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -478,7 +479,7 @@ export default function LeadDetails() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Vendedor</label>
-              <p className="text-base mt-1">{lead.sales_person_id || "N/A"}</p>
+              <p className="text-base mt-1">{canonicalSeller(lead.sales_person_id) || "N/A"}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Canal</label>

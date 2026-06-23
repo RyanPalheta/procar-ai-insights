@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
+import { sellerOrFilter } from "@/lib/sellers";
 import { SellerGoalStatus, GoalData } from "./SellerGoalStatus";
 import { SellerKPI } from "./SellersRankingTable";
 import { canonSalesStatus } from "@/lib/leadStatus";
@@ -52,8 +53,11 @@ export function SellerDetailView({ seller, goals, dateFrom, dateTo }: SellerDeta
       let query = supabase
         .from("lead_db")
         .select("created_at, sales_status, objection_categories, has_objection, objection_overcome, channel, sentiment, lead_temperature")
-        .eq("sales_person_id", seller.seller_id)
-        .not("last_ai_update", "is", null);
+        .or(sellerOrFilter(seller.seller_id))
+        .not("last_ai_update", "is", null)
+        // regra de paridade do painel: leituras de lead_db excluem duplicados/ausentes
+        .not("is_duplicate", "is", true)
+        .not("kommo_absent", "is", true);
 
       if (dateFrom) query = query.gte("created_at", dateFrom);
       if (dateTo) query = query.lte("created_at", dateTo);

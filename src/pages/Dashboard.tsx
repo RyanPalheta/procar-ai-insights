@@ -151,6 +151,8 @@ export default function Dashboard() {
         sale_leads_previous: number | null;
         appointment_leads: number;
         appointment_leads_previous: number | null;
+        appointments_booked: number;
+        appointments_booked_previous: number | null;
         no_show_leads: number;
         no_show_leads_previous: number | null;
         won_leads: number;
@@ -336,6 +338,8 @@ export default function Dashboard() {
         appointmentConversionRate,
         appointmentConversionRateVariation: null,
         appointmentLeadsCount: appointmentLeadsSM,
+        appointmentsBooked: kpisData?.appointments_booked ?? 0,
+        appointmentsBookedVariation: null,
         totalLeadsCount: totalLeadsRpc,
         noShowLeads,
         avgScore,
@@ -364,6 +368,8 @@ export default function Dashboard() {
       appointmentConversionRate: 0,
       appointmentConversionRateVariation: null,
       appointmentLeadsCount: 0,
+      appointmentsBooked: 0,
+      appointmentsBookedVariation: null,
       totalLeadsCount: 0,
       noShowLeads: 0,
       avgScore: 0,
@@ -402,6 +408,13 @@ export default function Dashboard() {
     if (kpisData.total_leads_previous && kpisData.total_leads_previous > 0) {
       const prev = (kpisData.appointment_leads_previous || 0) / kpisData.total_leads_previous * 100;
       if (prev > 0) appointmentConversionRateVariation = ((appointmentConversionRate - prev) / prev) * 100;
+    }
+
+    // Agendamentos MARCADOS no período (green por created_date) — variação simples
+    // sobre a contagem do período anterior.
+    let appointmentsBookedVariation: number | null = null;
+    if (kpisData.appointments_booked_previous && kpisData.appointments_booked_previous > 0) {
+      appointmentsBookedVariation = ((kpisData.appointments_booked - kpisData.appointments_booked_previous) / kpisData.appointments_booked_previous) * 100;
     }
 
     let scoreVariation: number | null = null;
@@ -456,6 +469,8 @@ export default function Dashboard() {
       appointmentConversionRate,
       appointmentConversionRateVariation,
       appointmentLeadsCount: kpisData.appointment_leads ?? 0,
+      appointmentsBooked: kpisData.appointments_booked ?? 0,
+      appointmentsBookedVariation,
       totalLeadsCount: kpisData.total_leads ?? 0,
       noShowLeads: kpisData.no_show_leads ?? 0,
       avgScore: kpisData.avg_score,
@@ -932,13 +947,11 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Conversion by Response Time & Quote Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Conversion by Response Time Chart.
+          Gráfico "Conversão por Cotação" (LeadsConversionByQuoteChart) ocultado da UX a pedido (23/06/2026) —
+          import e componente mantidos no código (não deletar). */}
+      <div className="grid grid-cols-1 gap-4">
         <LeadsConversionByResponseTimeChart
-          dateFrom={range.fromIso}
-          dateTo={range.toIso}
-        />
-        <LeadsConversionByQuoteChart
           dateFrom={range.fromIso}
           dateTo={range.toIso}
         />

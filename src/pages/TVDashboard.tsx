@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Percent, Clock, Star, RefreshCw, Home, LogOut } from "lucide-react";
+import { Users, Percent, Clock, Star, RefreshCw, Home, LogOut, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
 import logo from "@/assets/procar-logo.avif";
 import { cn } from "@/lib/utils";
+import { canonicalSeller, uniqueCanonicalSellers } from "@/lib/sellers";
 
 import { TVKPICard } from "@/components/tv/TVKPICard";
 import { TVQualitySection } from "@/components/tv/TVQualitySection";
@@ -155,6 +156,7 @@ export default function TVDashboard() {
         total_leads: totalLeads,
         conversion_rate: totalLeads > 0 ? Math.round((saleLeads / totalLeads) * 1000) / 10 : 0,
         appointment_rate: totalLeads > 0 ? Math.round((apptLeads / totalLeads) * 1000) / 10 : 0,
+        appointment_leads: apptLeads,
         no_show_leads: raw.no_show_leads ?? 0,
         avg_score: raw.avg_score ?? 0,
         median_first_response_time_minutes: raw.median_first_response_time_minutes ?? 0,
@@ -174,11 +176,7 @@ export default function TVDashboard() {
   // Extract unique sellers
   const uniqueSellers = useMemo(() => {
     if (!leads) return [];
-    const sellers = new Set<string>();
-    leads.forEach(l => {
-      if (l.sales_person_id) sellers.add(l.sales_person_id);
-    });
-    return Array.from(sellers).sort();
+    return uniqueCanonicalSellers(leads.map(l => l.sales_person_id));
   }, [leads]);
 
   // Filter leads by selected period and seller (calendar bounds)
@@ -188,7 +186,7 @@ export default function TVDashboard() {
       const created = new Date(l.created_at);
       if (range.from !== null && created < range.from) return false;
       if (range.to !== null && created > range.to) return false;
-      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      if (selectedSeller !== "all" && canonicalSeller(l.sales_person_id) !== selectedSeller) return false;
       return true;
     });
   }, [leads, range.fromIso, range.toIso, selectedSeller]);
@@ -201,7 +199,7 @@ export default function TVDashboard() {
     return leads.filter(l => {
       const created = new Date(l.created_at);
       if (!(created >= prev.from && created <= prev.to)) return false;
-      if (selectedSeller !== "all" && l.sales_person_id !== selectedSeller) return false;
+      if (selectedSeller !== "all" && canonicalSeller(l.sales_person_id) !== selectedSeller) return false;
       return true;
     });
   }, [leads, range.fromIso, range.toIso, selectedSeller]);
@@ -524,7 +522,7 @@ export default function TVDashboard() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-6 lg:mb-8"
+        className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 mb-6 lg:mb-8"
       >
         <motion.div variants={itemVariants}>
           <TVKPICard
@@ -556,15 +554,29 @@ export default function TVDashboard() {
         </motion.div>
         <motion.div variants={itemVariants}>
           <TVKPICard
-            title="Taxa de Agendamentos"
+            title="Agendamentos Confirmados"
+            value={kpisData?.appointment_leads ?? 0}
+            icon={CalendarCheck}
+            trend={trends?.appointment}
+            subtitle={`Agend. green (ShopMonkey) · ${kpisData?.no_show_leads ?? 0} no-show`}
+            info={{
+              description: "Quantos agendamentos a loja confirmou no ShopMonkey (agendamento green) no período.",
+              source: "Agendamentos = ShopMonkey (agendamento green = 'agendamento confirmado' na Kommo, fonte real da loja), pela data do agendamento. No-show (vermelho) não entra aqui.",
+              calculation: "conta os agendamentos green do ShopMonkey cuja data do agendamento cai no período selecionado.",
+            }}
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <TVKPICard
+            title="% Agendamentos Confirmados"
             value={`${Math.round(kpisData?.appointment_rate ?? 0)}%`}
             icon={Percent}
             trend={trends?.appointment}
             subtitle="(Agend. ShopMonkey ÷ leads) × 100 · = Visão Geral"
             info={{
-              description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período. É o MESMO número da 'Conversão de Agendamento' da Visão Geral.",
+              description: "Quantos agendamentos confirmados a loja marcou no ShopMonkey em relação aos leads do período. É o MESMO número do '% Agendamentos Confirmados' da Visão Geral.",
               source: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo).",
-              calculation: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100.",
+              calculation: "Fórmula: (Agendamentos confirmados do ShopMonkey ÷ Total de leads do período) × 100.",
             }}
           />
         </motion.div>
