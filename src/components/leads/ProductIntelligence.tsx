@@ -22,10 +22,11 @@ interface Props {
 }
 
 /**
- * Inteligência de Produtos — ranking dos serviços/produtos detectados pela IA nas
- * conversas (services_detected), com participação (%) e quantas vezes cada um
- * aparece como oportunidade de upsell (upsell_products). Subconjunto de chat
- * auditado (rotulado). Atende ao pedido transversal "destrinchar por produto".
+ * Inteligência de Produtos — ranking dos serviços/produtos detectados nas conversas
+ * (services_detected: palavra-chave sobre o texto do chat, com fallback do serviço
+ * que a IA identificou), com participação (%) e quantas vezes cada um aparece como
+ * oportunidade de upsell (upsell_products, vinda da IA). A detecção por texto NÃO
+ * depende da análise da IA. Atende ao pedido transversal "destrinchar por produto".
  */
 export function ProductIntelligence({ dateFrom, dateTo }: Props) {
   const { data, isLoading } = useQuery({
@@ -56,12 +57,12 @@ export function ProductIntelligence({ dateFrom, dateTo }: Props) {
             <h3 className="font-semibold leading-tight flex items-center gap-1.5">
               Inteligência de Produtos
               <ChartInfoTooltip
-                description="Ranking dos serviços e produtos que a IA mais identificou nas conversas, com a fatia (%) de cada um e quantas vezes apareceu como chance de vender algo a mais (upsell)."
-                source="conta só os clientes que chegaram por conversa de WhatsApp/chat e que a IA já analisou. Por isso o número é menor que o total no Kommo. A IA lê cada conversa e anota quais produtos o cliente quis e em quais havia chance de vender algo a mais."
+                description="Ranking dos serviços e produtos mais procurados, identificados no texto das conversas, com a fatia (%) de cada um e quantas vezes apareceu como chance de vender algo a mais (upsell)."
+                source="conta os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Os produtos são detectados pelo texto da conversa (e, quando não há correspondência, pelo serviço que a IA identificou) — não dependem da análise da IA. A chance de venda extra (upsell) vem da IA."
                 calculation="conta quantos clientes diferentes pediram cada produto; a fatia (%) é os clientes daquele produto divididos pelo total de clientes que pediram algum produto, vezes 100. O 'upsell' conta quantos clientes diferentes em que aquele produto apareceu como chance de venda extra."
               />
             </h3>
-            <p className="text-xs text-muted-foreground">Procura · fatia · chance de venda extra (conversas já analisadas pela IA)</p>
+            <p className="text-xs text-muted-foreground">Procura · fatia · chance de venda extra (detectado no texto das conversas)</p>
           </div>
         </div>
 
