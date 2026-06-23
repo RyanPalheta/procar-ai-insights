@@ -23,7 +23,10 @@ const PRODUCT_KEYWORDS: Record<string, string[]> = {
     'kenwood dmx', 'sony xav', 'alpine ilx', 'atoto', 'double din',
   ],
   'Sound System': [
-    'sound system', 'sound', ' som ', 'som automotivo', 'caixa de som', 'subwoofer', 'amplificador',
+    // NÃO usar o token solto 'sound': a loja se chama "Pro Car Sound", então o
+    // nome/assinatura/link casava em ~91% das conversas (falso positivo). Manter
+    // só termos específicos de áudio.
+    'sound system', ' som ', 'som automotivo', 'caixa de som', 'subwoofer', 'amplificador',
     'speaker', 'speakers', 'alto falante', 'alto-falante', 'alto-falantes', 'auto falante',
     'audio upgrade', 'audio system', ' sub ', ' sub.', ' sub,', 'sub and amp', 'sub & amp',
     ' amp ', ' amp.', ' amp,', 'amplifier', 'tweeter', 'tweeters', 'midrange', 'midbass',
@@ -76,6 +79,7 @@ interface ScanRequest {
   trigger_kommo_sync?: boolean;   // default true on real run; false for cheap scans
   overwrite?: boolean;            // default false (merge with existing services_detected)
   only_unscanned?: boolean;       // default true (skip leads that already have services_detected)
+  newest_first?: boolean;         // default false; true = varre session_id DESC (mantém os recentes sempre frescos)
 }
 
 const DEFAULT_BATCH_SIZE = 50;
@@ -163,26 +167,48 @@ async function processSingleLead(
 
   const { detected, messages_scanned } = await scanSessionProducts(supabase, sessionId);
 
-  const merged = opts.overwrite
-    ? (detected.length > 0 ? detected : null)
-    : mergeServices(lead.services_detected, detected);
-
-  // No-op when merge returns null (nothing new)
-  if (!merged) {
-    return {
-      session_id: sessionId,
-      detected,
-      written: null,
-      messages_scanned,
-      kommo_synced: false,
-      changed: false,
-    };
+  // Palavra-chave PRIMEIRO; se não achar nada, cai para o serviço primário que a
+  // IA detectou (service_desired). Cobre os casos que o catálogo de keywords não
+  // tem (ex.: ALPINE, REMOTE START, AMBIENT LIGHT). O canonical_product() da RPC
+  // normaliza na leitura, então gravamos o texto cru da IA.
+  let finalDetected = detected;
+  const aiService = (lead.service_desired || '').trim();
+  if (finalDetected.length === 0 && aiService) {
+    finalDetected = [aiService];
   }
 
-  const updates: Record<string, any> = { services_detected: merged };
+  const current = (lead.services_detected as string[] | null) ?? null;
+
+  // Decide o que persistir. REGRA: nunca deixar services_detected NULL depois de
+  // escanear — quando nada é detectado, gravamos [] para o lead SAIR da fila
+  // only_unscanned (IS NULL) e o cron diário avançar (antes ele represava nos
+  // leads antigos sem chat e nunca chegava nos recentes).
+  let toWrite: string[];
+  if (opts.overwrite) {
+    toWrite = finalDetected; // pode ser []
+  } else {
+    const merged = mergeServices(current, finalDetected);
+    if (merged) {
+      toWrite = merged;
+    } else if (current === null) {
+      toWrite = finalDetected; // [] aqui — carimba como escaneado
+    } else {
+      // Já escaneado e nada novo -> no-op real.
+      return {
+        session_id: sessionId,
+        detected: finalDetected,
+        written: null,
+        messages_scanned,
+        kommo_synced: false,
+        changed: false,
+      };
+    }
+  }
+
+  const updates: Record<string, any> = { services_detected: toWrite };
   // Keep service_desired in sync as primary (first) for backward compat, only if it's empty
-  if (!lead.service_desired && merged.length > 0) {
-    updates.service_desired = merged[0];
+  if (!lead.service_desired && toWrite.length > 0) {
+    updates.service_desired = toWrite[0];
   }
 
   const { error: updErr } = await supabase
@@ -191,8 +217,9 @@ async function processSingleLead(
     .eq('session_id', sessionId);
   if (updErr) throw updErr;
 
+  // Só sincroniza Kommo quando há produto de fato (pula os carimbos vazios).
   let kommoSynced = false;
-  if (opts.triggerKommo) {
+  if (opts.triggerKommo && toWrite.length > 0) {
     try {
       await supabase.functions.invoke('sync-to-kommo', { body: { session_id: sessionId } });
       kommoSynced = true;
@@ -203,11 +230,11 @@ async function processSingleLead(
 
   return {
     session_id: sessionId,
-    detected,
-    written: merged,
+    detected: finalDetected,
+    written: toWrite,
     messages_scanned,
     kommo_synced: kommoSynced,
-    changed: true,
+    changed: toWrite.length > 0,
   };
 }
 
@@ -249,14 +276,20 @@ serve(async (req) => {
 
     // ---- Batch mode ----
     const batchSize = Math.min(body.batch_size || DEFAULT_BATCH_SIZE, 200);
-    const cursor = body.cursor_session_id ?? 0;
+    const newestFirst = body.newest_first === true;
+    // Cursor é a fronteira de paginação. Ascendente parte de 0 (mais antigos);
+    // descendente parte do topo (mais novos). O teto precisa caber no int4 do
+    // session_id (usar MAX_SAFE_INTEGER estoura o tipo no Postgres -> 500).
+    const INT4_MAX = 2147483647;
+    const cursor = body.cursor_session_id ?? (newestFirst ? INT4_MAX : 0);
 
     let q = supabase
       .from('lead_db')
-      .select('session_id', { count: 'exact' })
-      .gt('session_id', cursor)
-      .order('session_id', { ascending: true })
-      .limit(batchSize);
+      .select('session_id', { count: 'exact' });
+    q = newestFirst
+      ? q.lt('session_id', cursor).order('session_id', { ascending: false })
+      : q.gt('session_id', cursor).order('session_id', { ascending: true });
+    q = q.limit(batchSize);
 
     if (onlyUnscanned) {
       q = q.is('services_detected', null);

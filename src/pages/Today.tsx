@@ -10,6 +10,7 @@ import { ChartInfoTooltip } from "@/components/ui/chart-info-tooltip";
 import { formatUSD } from "@/lib/utils";
 import { BarChart as TremorBarChart } from "@tremor/react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { TOOLTIP_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "@/lib/chart-theme";
 import {
   Users, MessageSquare, Phone, DollarSign, Gauge, AlertTriangle,
   PhoneIncoming, PhoneOutgoing, ArrowRight, TrendingUp, TrendingDown, Minus, Clock,
@@ -610,11 +611,9 @@ export default function Today() {
                 <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                  }}
+                  contentStyle={TOOLTIP_STYLE}
+                  itemStyle={TOOLTIP_ITEM_STYLE}
+                  labelStyle={TOOLTIP_LABEL_STYLE}
                 />
                 <Bar dataKey="leads" fill="hsl(var(--primary))" name="Leads" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="calls" fill="rgb(139, 92, 246)" name="Chamadas" radius={[4, 4, 0, 0]} />

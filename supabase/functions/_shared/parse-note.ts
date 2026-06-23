@@ -33,7 +33,7 @@ const WALK_RE = /\bwalk(?:ed|s)?\s*-?\s*ins?\b|\bwalkins?\b|\bwalking\b|\bwalk\s
 // Vendedores conhecidos (ajustável conforme o time cresce).
 // NÃO incluir nomes de PRODUTOS aqui: "Maestro" é um item vendido (aparece no
 // trecho <PRODUTO> do note), não um vendedor — removido em 2026-06-23.
-const SELLERS = ["henrique", "jp", "gabriel", "ricardo", "matheus"];
+const SELLERS = ["henrique", "jp", "gabriel", "ricardo", "matheus", "fabricio", "fabrício"];
 
 /** Normaliza a origem para os 20 padrões observados nas notes. */
 function normalizeSource(s: string): string | null {

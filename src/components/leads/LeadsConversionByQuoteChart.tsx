@@ -11,10 +11,11 @@ import { Lightbulb, DollarSign } from "lucide-react";
 
 interface ConversionByQuoteData {
   quote_bracket: string;
-  total_leads: number;      // orçamentos gerados na faixa
-  converted_leads: number;  // desses, quantos foram pagos
-  conversion_rate: number;
+  total_leads: number;      // TOTAL de leads do período (denominador, igual p/ todas as faixas)
+  converted_leads: number;  // pagos na faixa
+  conversion_rate: number;  // pagos da faixa ÷ total de leads do período × 100
   avg_quote_value: number;
+  bracket_leads: number;    // nº de leads com orçamento nesta faixa (contexto)
 }
 
 interface LeadsConversionByQuoteChartProps {
@@ -24,11 +25,11 @@ interface LeadsConversionByQuoteChartProps {
 
 const TOOLTIP = {
   description:
-    "Mostra, por faixa de valor do PRIMEIRO orçamento que o lead recebeu, quantos leads viraram venda paga; eixo X = faixas em USD, barra = % de leads convertidos. A linha tracejada marca a média entre as faixas. Mesma definição de conversão do gráfico de Tempo de Resposta.",
+    "Mostra, por faixa de valor do PRIMEIRO orçamento que o lead recebeu, quanto cada faixa converteu em venda paga sobre o TOTAL de leads do período; eixo X = faixas em USD, barra = % do total de leads. A linha tracejada marca a média entre as faixas. Mesma definição de conversão do gráfico de Tempo de Resposta.",
   source:
     "cruza os leads do painel com os orçamentos do ShopMonkey, ligados pelo telefone do cliente. Só conta orçamentos gerados DEPOIS da chegada do lead (sem arquivados e sem valor zero) — orçamentos de clientes walk-in que não vieram como lead ficam de fora.",
   calculation:
-    "para cada lead do período com orçamento no ShopMonkey, pega o primeiro orçamento após a chegada e agrupa pela faixa de valor: $0-500, $500-1000, $1000-2000, $2000+. A taxa da faixa = leads com venda PAGA na loja (ShopMonkey, paga depois da chegada do lead) divididos pelos leads da faixa, vezes 100.",
+    "para cada lead do período com orçamento no ShopMonkey, pega o primeiro orçamento após a chegada e agrupa pela faixa de valor: $0-500, $500-1000, $1000-2000, $2000+. A taxa da faixa = leads com venda PAGA na loja (ShopMonkey, paga depois da chegada do lead) naquela faixa divididos pelo TOTAL de leads do período (mesma base da Conversão de Venda), vezes 100. A soma das faixas é a conversão geral via orçamento sobre o total de leads.",
 };
 
 // Semântica vs. média: verde acima, âmbar na média, vermelho abaixo
@@ -59,9 +60,12 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
     ? data.reduce((sum, d) => sum + (d.conversion_rate || 0), 0) / data.length
     : 0;
 
-  const totalGerados = data?.reduce((sum, d) => sum + (d.total_leads || 0), 0) || 0;
+  // total_leads agora é o TOTAL de leads do período (escalar, igual em todas as
+  // faixas) — denominador único, igual ao da Conversão de Venda.
+  const totalLeadsPeriodo = data?.[0]?.total_leads || 0;
+  const totalComOrcamento = data?.reduce((sum, d) => sum + (d.bracket_leads || 0), 0) || 0;
   const totalPagos = data?.reduce((sum, d) => sum + (d.converted_leads || 0), 0) || 0;
-  const overallRate = totalGerados > 0 ? (totalPagos / totalGerados) * 100 : 0;
+  const overallRate = totalLeadsPeriodo > 0 ? (totalPagos / totalLeadsPeriodo) * 100 : 0;
 
   const bestBracket = data && data.length > 0
     ? data.reduce((best, current) =>
@@ -78,7 +82,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
       quote_bracket: d.quote_bracket,
       rate,
       category,
-      _total: d.total_leads,
+      _total: d.bracket_leads,
       _converted: d.converted_leads,
       _avgQuote: d.avg_quote_value,
     };
@@ -92,7 +96,7 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
         <p className="font-medium">{d.quote_bracket}</p>
         <p className="text-muted-foreground text-xs mt-1">
-          {d._converted} convertidos de {d._total} leads com orçamento
+          {d._converted} pagos · faixa teve {d._total} orçamentos
         </p>
         {d._avgQuote > 0 && (
           <p className="text-xs mt-1">
@@ -205,16 +209,16 @@ export function LeadsConversionByQuoteChart({ dateFrom, dateTo }: LeadsConversio
           </ChartContainer>
 
           {/* Insight Card */}
-          {totalGerados > 0 && (
+          {totalLeadsPeriodo > 0 && (
             <div className="bg-success/10 border border-success/20 rounded-lg p-3">
               <div className="flex items-start gap-2">
                 <Lightbulb className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                 <p className="text-sm">
                   <span className="font-medium">Insight:</span>{" "}
                   <span className="font-semibold text-success">
-                    {totalPagos} de {totalGerados}
+                    {totalPagos} de {totalLeadsPeriodo}
                   </span>{" "}
-                  leads que receberam orçamento converteram em venda paga ({overallRate.toFixed(1)}%)
+                  leads do período converteram em venda paga via orçamento ({overallRate.toFixed(1)}%) · {totalComOrcamento} receberam orçamento
                   {bestBracket && (bestBracket.conversion_rate || 0) > 0 && (
                     <>. Faixa que mais converte:{" "}
                       <span className="font-semibold text-success">
