@@ -375,7 +375,7 @@ export function LeadsKPICards({
           spotlightRadius={300}
           glowColor="228, 0, 43"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-10 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8 gap-2.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help">

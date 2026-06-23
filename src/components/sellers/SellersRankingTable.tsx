@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, Shield, ArrowUpDown, Trophy, Medal, Award, Star, Sparkles,
-  Users, FileText, CalendarCheck, CalendarClock, Footprints, ShoppingBag, DollarSign, Receipt,
+  Users, FileText, CalendarCheck, TrendingUp, Footprints, ShoppingBag, DollarSign, Receipt,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GoalsSummary, GoalData } from "./SellerGoalStatus";
@@ -281,7 +281,11 @@ export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateF
                       <div className="grid grid-cols-2 gap-2">
                         {/* Métrica "Orçamentos" ocultada da UX a pedido (23/06/2026) — dado sm.orcamentos mantido. */}
                         <Metric icon={<CalendarCheck className="h-3.5 w-3.5" />} label="Agendamentos" value={sm.agendamentos} />
-                        <Metric icon={<CalendarClock className="h-3.5 w-3.5" />} label="Taxa agendamento" value={sm.taxa_agend_pct != null ? `${sm.taxa_agend_pct}%` : "—"} />
+                        <Metric
+                          icon={<TrendingUp className="h-3.5 w-3.5" />}
+                          label="Taxa de conversão"
+                          value={seller.total_audited > 0 ? `${seller.conversion_rate.toFixed(1)}%` : "—"}
+                        />
                         <Metric icon={<Footprints className="h-3.5 w-3.5" />} label="Presenciais" value={sm.walk_ins} />
                         <Metric icon={<ShoppingBag className="h-3.5 w-3.5" />} label="Vendas" value={sm.vendas} />
                         <Metric icon={<DollarSign className="h-3.5 w-3.5" />} label="Receita" value={formatUSD(Number(sm.receita_usd), 0)} highlight />
