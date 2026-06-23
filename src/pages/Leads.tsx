@@ -512,58 +512,8 @@ export default function Leads() {
         </div>
       )}
 
-      {/* Upsell KPIs — respeitam o período selecionado (created_at dentro do range) */}
-      {leads && (() => {
-        const fromTs = range.fromIso ? new Date(range.fromIso).getTime() : null;
-        const toTs = range.toIso ? new Date(range.toIso).getTime() : null;
-        const inPeriod = (l: any) => {
-          const t = new Date(l.created_at).getTime();
-          if (fromTs !== null && t < fromTs) return false;
-          if (toTs !== null && t > toTs) return false;
-          return true;
-        };
-        const analyzedInPeriod = leads.filter(l => l.last_ai_update && inPeriod(l));
-        const upsellLeads = analyzedInPeriod.filter(l => l.has_upsell);
-        const upsellCount = upsellLeads.length;
-        const upsellTotalValue = upsellLeads.reduce((sum: number, l: any) => sum + (l.upsell_value_estimate || 0), 0);
-        if (upsellCount === 0) return null;
-        return (
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-500" />
-              Oportunidades de Upsell
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 max-w-lg">
-              <div className="cursor-pointer" onClick={() => { setUpsellFilter("with"); resetPage(); }}>
-                <KPICard
-                  title="Leads com Upsell"
-                  value={upsellCount}
-                  icon={TrendingUp}
-                  variant="success"
-                  description={`${analyzedInPeriod.length > 0 ? Math.round((upsellCount / analyzedInPeriod.length) * 100) : 0}% dos clientes analisados no período · menor que o Kommo`}
-                  info={{
-                    description: "Clientes já analisados em que a IA viu chance de vender algo a mais (upsell).",
-                    source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes com chance de venda extra que a IA já analisou.",
-                    calculation: "conta os clientes já analisados com chance de venda extra, divididos pelo total de clientes que a IA já analisou, vezes 100.",
-                  }}
-                />
-              </div>
-              <KPICard
-                title="Valor Potencial Upsell"
-                value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue) : "N/A"}
-                icon={DollarSign}
-                variant="success"
-                description="Estimativa total · menor que o Kommo"
-                info={{
-                  description: "Valor estimado, somado, de todas as vendas extras (upsell) que a IA identificou.",
-                  source: "conta só os clientes que chegaram por conversa de WhatsApp/chat. Por isso o número é menor que o total no Kommo. Aqui: os clientes com chance de venda extra que a IA já analisou.",
-                  calculation: "a soma do valor estimado das vendas extras dos clientes com essa oportunidade, mostrada em dólar.",
-                }}
-              />
-            </div>
-          </div>
-        );
-      })()}
+      {/* Seção "Oportunidades de Upsell" desativada da UX a pedido (23/06/2026).
+          Lógica (has_upsell / upsell_value_estimate) mantida no restante do código — só removida do render. */}
 
       {/* Inteligência de Produtos — ranking + share + upsell (dado real: services_detected). */}
       <ProductIntelligence dateFrom={range.fromIso} dateTo={range.toIso} />
@@ -787,20 +737,8 @@ export default function Leads() {
                   </Select>
                 </div>
 
-                {/* Upsell */}
-                <div className="space-y-2">
-                  <Label>Upsell</Label>
-                  <Select value={upsellFilter} onValueChange={(v) => { setUpsellFilter(v); resetPage(); }}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="with">Com Upsell</SelectItem>
-                      <SelectItem value="without">Sem Upsell</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Filtro "Upsell" desativado da UX a pedido (23/06/2026).
+                    Estado upsellFilter e a aplicação do filtro permanecem no código (default "all" = sem efeito). */}
               </div>
 
               {/* Score & Compliance Range Sliders */}

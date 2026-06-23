@@ -442,52 +442,9 @@ export function LeadsKPICards({
               </TooltipContent>
             </Tooltip>
             
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Leads com Cotação"
-                    value={leadsWithQuote}
-                    icon={Receipt}
-                    variant="default"
-                    description={isAll ? "Com cotação (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(leadsWithQuoteVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.leadsWithQuote.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.leadsWithQuote.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.leadsWithQuote.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.leadsWithQuote.fonte} calculo={kpiTooltips.leadsWithQuote.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Valor Médio Cotado"
-                    value={avgQuotedPrice > 0 ? formatUSD(avgQuotedPrice) : "N/A"}
-                    icon={DollarSign}
-                    variant="success"
-                    description={isAll ? "Ticket médio (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(avgQuotedPriceVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.avgQuotedPrice.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.avgQuotedPrice.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.avgQuotedPrice.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.avgQuotedPrice.fonte} calculo={kpiTooltips.avgQuotedPrice.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-            
+            {/* Cards "Leads com Cotação" e "Valor Médio Cotado" ocultos da UX a pedido (23/06/2026).
+                Lógica e props mantidas (não deletar) — só removidos do render. */}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="cursor-help relative">
@@ -545,51 +502,8 @@ export function LeadsKPICards({
               </TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Oport. Upsell"
-                    value={upsellLeads}
-                    icon={PackagePlus}
-                    variant={upsellLeads > 0 ? "success" : "default"}
-                    description={isAll ? "Chance de venda extra (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(upsellLeadsVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.upsellLeads.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellLeads.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellLeads.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.upsellLeads.fonte} calculo={kpiTooltips.upsellLeads.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <KPICard
-                    title="Valor Upsell"
-                    value={upsellTotalValue > 0 ? formatUSD(upsellTotalValue, 0) : "N/A"}
-                    icon={BadgeDollarSign}
-                    variant={upsellTotalValue > 0 ? "success" : "default"}
-                    description={isAll ? "Valor estimado (WhatsApp/chat)" : periodLabel}
-                    trend={getTrend(upsellTotalValueVariation)}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{kpiTooltips.upsellTotalValue.title}</p>
-                  <p className="text-xs text-muted-foreground">{kpiTooltips.upsellTotalValue.description}</p>
-                  <p className="text-xs text-primary">{kpiTooltips.upsellTotalValue.comparison(periodLabel, isAll)}</p>
-                  <TooltipProvenance fonte={kpiTooltips.upsellTotalValue.fonte} calculo={kpiTooltips.upsellTotalValue.calculo} />
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            {/* Cards "Oport. Upsell" e "Valor Upsell" desativados da UX a pedido (23/06/2026).
+                Lógica e props mantidas — só removidos do render. */}
           </div>
         </MagicBentoGrid>
       </TooltipProvider>

@@ -932,13 +932,11 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Conversion by Response Time & Quote Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Conversion by Response Time Chart.
+          Gráfico "Conversão por Cotação" (LeadsConversionByQuoteChart) ocultado da UX a pedido (23/06/2026) —
+          import e componente mantidos no código (não deletar). */}
+      <div className="grid grid-cols-1 gap-4">
         <LeadsConversionByResponseTimeChart
-          dateFrom={range.fromIso}
-          dateTo={range.toIso}
-        />
-        <LeadsConversionByQuoteChart
           dateFrom={range.fromIso}
           dateTo={range.toIso}
         />
