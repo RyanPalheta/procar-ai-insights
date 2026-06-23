@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatUSD } from "@/lib/utils";
 import { MagicBentoGrid } from "@/components/ui/magic-bento-grid";
-import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign, CalendarCheck } from "lucide-react";
+import { TrendingUp, Award, Clock, DollarSign, Receipt, Timer, AlertTriangle, X, Footprints, PackagePlus, BadgeDollarSign, CalendarCheck, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { resolvePeriod, type PeriodValue } from "@/lib/period";
@@ -92,11 +92,22 @@ const kpiTooltips = {
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
   },
+  // Contagem de agendamentos confirmados (green do ShopMonkey = status "Agendamento
+  // confirmado" na Kommo). Fonte real da loja, pela data do agendamento.
+  appointmentConfirmed: {
+    title: "Agendamentos Confirmados",
+    description: "Quantos agendamentos a loja confirmou no ShopMonkey (agendamento green) no período.",
+    fonte: "Agendamentos = ShopMonkey (agendamento green = \"agendamento confirmado\" na Kommo, fonte real da loja), pela data do agendamento. No-show (vermelho) não entra aqui.",
+    calculo: "conta os agendamentos green do ShopMonkey cuja data do agendamento cai no período selecionado.",
+    comparison: (periodLabel: string, isAll: boolean) => isAll
+      ? "Mostrando dados de todo o período"
+      : `Comparando ${periodLabel} com o período anterior de mesma duração`
+  },
   appointmentConversion: {
-    title: "Conversão de Agendamento",
-    description: "Quantos agendamentos a loja marcou no ShopMonkey em relação aos leads do período.",
+    title: "% Agendamentos Confirmados",
+    description: "Quantos agendamentos confirmados a loja marcou no ShopMonkey em relação aos leads do período.",
     fonte: "Agendamentos = ShopMonkey (agendamento green, fonte real da loja), pela data do agendamento. Leads = base do painel (= Kommo). No-show = agendamentos VERMELHOS no ShopMonkey (faltou/cancelou), mostrado separado no cartão.",
-    calculo: "Fórmula: (Agendamentos do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
+    calculo: "Fórmula: (Agendamentos confirmados do ShopMonkey ÷ Total de leads do período) × 100. No-show conta os agendamentos vermelhos do ShopMonkey no período.",
     comparison: (periodLabel: string, isAll: boolean) => isAll
       ? "Mostrando dados de todo o período"
       : `Comparando ${periodLabel} com o período anterior de mesma duração`
@@ -377,11 +388,34 @@ export function LeadsKPICards({
               <TooltipTrigger asChild>
                 <div className="cursor-help">
                   <KPICard
-                    title="Conversão de Agendamento"
-                    value={`${appointmentConversionRate.toFixed(1)}%`}
+                    title="Agendamentos Confirmados"
+                    value={appointmentLeadsCount}
                     icon={CalendarCheck}
+                    variant={appointmentLeadsCount > 0 ? "success" : "default"}
+                    description={isAll ? `Agend. green (ShopMonkey) · ${noShowLeads} no-show` : `${periodLabel} · ${noShowLeads} no-show`}
+                    trend={getTrend(appointmentConversionRateVariation)}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3">
+                <div className="space-y-1">
+                  <p className="font-medium">{kpiTooltips.appointmentConfirmed.title}</p>
+                  <p className="text-xs text-muted-foreground">{kpiTooltips.appointmentConfirmed.description}</p>
+                  <p className="text-xs text-primary">{kpiTooltips.appointmentConfirmed.comparison(periodLabel, isAll)}</p>
+                  <TooltipProvenance fonte={kpiTooltips.appointmentConfirmed.fonte} calculo={kpiTooltips.appointmentConfirmed.calculo} />
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <KPICard
+                    title="% Agendamentos Confirmados"
+                    value={`${appointmentConversionRate.toFixed(1)}%`}
+                    icon={Percent}
                     variant={appointmentConversionRate >= 10 ? "success" : appointmentConversionRate >= 5 ? "warning" : "default"}
-                    description={`(${appointmentLeadsCount} agend. ShopMonkey ÷ ${totalLeadsCount} leads) × 100 · ${noShowLeads} no-show`}
+                    description={`(${appointmentLeadsCount} agend. ÷ ${totalLeadsCount} leads) × 100`}
                     trend={getTrend(appointmentConversionRateVariation)}
                   />
                 </div>
