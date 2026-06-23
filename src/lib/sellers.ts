@@ -26,7 +26,8 @@ export function canonicalSeller(raw: string | null | undefined): string | null {
   if (["jp", "joao", "joão"].includes(l)) return "JP";
   if (l.includes("doug")) return "Doug";
   if (l.includes("maick")) return "Maick";
-  if (l.includes("maestro")) return "Maestro";
+  if (l.includes("fabricio") || l.includes("fabrício")) return "Fabricio";
+  if (l.includes("maestro")) return null; // "Maestro" é um PRODUTO vendido, não um vendedor (Pro Car, 2026-06-23)
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
@@ -61,7 +62,8 @@ export function sellerOrFilter(canonical: string): string {
     ],
     Doug: ["sales_person_id.ilike.%doug%"],
     Maick: ["sales_person_id.ilike.%maick%"],
-    Maestro: ["sales_person_id.ilike.%maestro%"],
+    Fabricio: ["sales_person_id.ilike.%fabricio%", "sales_person_id.ilike.%fabrício%"],
+    // "Maestro" removido: é um produto, não um vendedor (canonicalSeller retorna null).
   };
   return (map[canonical] ?? [`sales_person_id.eq.${canonical}`]).join(",");
 }
