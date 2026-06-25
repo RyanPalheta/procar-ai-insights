@@ -69,8 +69,9 @@ export function KPICard({
         )}
       >
         <CardContent className="p-2.5 sm:p-3">
-          {/* Título ocupa a largura toda (não corta). O badge de tendência desce
-              para a linha do valor — ao lado do número, padrão p/ % de variação. */}
+          {/* Título ocupa a largura toda e quebra em até 2 linhas (sem reticências);
+              min-h de 2 linhas mantém os valores alinhados entre os cards. O badge de
+              tendência desce para a linha do valor — ao lado do número, padrão p/ % de variação. */}
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5 leading-tight line-clamp-2 min-h-[2.5em]">{title}</p>
           <div className="flex items-end gap-2">
             <p className="text-2xl font-extrabold tracking-tight leading-tight tabular-nums">{value}</p>
