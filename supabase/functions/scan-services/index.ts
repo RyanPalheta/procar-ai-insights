@@ -1,75 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+import { detectProducts } from "../_shared/product-keywords.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Keyword-based product detection — zero LLM tokens.
-// Canonical product name -> list of trigger keywords (case-insensitive substring match).
-// Canonical names should match products.product_name in the DB so downstream
-// (Kommo enum mapping, dashboards) recognises them.
-const PRODUCT_KEYWORDS: Record<string, string[]> = {
-  'Remote Start': [
-    'remote start', 'remote starter', 'remote-start', 'partida remota', 'partida a distancia',
-    'partida à distância', 'liga sozinho', 'controle remoto pra ligar', 'compustar', 'viper start',
-  ],
-  'CarPlay': [
-    'carplay', 'car play', 'apple carplay', 'apple car play', 'android auto', 'sistema multimidia',
-    'central multimidia', 'multimídia', 'head unit', 'head-unit', 'aftermarket unit',
-    'aftermarket radio', 'screen upgrade', 'upgrade screen', 'upgrade radio', 'touch screen',
-    'multimedia screen', 'pioneer dmh', 'pioneer 3000', 'pioneer avh', 'kenwood ddx',
-    'kenwood dmx', 'sony xav', 'alpine ilx', 'atoto', 'double din',
-  ],
-  'Sound System': [
-    // NÃO usar o token solto 'sound': a loja se chama "Pro Car Sound", então o
-    // nome/assinatura/link casava em ~91% das conversas (falso positivo). Manter
-    // só termos específicos de áudio.
-    'sound system', ' som ', 'som automotivo', 'caixa de som', 'subwoofer', 'amplificador',
-    'speaker', 'speakers', 'alto falante', 'alto-falante', 'alto-falantes', 'auto falante',
-    'audio upgrade', 'audio system', ' sub ', ' sub.', ' sub,', 'sub and amp', 'sub & amp',
-    ' amp ', ' amp.', ' amp,', 'amplifier', 'tweeter', 'tweeters', 'midrange', 'midbass',
-    'crossover', 'enclosure', 'pillar pod', 'pillar pods', 'a-pillar', 'sound pod',
-    'jl audio', 'kicker', 'rockford', 'rockford fosgate', 'hertz audio', 'hertz m', 'hertz mille',
-    'focal audio', 'morel', 'audison', 'memphis audio', 'alpine type', 'alpine s-', 'alpine r-',
-    'pioneer ts', 'kenwood ksc', 'jbl club', 'jbl gx', 'jbl stage',
-  ],
-  'Window Tint': [
-    'window tint', ' tint ', 'tinted', 'tinting', 'insulfilm', 'pelicula', 'película',
-    'pelicula automotiva', 'suntek', 'suntek carbon', 'suntek standart', 'suntek standard',
-    'sunteck', 'llumar', 'ceramic pro', 'formula one', 'xpel', ' carbon ',
-    '3m tint', 'window film', 'tonalizar vidro', 'escurecer vidro', 'ceramic tint',
-    'ceramic film', 'shade', 'tint shade', 'vlt', 'darken windows',
-  ],
-  'Backup Camera': [
-    'backup cam', 'backup camera', 'reverse camera', 'camera de re', 'câmera de ré',
-    'camera de ré', 'camera traseira', 'rear camera', 'rearview camera', 'rear-view camera',
-    'reversing camera',
-  ],
-  'Dashcam': [
-    'dashcam', 'dash cam', 'dash-cam', 'camera de bordo', 'câmera de bordo', 'camera veicular',
-    'camera frontal', 'front cam', 'thinkware', 'blackvue', 'viofo', 'nextbase',
-  ],
-  'Ambient Light': [
-    'ambient light', 'ambient lights', 'ambient lighting', 'luz ambiente', 'iluminação ambiente',
-    'iluminacao ambiente', 'luzes internas led', 'interior led', 'mood lighting', 'rgb interior',
-  ],
-  'LED Lights': [
-    'led light', 'led lights', 'led headlight', 'led headlights', 'farol led', 'farois led',
-    'faróis led', 'lampada led', 'lâmpada led', 'kit led', 'led bulb', 'led bulbs',
-    'fog light', 'fog lights', 'underglow',
-  ],
-  'Key Programming': [
-    'key copy', 'key programming', 'car key', 'copia de chave', 'cópia de chave',
-    'programar chave', 'chave codificada', 'chave canivete', 'chave reserva',
-    'spare key', 'key fob', 'fob programming', 'transponder key',
-  ],
-  'Labor': [
-    ' labor ', 'mão de obra', 'mao de obra', 'instalação', 'instalacao', 'serviço de instalação',
-    'install only', 'just install', 'installation cost',
-  ],
-};
+// PRODUCT_KEYWORDS + detectProducts agora vêm de ../_shared/product-keywords.ts
+// (fonte única, compartilhada com analyze-lead).
 
 interface ScanRequest {
   session_id?: number;            // single mode
@@ -80,26 +19,11 @@ interface ScanRequest {
   overwrite?: boolean;            // default false (merge with existing services_detected)
   only_unscanned?: boolean;       // default true (skip leads that already have services_detected)
   newest_first?: boolean;         // default false; true = varre session_id DESC (mantém os recentes sempre frescos)
+  include_empty?: boolean;        // default false; true = também re-escaneia os carimbados '{}' (re-detecção c/ catálogo novo)
 }
 
 const DEFAULT_BATCH_SIZE = 50;
 const MAX_DURATION_MS = 5 * 60 * 1000;
-
-/**
- * Detects products mentioned in arbitrary text. Returns canonical product names.
- */
-function detectProducts(text: string): string[] {
-  if (!text) return [];
-  // Pad with spaces so word-boundary keywords like " som " match at start/end too
-  const lower = ` ${text.toLowerCase()} `;
-  const matched = new Set<string>();
-  for (const [product, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
-    if (keywords.some((kw) => lower.includes(kw))) {
-      matched.add(product);
-    }
-  }
-  return Array.from(matched);
-}
 
 /**
  * Scans every interaction for a session and returns deduped product list.
@@ -277,6 +201,7 @@ serve(async (req) => {
     // ---- Batch mode ----
     const batchSize = Math.min(body.batch_size || DEFAULT_BATCH_SIZE, 200);
     const newestFirst = body.newest_first === true;
+    const includeEmpty = body.include_empty === true;
     // Cursor é a fronteira de paginação. Ascendente parte de 0 (mais antigos);
     // descendente parte do topo (mais novos). O teto precisa caber no int4 do
     // session_id (usar MAX_SAFE_INTEGER estoura o tipo no Postgres -> 500).
@@ -292,7 +217,11 @@ serve(async (req) => {
     q = q.limit(batchSize);
 
     if (onlyUnscanned) {
-      q = q.is('services_detected', null);
+      // Padrão: só os NUNCA escaneados (services_detected IS NULL). Com include_empty,
+      // também re-avalia os carimbados '{}' (re-detecção com o catálogo expandido).
+      q = includeEmpty
+        ? q.or('services_detected.is.null,services_detected.eq.{}')
+        : q.is('services_detected', null);
     }
 
     const { data: leads, error: leadsErr, count } = await q;

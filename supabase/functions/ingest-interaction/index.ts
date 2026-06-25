@@ -170,6 +170,20 @@ Deno.serve(async (req) => {
       console.error('[ingest-interaction] Error updating last_interaction_at:', lastInteractionError);
     }
 
+    // DETECÇÃO DE PRODUTO EM TEMPO REAL: a cada mensagem do CLIENTE, re-escaneia a
+    // sessão por palavra-chave (scan-services single-mode, zero custo LLM). Mantém
+    // services_detected fresco no painel SEM esperar o lote do cron e re-avalia até
+    // leads já carimbados '{}' (single-mode não tem o gate only_unscanned). Roda em
+    // background (não bloqueia a ingestão) e nunca lança. Kommo segue pelos fluxos de
+    // IA/lote — aqui trigger_kommo_sync=false p/ não adicionar latência de rede.
+    if ((body.sender_type ?? 'client') !== 'agent') {
+      const scanPromise = supabase.functions
+        .invoke('scan-services', { body: { session_id: sessionId, trigger_kommo_sync: false } })
+        .then(() => console.log(`[ingest-interaction] real-time scan-services ok for ${sessionId}`))
+        .catch((e: unknown) => console.error(`[ingest-interaction] real-time scan-services failed for ${sessionId}:`, e));
+      scanPromise.catch(console.error);
+    }
+
     // BLOCO G (absoluto): captação DIRETA do webhook de mensagens — se a mensagem
     // contém "absoluto", marca o lead em tempo real, sem depender da tag/sync-kommo
     // (que só relê leads da janela de criação). Idempotente (uma vez true, fica true).

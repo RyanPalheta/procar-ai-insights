@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
 import { detectLanguage } from "../_shared/detect-language.ts";
+import { detectProducts } from "../_shared/product-keywords.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,31 +30,8 @@ const AI_VERSION = AI_CONFIG.version;
 // Max messages to send to AI (first 15 + last 15 if > 30)
 const MAX_MESSAGES = 30;
 
-// Keyword fallback (mirror of scan-services PRODUCT_KEYWORDS).
-// Used when the LLM fails to identify a product so the lead still gets
-// services_detected populated for Kommo sync. Zero LLM cost.
-const PRODUCT_KEYWORDS: Record<string, string[]> = {
-  'Remote Start': ['remote start','remote starter','remote-start','partida remota','partida a distancia','partida à distância','liga sozinho','controle remoto pra ligar','compustar','viper start'],
-  'CarPlay': ['carplay','car play','apple carplay','apple car play','android auto','sistema multimidia','central multimidia','multimídia','head unit','head-unit','aftermarket unit','aftermarket radio','screen upgrade','upgrade screen','upgrade radio','touch screen','multimedia screen','pioneer dmh','pioneer 3000','pioneer avh','kenwood ddx','kenwood dmx','sony xav','alpine ilx','atoto','double din'],
-  'Sound System': ['sound system','sound',' som ','som automotivo','caixa de som','subwoofer','amplificador','speaker','speakers','alto falante','alto-falante','alto-falantes','auto falante','audio upgrade','audio system',' sub ',' sub.',' sub,','sub and amp','sub & amp',' amp ',' amp.',' amp,','amplifier','tweeter','tweeters','midrange','midbass','crossover','enclosure','pillar pod','pillar pods','a-pillar','sound pod','jl audio','kicker','rockford','rockford fosgate','hertz audio','hertz m','hertz mille','focal audio','morel','audison','memphis audio','alpine type','alpine s-','alpine r-','pioneer ts','kenwood ksc','jbl club','jbl gx','jbl stage'],
-  'Window Tint': ['window tint',' tint ','tinted','tinting','insulfilm','pelicula','película','pelicula automotiva','suntek','suntek carbon','suntek standart','suntek standard','sunteck','llumar','ceramic pro','formula one','xpel',' carbon ','3m tint','window film','tonalizar vidro','escurecer vidro','ceramic tint','ceramic film','shade','tint shade','vlt','darken windows'],
-  'Backup Camera': ['backup cam','backup camera','reverse camera','camera de re','câmera de ré','camera de ré','camera traseira','rear camera','rearview camera','rear-view camera','reversing camera'],
-  'Dashcam': ['dashcam','dash cam','dash-cam','camera de bordo','câmera de bordo','camera veicular','camera frontal','front cam','thinkware','blackvue','viofo','nextbase'],
-  'Ambient Light': ['ambient light','ambient lights','ambient lighting','luz ambiente','iluminação ambiente','iluminacao ambiente','luzes internas led','interior led','mood lighting','rgb interior'],
-  'LED Lights': ['led light','led lights','led headlight','led headlights','farol led','farois led','faróis led','lampada led','lâmpada led','kit led','led bulb','led bulbs','fog light','fog lights','underglow'],
-  'Key Programming': ['key copy','key programming','car key','copia de chave','cópia de chave','programar chave','chave codificada','chave canivete','chave reserva','spare key','key fob','fob programming','transponder key'],
-  'Labor': [' labor ','mão de obra','mao de obra','instalação','instalacao','serviço de instalação','install only','just install','installation cost'],
-};
-
-function detectProductsFromText(text: string): string[] {
-  if (!text) return [];
-  const padded = ` ${text.toLowerCase()} `;
-  const matched = new Set<string>();
-  for (const [product, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
-    if (keywords.some((kw) => padded.includes(kw))) matched.add(product);
-  }
-  return Array.from(matched);
-}
+// Fallback de palavra-chave usado quando a IA não identifica produto (zero custo LLM):
+// detectProducts vem de ../_shared/product-keywords.ts (fonte única, espelhada com scan-services).
 
 async function logAudit(supabase: any, params: {
   event_type: string;
@@ -701,7 +679,7 @@ Analise e responda:
         .map((i: any) => i.message_text || '')
         .filter((s: string) => s)
         .join(' \n ');
-      const keywordHits = detectProductsFromText(allText);
+      const keywordHits = detectProducts(allText);
       if (keywordHits.length > 0) {
         finalServicesDetected = keywordHits;
         finalServiceDesired = keywordHits[0];
