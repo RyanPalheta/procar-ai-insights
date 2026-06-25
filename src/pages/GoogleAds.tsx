@@ -8,10 +8,13 @@ import { GoogleAdsKPICards } from "@/components/google-ads/GoogleAdsKPICards";
 import { GoogleAdsSpendChart } from "@/components/google-ads/GoogleAdsSpendChart";
 import { GoogleAdsPerformanceChart } from "@/components/google-ads/GoogleAdsPerformanceChart";
 import { GoogleAdsCampaignTable } from "@/components/google-ads/GoogleAdsCampaignTable";
+import { GoogleAdsImpressionShare } from "@/components/google-ads/GoogleAdsImpressionShare";
+import { GoogleAdsConversionActions } from "@/components/google-ads/GoogleAdsConversionActions";
 import {
   useGoogleAdsKPIs,
   useGoogleAdsDailyData,
   useGoogleAdsCampaigns,
+  useGoogleAdsConversionActions,
 } from "@/hooks/useGoogleAdsData";
 
 export default function GoogleAds() {
@@ -23,6 +26,7 @@ export default function GoogleAds() {
   const { data: kpis, isLoading: kpisLoading } = useGoogleAdsKPIs(dateFrom, dateTo);
   const { data: dailyData, isLoading: dailyLoading } = useGoogleAdsDailyData(dateFrom, dateTo);
   const { data: campaigns, isLoading: campaignsLoading } = useGoogleAdsCampaigns(dateFrom, dateTo);
+  const { data: convActions, isLoading: convLoading } = useGoogleAdsConversionActions(dateFrom, dateTo);
 
   const isLoading = kpisLoading || dailyLoading;
 
@@ -64,6 +68,16 @@ export default function GoogleAds() {
             <GoogleAdsPerformanceChart data={dailyData || []} />
           </>
         )}
+      </div>
+
+      {/* Fase 2: Parcela de impressões (Search) + Conversões por tipo */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <GoogleAdsImpressionShare kpis={kpis} loading={kpisLoading} />
+        <GoogleAdsConversionActions
+          actions={convActions || []}
+          total={kpis?.allConversions || 0}
+          loading={convLoading}
+        />
       </div>
 
       {/* Campaign Table */}
