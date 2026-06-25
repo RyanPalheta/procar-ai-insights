@@ -18,6 +18,13 @@ interface KPICardProps {
   };
   /** Mantido por compatibilidade; o chip de ícone que usava o variant foi removido. */
   variant?: "default" | "success" | "warning" | "destructive";
+  /**
+   * Destaque visual do card. "warning" pinta o card de AMARELO (glow âmbar +
+   * borda âmbar) — usado nos cards cuja métrica depende de uma REGRA de captura
+   * específica (ex.: texto exato na nota, marcador no tráfego). A regra fica
+   * documentada no tooltip "?" via `info`.
+   */
+  tone?: "default" | "warning";
   /** Explicação no hover (bolinha "?"): o que mostra, Fonte do dado e como é calculado. */
   info?: {
     description: string;
@@ -31,12 +38,17 @@ export function KPICard({
   value,
   description,
   trend,
+  tone = "default",
   info,
 }: KPICardProps) {
   // Trend badge styles
   const trendBadgeStyles = trend?.isPositive
     ? "bg-success/15 text-success border-success/25"
     : "bg-warning/15 text-warning border-warning/25";
+
+  // Tom "warning" = card amarelo (regra de captura específica). Glow âmbar
+  // (mesmo RGB usado nos cards de Ads) + borda/fundo âmbar sutis.
+  const isWarning = tone === "warning";
 
   return (
     <MagicBentoCard
@@ -45,10 +57,17 @@ export function KPICard({
       enableTilt={false}
       enableMagnetism={false}
       clickEffect={true}
-      glowColor="228, 0, 43"
+      glowColor={isWarning ? "234, 179, 8" : "228, 0, 43"}
       className="rounded-lg"
     >
-      <Card className="bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full">
+      <Card
+        className={cn(
+          "shadow-sm hover:shadow-md transition-shadow duration-200 h-full",
+          isWarning
+            ? "bg-amber-50/60 dark:bg-amber-500/10 border border-amber-400/50 dark:border-amber-500/30"
+            : "bg-card border border-border/60",
+        )}
+      >
         <CardContent className="p-2.5 sm:p-3">
           {/* Título ocupa a largura toda (não corta). O badge de tendência desce
               para a linha do valor — ao lado do número, padrão p/ % de variação. */}

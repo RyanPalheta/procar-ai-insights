@@ -9,6 +9,7 @@ interface LeadsStatusChartProps {
 
 const getStatusTremorColor = (statusName: string): string => {
   const lowerName = statusName.toLowerCase();
+  if (lowerName.includes('ligação') || lowerName.includes('ligacao')) return "blue";
   if (lowerName.includes('ganha') || lowerName.includes('fechad') || lowerName.includes('won')) return "emerald";
   if (lowerName.includes('perdida') || lowerName.includes('cancel') || lowerName.includes('lost')) return "red";
   if (lowerName.includes('atendimento') || lowerName.includes('qualificação')) return "rose";

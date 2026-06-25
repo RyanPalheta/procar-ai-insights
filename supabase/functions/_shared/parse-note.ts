@@ -21,6 +21,30 @@ export interface ParsedNote {
    * Valores: kommo | telefone | instagram | facebook | google | presencial | null.
    */
   channel: string | null;
+  /**
+   * Itens de UPSELL declarados no note no formato "(UPSELL: LED - JP)" ou
+   * com vários itens separados por vírgula "(UPSELL: LED, SOUND SYSTEM - JP)".
+   * Cada item conta 1. Vazio quando não há marcador de upsell. (BLOCO upsell)
+   */
+  upsell: string[];
+  /**
+   * Parceiros de financiamento citados no note. Tokens reconhecidos:
+   * SNAP, ACIMA, AMERICAN FIRST. Podem vir separados por vírgula no mesmo
+   * note e cada um conta 1 unidade. Vazio quando não há. (BLOCO N — financiamento)
+   */
+  financing: string[];
+  /**
+   * Agendamento por INDICAÇÃO — note menciona "INDICACAO"/"indicação"/"indicado"
+   * em QUALQUER lugar (não depende de walk-in). Os formatos reais variam:
+   * "WALK-IN:INDICACAO DO AMIGO", "Indicação de amigo - Claudson",
+   * "INDICACAO: (781)...". (BLOCO K) */
+  isReferral: boolean;
+  /** Note contém "absoluto" → entra no card Absoluto. (BLOCO G) */
+  isAbsoluto: boolean;
+  /**
+   * Note contém exatamente "APONTAMENTO MARCADO VIA TELEFONE ATIVO" → agendamento
+   * realizado via follow-up de ligação ativa. (BLOCO J) */
+  phoneActiveBooking: boolean;
 }
 
 // Cobre: "walk in", "walk-in", "walkin", "walk - in", "walking", o plural
@@ -53,6 +77,37 @@ function normalizeSource(s: string): string | null {
   return words || null;
 }
 
+// --- BLOCO upsell: "(UPSELL: LED - JP)" / "(UPSELL: LED, SOUND SYSTEM - JP)" ---
+// Captura o miolo entre "UPSELL:" e o ")"; remove o sufixo " - <iniciais do
+// vendedor>" e separa os itens por vírgula. Cada item = 1 unidade.
+const UPSELL_RE = /\(\s*upsell\s*:\s*([^)]+?)\s*\)/gi;
+function parseUpsell(note: string): string[] {
+  const items: string[] = [];
+  for (const m of note.matchAll(UPSELL_RE)) {
+    // tira o " - JP" final (iniciais do vendedor), preservando itens com vírgula
+    const inner = m[1].replace(/\s*-\s*[^,\-]+$/, "");
+    for (const raw of inner.split(",")) {
+      const item = raw.trim().toUpperCase();
+      if (item) items.push(item);
+    }
+  }
+  return items;
+}
+
+// --- BLOCO N (financiamento): SNAP, ACIMA, AMERICAN FIRST (1 unidade cada) ---
+const FINANCING_TOKENS: { label: string; re: RegExp }[] = [
+  { label: "SNAP", re: /\bsnap\b/i },
+  { label: "ACIMA", re: /\bacima\b/i },
+  { label: "AMERICAN FIRST", re: /\bamerican\s+first\b/i },
+];
+function parseFinancing(note: string): string[] {
+  return FINANCING_TOKENS.filter((t) => t.re.test(note)).map((t) => t.label);
+}
+
+// BLOCO J: a nota deve conter exatamente "APONTAMENTO MARCADO VIA TELEFONE ATIVO"
+// (tolerante a espaços extras e caixa; o note já vem com espaços colapsados).
+const PHONE_ACTIVE_RE = /apontamento\s+marcado\s+via\s+telefone\s+ativo/i;
+
 /** Canal do atendimento a partir dos marcadores escritos no note. */
 function detectChannel(lower: string, walkIn: boolean): string | null {
   if (/\bkommo\b/.test(lower)) return "kommo";
@@ -66,7 +121,12 @@ function detectChannel(lower: string, walkIn: boolean): string | null {
 
 export function parseNote(raw: string | null | undefined): ParsedNote {
   const note = (raw ?? "").replace(/\s+/g, " ").trim();
-  if (!note) return { walkIn: false, source: null, seller: null, channel: null };
+  if (!note) {
+    return {
+      walkIn: false, source: null, seller: null, channel: null,
+      upsell: [], financing: [], isReferral: false, isAbsoluto: false, phoneActiveBooking: false,
+    };
+  }
 
   const lower = note.toLowerCase();
   const walkIn = WALK_RE.test(note);
@@ -84,6 +144,11 @@ export function parseNote(raw: string | null | undefined): ParsedNote {
 
   const seller = SELLERS.find((s) => new RegExp(`\\b${s}\\b`, "i").test(lower)) ?? null;
   const channel = detectChannel(lower, walkIn);
+  const upsell = parseUpsell(note);
+  const financing = parseFinancing(note);
+  const isReferral = /\bindica/i.test(note); // indicacao / indicação / indicado
+  const isAbsoluto = /\babsoluto\b/i.test(note);
+  const phoneActiveBooking = PHONE_ACTIVE_RE.test(note);
 
-  return { walkIn, source, seller, channel };
+  return { walkIn, source, seller, channel, upsell, financing, isReferral, isAbsoluto, phoneActiveBooking };
 }

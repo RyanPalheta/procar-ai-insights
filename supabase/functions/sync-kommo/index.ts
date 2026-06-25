@@ -123,12 +123,12 @@ Deno.serve(async (req) => {
     // (max_pages=60), então o cron (days=2) segue inalterado.
     const startPage = Math.max(1, Number(body.start_page ?? 1));
     const maxPages = Math.max(1, Math.min(60, Number(body.max_pages ?? 60)));
-    const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null; source_id: number | null }[] = [];
+    const leads: { id: number; status_id: number; price: any; created_at: number; sellerRaw: string | null; contactId: number | null; source_id: number | null; isAbsoluto: boolean; lossReason: string | null }[] = [];
     let page = startPage;
     let pagesRead = 0;
     let nextStartPage: number | null = null;
     while (pagesRead < maxPages) {
-      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts,source_id&limit=250&page=${page}`);
+      const d = await kget(`/leads?filter[created_at][from]=${fromUnix}&with=contacts,source_id,loss_reason&limit=250&page=${page}`);
       const batch = d?._embedded?.leads ?? [];
       if (!batch.length) break;
       for (const l of batch) {
@@ -142,6 +142,11 @@ Deno.serve(async (req) => {
           sellerRaw: cfValue(l, VENDEDOR_SHOPMONKEY_CF),
           contactId: main?.id ?? null,
           source_id: l.source_id ?? null,
+          // BLOCO G: tag "absoluto" aplicada ao lead na Kommo (via webhook de mensagem).
+          isAbsoluto: (l?._embedded?.tags ?? []).some((t: any) => /absoluto/i.test(t?.name ?? "")),
+          // BLOCO N #50: motivo de perda do Kommo (ex.: "Local distante"), quando o
+          // lead foi para um status de perdido (with=loss_reason).
+          lossReason: l?._embedded?.loss_reason?.[0]?.name ?? null,
         });
       }
       pagesRead++;
@@ -188,6 +193,8 @@ Deno.serve(async (req) => {
         source_system: 'kommo_sync',
         phone: ph?.raw ?? null,
         phone_normalized: ph?.norm ?? null,
+        is_absoluto: l.isAbsoluto,
+        loss_reason: l.lossReason,
       };
     });
 
@@ -256,6 +263,46 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 2c) BLOCO G (absoluto): marca is_absoluto=true nos leads cuja TAG "absoluto" chegou
+    //     da Kommo (aplicada por webhook de mensagem). Só marca os positivos (tag rara);
+    //     não reseta os demais. Idempotente.
+    const absolutoIds = rows.filter((r) => r.is_absoluto).map((r) => r.session_id);
+    let absolutoSet = 0;
+    for (let i = 0; i < absolutoIds.length; i += 300) {
+      const slice = absolutoIds.slice(i, i + 300);
+      const { data, error } = await supabase
+        .from('lead_db')
+        .update({ is_absoluto: true })
+        .in('session_id', slice)
+        .select('session_id');
+      if (error) throw new Error('update absoluto: ' + error.message);
+      absolutoSet += data?.length ?? 0;
+    }
+
+    // 2d) BLOCO N #50: espelha o MOTIVO DE PERDA (loss_reason) do Kommo nas linhas
+    //     existentes — agrupado por motivo p/ poucas queries. Só grava onde o Kommo tem
+    //     motivo (lead perdido); não apaga os demais.
+    const byLoss = new Map<string, number[]>();
+    for (const r of rows) {
+      if (!r.loss_reason) continue;
+      const arr = byLoss.get(r.loss_reason) ?? [];
+      arr.push(r.session_id);
+      byLoss.set(r.loss_reason, arr);
+    }
+    let lossSet = 0;
+    for (const [reason, ids] of byLoss) {
+      for (let i = 0; i < ids.length; i += 300) {
+        const slice = ids.slice(i, i + 300);
+        const { data, error } = await supabase
+          .from('lead_db')
+          .update({ loss_reason: reason })
+          .in('session_id', slice)
+          .select('session_id');
+        if (error) throw new Error('update loss_reason: ' + error.message);
+        lossSet += data?.length ?? 0;
+      }
+    }
+
     // 3) Backfill do TELEFONE: refresca os espelhos kommo_sync E preenche linhas de
     //    chat/ponte que estejam SEM telefone (o telefone do contato Kommo é verdade;
     //    sem ele a linha de chat não liga à venda paga do ShopMonkey nem deduplica).
@@ -321,6 +368,8 @@ Deno.serve(async (req) => {
       leads_com_vendedor: rows.filter((r) => r.sales_person_id).length,
       espelhos_normalizados: sellersSet,
       etapas_normalizadas: statusSet,
+      absoluto_marcados: absolutoSet,
+      loss_reason_gravados: lossSet,
       canais_normalizados: channelsSet,
       leads_com_telefone: rows.filter((r) => r.phone_normalized).length,
       telefones_gravados: phonesSet,

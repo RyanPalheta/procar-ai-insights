@@ -145,6 +145,12 @@ Deno.serve(async (req) => {
         source: p.source,
         seller: p.seller,
         channel: isBlue && !p.channel ? "presencial" : p.channel,
+        // tokens determinísticos do note (cards do backlog 2026-06-24)
+        upsell: p.upsell,
+        financing: p.financing,
+        is_referral: p.isReferral,
+        is_absoluto: p.isAbsoluto,
+        phone_active_booking: p.phoneActiveBooking,
         synced_at: nowIso,
       };
     }));

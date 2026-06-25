@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Sparkles, Loader2, Filter, X, Star, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
+import { Eye, Sparkles, Loader2, Filter, X, Star, Flame, Sun, Snowflake, MessageSquare, ClipboardCheck, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertTriangle, UserX, RotateCcw, CheckCircle2, TrendingUp, DollarSign, Download } from "lucide-react";
+import { exportToCsv, exportToXlsx, exportToPdf } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { differenceInHours } from "date-fns";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
@@ -296,6 +297,26 @@ export default function Leads() {
 
     return result;
   }, [leads, searchTerm, processedFilter, productFilter, sentimentFilter, temperatureFilter, channelFilter, salesStatusFilter, sellerFilter, scoreRange, complianceRange, range.from, range.to, sortField, sortDirection, coldAuditFilter, reactivationFilter, followupFilter, upsellFilter]);
+
+  // Exportação (checklist P #61): exporta os leads JÁ FILTRADOS (não só a página).
+  const buildExportRows = () =>
+    (filteredLeads ?? []).map((l: any) => ({
+      session_id: l.session_id,
+      criado_em: l.created_at,
+      canal: l.channel ?? "",
+      status: l.sales_status ?? "",
+      vendedor: canonicalSeller(l.sales_person_id) ?? "",
+      score: l.lead_score ?? "",
+      temperatura: l.lead_temperature ?? "",
+      idioma: l.lead_language ?? "",
+      servico: l.service_desired ?? "",
+      valor_cotado_usd: l.lead_price ?? "",
+      sentimento: l.sentiment ?? "",
+    }));
+  const exportStamp = () => new Date().toISOString().slice(0, 10);
+  const handleExportCsv = () => exportToCsv(buildExportRows(), `leads_${exportStamp()}`);
+  const handleExportXlsx = () => exportToXlsx(buildExportRows(), `leads_${exportStamp()}`, "Leads");
+  const handleExportPdf = () => exportToPdf(buildExportRows(), `Leads — ${exportStamp()}`);
 
   // Pagination
   const totalPages = Math.ceil((filteredLeads?.length || 0) / pageSize);
@@ -776,6 +797,36 @@ export default function Leads() {
           )}
         </CardHeader>
         <CardContent>
+          {/* Exportação (checklist P #61): Excel / CSV dos leads filtrados */}
+          <div className="mb-3 flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={!filteredLeads?.length}
+              title="Exportar os leads filtrados como CSV"
+            >
+              <Download className="mr-1.5 h-4 w-4" /> CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportXlsx}
+              disabled={!filteredLeads?.length}
+              title="Exportar os leads filtrados como Excel (.xlsx)"
+            >
+              <Download className="mr-1.5 h-4 w-4" /> Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={!filteredLeads?.length}
+              title="Exportar os leads filtrados como PDF (impressão)"
+            >
+              <Download className="mr-1.5 h-4 w-4" /> PDF
+            </Button>
+          </div>
           {isLoading ? (
             <div className="text-center py-4">Carregando...</div>
           ) : paginatedLeads && paginatedLeads.length > 0 ? (

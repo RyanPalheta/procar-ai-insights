@@ -21,6 +21,10 @@ import { resolvePeriod, type PeriodValue } from "@/lib/period";
 
 // Chart Components
 import { LeadsKPICards } from "@/components/leads/LeadsKPICards";
+import { PipelineLossCards } from "@/components/leads/PipelineLossCards";
+import { OngoingConversationsCards } from "@/components/leads/OngoingConversationsCards";
+import { OrganicInterestedCards } from "@/components/leads/OrganicInterestedCards";
+import { AbsolutoCards } from "@/components/leads/AbsolutoCards";
 import { LeadsChannelChart } from "@/components/leads/LeadsChannelChart";
 import { LeadsStatusChart } from "@/components/leads/LeadsStatusChart";
 import { LeadsLanguageChart } from "@/components/leads/LeadsLanguageChart";
@@ -176,6 +180,36 @@ export default function Dashboard() {
       };
     }
   });
+
+  // KPIs de ORIGEM do agendamento (note do ShopMonkey): Indicação + Cliente Antigo
+  // (checklist seção K, itens 37/38). RPC separada para não tocar no get_leads_kpis.
+  const { data: originData } = useQuery({
+    queryKey: ["appointment-origin-kpis", range.fromIso, range.toIso],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("get_appointment_origin_kpis", {
+        date_from: range.fromIso,
+        date_to: range.toIso,
+      });
+      if (error) throw error;
+      return data as {
+        referral_appointments: number;
+        referral_appointments_previous: number | null;
+        cliente_antigo_appointments: number;
+        cliente_antigo_appointments_previous: number | null;
+      };
+    }
+  });
+
+  const originMetrics = useMemo(() => {
+    const pctVar = (cur: number, prev: number | null | undefined): number | null =>
+      prev && prev > 0 ? ((cur - prev) / prev) * 100 : null;
+    return {
+      referralAppointments: originData?.referral_appointments ?? 0,
+      referralAppointmentsVariation: pctVar(originData?.referral_appointments ?? 0, originData?.referral_appointments_previous),
+      clienteAntigoAppointments: originData?.cliente_antigo_appointments ?? 0,
+      clienteAntigoAppointmentsVariation: pctVar(originData?.cliente_antigo_appointments ?? 0, originData?.cliente_antigo_appointments_previous),
+    };
+  }, [originData]);
 
   // Channel normalization function
   const normalizeChannel = (channel: string | null): string => {
@@ -554,7 +588,13 @@ export default function Dashboard() {
     // espelho da Kommo atualizar no sync horário).
     const statusCounts = new Map<string, number>();
     globalFilteredLeads.forEach(l => {
-      const normalizedStatus = normalizeStatus(l.sales_status) ?? "Sem etapa (ainda)";
+      // Leads CRIADOS VIA LIGAÇÃO (channel=phone, auto-criados pelo ingest-call a
+      // cada chamada) são consolidados numa ETAPA ÚNICA e padronizada — antes caíam
+      // espalhados em "Aguardando atendimento" e poluíam as etapas reais do funil.
+      const isCallLead = (l.channel ?? '').toLowerCase() === 'phone';
+      const normalizedStatus = isCallLead
+        ? "Leads criados via ligação"
+        : (normalizeStatus(l.sales_status) ?? "Sem etapa (ainda)");
       statusCounts.set(normalizedStatus, (statusCounts.get(normalizedStatus) || 0) + 1);
     });
     const statusData = Array.from(statusCounts.entries())
@@ -900,9 +940,23 @@ export default function Dashboard() {
       {/* KPI Cards Section */}
       <LeadsKPICards
         {...kpiMetrics}
+        {...originMetrics}
         period={period}
         onPeriodChange={setPeriod}
       />
+
+      {/* Pipeline / Perdas (checklist N — 49/50/52): leads perdidos, local distante,
+          financeiras. Cards amarelos: motivo vem da IA sobre o chat (não há loss_reason). */}
+      <PipelineLossCards dateFrom={range.fromIso} dateTo={range.toIso} />
+
+      {/* Conversas de dias anteriores em andamento (checklist B — 7-12) */}
+      <OngoingConversationsCards dateFrom={range.fromIso} dateTo={range.toIso} />
+
+      {/* Orgânico "I'm interested" (checklist D — 16-18) — preparado, volume baixo */}
+      <OrganicInterestedCards dateFrom={range.fromIso} dateTo={range.toIso} />
+
+      {/* Absoluto (checklist G — 25-27) — preparado, depende da tag/webhook da Kommo */}
+      <AbsolutoCards dateFrom={range.fromIso} dateTo={range.toIso} />
 
       {/* Reputação Google. O card "Saúde da base (Kommo × painel)" foi removido a
           pedido da Pro Car (11/06): com a paridade automática (kommo_absent +

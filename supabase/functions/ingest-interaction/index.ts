@@ -8,6 +8,27 @@ const corsHeaders = {
 // Milestones that trigger automatic AI analysis
 const ANALYSIS_MILESTONES = [5, 10, 20, 30, 40];
 
+// BLOCO G (absoluto): adiciona a TAG "Absoluto" ao lead na Kommo, PRESERVANDO as tags
+// existentes (o PATCH de tags na Kommo substitui a lista, então relemos e anexamos).
+// session_id = id do lead na Kommo. Defensivo: 404/sem credencial -> 'skip', nunca lança.
+async function addAbsolutoTagToKommo(leadId: number): Promise<'ok' | 'already' | 'skip' | 'error'> {
+  const kTok = Deno.env.get('KOMMO_ACCESS_TOKEN');
+  const sub = Deno.env.get('KOMMO_SUBDOMAIN');
+  if (!kTok || !sub) return 'skip';
+  const KB = `https://${sub}.kommo.com/api/v4`;
+  const kH = { Authorization: `Bearer ${kTok}`, 'Content-Type': 'application/json' };
+  const lr = await fetch(`${KB}/leads/${leadId}`, { headers: kH });
+  if (lr.status === 404) return 'skip';
+  if (!lr.ok) { console.error(`[ingest-interaction] GET lead ${leadId} ${lr.status}`); return 'error'; }
+  const lead = await lr.json();
+  const tags = lead?._embedded?.tags ?? [];
+  if (tags.some((t: { name?: string }) => /absoluto/i.test(t?.name ?? ''))) return 'already';
+  const patchBody = { _embedded: { tags: [...tags.map((t: { id: number }) => ({ id: t.id })), { name: 'Absoluto' }] } };
+  const pr = await fetch(`${KB}/leads/${leadId}`, { method: 'PATCH', headers: kH, body: JSON.stringify(patchBody) });
+  if (!pr.ok) { console.error(`[ingest-interaction] PATCH tag lead ${leadId} ${pr.status}: ${await pr.text()}`); return 'error'; }
+  return 'ok';
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,6 +43,27 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     console.log('Received interaction data:', JSON.stringify(body, null, 2));
+
+    // BLOCO G — BACKFILL: tagueia no Kommo TODOS os leads já marcados is_absoluto que
+    // ainda não têm a tag. Acionar uma vez com { "backfill_absoluto": true }.
+    if (body.backfill_absoluto === true) {
+      const { data: leads } = await supabase
+        .from('lead_db')
+        .select('session_id')
+        .eq('is_absoluto', true);
+      let ok = 0, already = 0, skip = 0, error = 0;
+      for (const l of leads ?? []) {
+        try {
+          const r = await addAbsolutoTagToKommo(l.session_id);
+          if (r === 'ok') ok++; else if (r === 'already') already++; else if (r === 'skip') skip++; else error++;
+        } catch { error++; }
+        await new Promise((res) => setTimeout(res, 150)); // rate-limit Kommo
+      }
+      return new Response(
+        JSON.stringify({ backfill_absoluto: true, total: leads?.length ?? 0, ok, already, skip, error }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validação básica
     const requiredFields = ['session_id', 'channel'];
@@ -126,6 +168,36 @@ Deno.serve(async (req) => {
 
     if (lastInteractionError) {
       console.error('[ingest-interaction] Error updating last_interaction_at:', lastInteractionError);
+    }
+
+    // BLOCO G (absoluto): captação DIRETA do webhook de mensagens — se a mensagem
+    // contém "absoluto", marca o lead em tempo real, sem depender da tag/sync-kommo
+    // (que só relê leads da janela de criação). Idempotente (uma vez true, fica true).
+    if (body.message_text && /\babsoluto\b/i.test(body.message_text)) {
+      // Só age na TRANSIÇÃO p/ true (evita re-marcar e re-tagear a cada mensagem).
+      const { data: curAbs } = await supabase
+        .from('lead_db')
+        .select('is_absoluto')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+      if (!curAbs?.is_absoluto) {
+        const { error: absErr } = await supabase
+          .from('lead_db')
+          .update({ is_absoluto: true })
+          .eq('session_id', sessionId);
+        if (absErr) {
+          console.error('[ingest-interaction] Error setting is_absoluto:', absErr);
+        } else {
+          console.log(`[ingest-interaction] Lead ${sessionId} is_absoluto=true (mensagem contém "absoluto")`);
+          // Escreve a TAG "Absoluto" no lead na Kommo (await: roda só nesta transição, raro).
+          try {
+            const tagResult = await addAbsolutoTagToKommo(sessionId);
+            console.log(`[ingest-interaction] tag "Absoluto" no Kommo p/ lead ${sessionId}: ${tagResult}`);
+          } catch (e) {
+            console.error('[ingest-interaction] erro ao taguear "Absoluto" no Kommo:', e);
+          }
+        }
+      }
     }
 
     console.log('Interaction created successfully:', data.interaction_id, leadCreated ? '(lead was auto-created)' : '');

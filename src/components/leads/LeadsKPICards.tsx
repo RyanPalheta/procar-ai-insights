@@ -59,6 +59,12 @@ interface LeadsKPICardsProps {
   upsellLeadsVariation: number | null;
   upsellTotalValue: number;
   upsellTotalValueVariation: number | null;
+  /** Agendamentos por INDICAÇÃO (note do ShopMonkey, is_referral) — checklist K #37 */
+  referralAppointments?: number;
+  referralAppointmentsVariation?: number | null;
+  /** Agendamentos de CLIENTE ANTIGO (note do ShopMonkey, source) — checklist K #38 */
+  clienteAntigoAppointments?: number;
+  clienteAntigoAppointmentsVariation?: number | null;
   period: PeriodValue;
   onPeriodChange: (value: PeriodValue) => void;
 }
@@ -224,6 +230,10 @@ export function LeadsKPICards({
   upsellLeadsVariation,
   upsellTotalValue,
   upsellTotalValueVariation,
+  referralAppointments = 0,
+  referralAppointmentsVariation = null,
+  clienteAntigoAppointments = 0,
+  clienteAntigoAppointmentsVariation = null,
   period,
   onPeriodChange
 }: LeadsKPICardsProps) {
@@ -576,6 +586,35 @@ export function LeadsKPICards({
 
             {/* Cards "Oport. Upsell" e "Valor Upsell" desativados da UX a pedido (23/06/2026).
                 Lógica e props mantidas — só removidos do render. */}
+
+            {/* BLOCO K (checklist 37/38): origem do agendamento extraída do note do
+                ShopMonkey (parseNote). Cards AMARELOS (tone="warning") porque a regra
+                de captura é parcial — o disclaimer "?" (info) explica dentro do card. */}
+            <KPICard
+              title="Agendamentos por Indicação"
+              value={referralAppointments}
+              tone="warning"
+              description={isAll ? "Indicação no note (ShopMonkey)" : periodLabel}
+              trend={getTrend(referralAppointmentsVariation)}
+              info={{
+                description: "Agendamentos cuja origem é INDICAÇÃO (amigo/cliente que recomendou a loja).",
+                source: "vem do texto (note) do agendamento no ShopMonkey, lido por código (parseNote) — não depende de IA.",
+                calculation: "conta agendamentos cujo note menciona indicação, pela data do agendamento. Contagem PARCIAL: ~94% dos agendamentos não trazem a origem no note, então o número é um piso, não o total.",
+              }}
+            />
+
+            <KPICard
+              title="Agendamentos · Cliente Antigo"
+              value={clienteAntigoAppointments}
+              tone="warning"
+              description={isAll ? "Cliente antigo no note (ShopMonkey)" : periodLabel}
+              trend={getTrend(clienteAntigoAppointmentsVariation)}
+              info={{
+                description: "Agendamentos de CLIENTE ANTIGO (retorno de quem já é cliente da loja).",
+                source: "vem do texto (note) do agendamento no ShopMonkey, lido por código (parseNote) — não depende de IA.",
+                calculation: "conta agendamentos cujo note marca 'cliente antigo', pela data do agendamento. Contagem PARCIAL (origem ausente em ~94% dos notes) — use como piso, não como total.",
+              }}
+            />
           </div>
         </MagicBentoGrid>
       </TooltipProvider>

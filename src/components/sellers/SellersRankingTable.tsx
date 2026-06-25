@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, Shield, ArrowUpDown, Trophy, Medal, Award, Star, Sparkles,
   Users, FileText, CalendarCheck, TrendingUp, Footprints, ShoppingBag, DollarSign, Receipt,
+  PhoneCall, PackagePlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GoalsSummary, GoalData } from "./SellerGoalStatus";
@@ -90,6 +93,27 @@ export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateF
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("receita");
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
+
+  // I (checklist 29-31): ligações de follow-up por vendedor (call_db -> dono do lead).
+  const { data: followupData } = useQuery({
+    queryKey: ["followup-calls-by-seller", dateFrom, dateTo],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("get_followup_calls_by_seller", { date_from: dateFrom, date_to: dateTo });
+      if (error) throw error;
+      return (data as { seller: string; active_calls: number; followup_calls: number; leads_called: number }[]) || [];
+    },
+  });
+  // M (checklist 45-48): upsell por vendedor (ShopMonkey upsell[] + fallback IA).
+  const { data: upsellData } = useQuery({
+    queryKey: ["seller-upsell-kpis", dateFrom, dateTo],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("get_seller_upsell_kpis", { date_from: dateFrom, date_to: dateTo });
+      if (error) throw error;
+      return (data as { seller: string; upsell_sm: number; upsell_ia: number; upsell_valor_ia: number }[]) || [];
+    },
+  });
+  const followupByName = useMemo(() => new Map((followupData ?? []).map(f => [f.seller, f])), [followupData]);
+  const upsellByName = useMemo(() => new Map((upsellData ?? []).map(u => [u.seller, u])), [upsellData]);
 
   // União chat (qualidade IA) × loja (funil ShopMonkey), por nome canônico —
   // os dois RPCs agrupam por canonical_seller, então o nome é a chave.
@@ -300,15 +324,30 @@ export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateF
                         <div className="flex flex-wrap gap-1">
                           {Object.entries(sm.agendamentos_por_canal)
                             .sort((a, b) => b[1] - a[1])
-                            .map(([canal, n]) => (
-                              <span
-                                key={canal}
-                                className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
-                                title="Canal do atendimento que gerou o agendamento (marcador escrito no note da loja)"
-                              >
-                                {CHANNEL_CHIP_LABEL[canal] ?? canal} <b className="text-foreground">{n}</b>
-                              </span>
-                            ))}
+                            .map(([canal, n]) => {
+                              // BLOCO J (checklist 32-34): chip "Ligação" (telefone) =
+                              // agendamento via follow-up de ligação ativa. AMARELO +
+                              // disclaimer porque depende de marcação manual no note.
+                              const isPhone = canal === "telefone";
+                              return (
+                                <span
+                                  key={canal}
+                                  className={
+                                    isPhone
+                                      ? "rounded-full border border-amber-400/50 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300"
+                                      : "rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                                  }
+                                  title={
+                                    isPhone
+                                      ? "Agendamentos por FOLLOW-UP de ligação ativa do vendedor. Vem do marcador 'TELEFONE' escrito no note do agendamento na loja (ShopMonkey), lido por código e quebrado por vendedor. Cobertura PARCIAL: depende de marcação manual da equipe (hoje 49 agendamentos com esse marcador na base toda). Conta agendamentos verdes do vendedor no período."
+                                      : "Canal do atendimento que gerou o agendamento (marcador escrito no note da loja)"
+                                  }
+                                >
+                                  {CHANNEL_CHIP_LABEL[canal] ?? canal}{" "}
+                                  <b className={isPhone ? "text-amber-900 dark:text-amber-200" : "text-foreground"}>{n}</b>
+                                </span>
+                              );
+                            })}
                         </div>
                       )}
                     </div>
@@ -317,6 +356,33 @@ export function SellersRankingTable({ sellers, shopmonkey, sellerGoalsMap, dateF
                       Sem agendamento, orçamento ou venda atribuída no ShopMonkey neste período.
                     </p>
                   )}
+
+                  {/* I (29-31) Ligações follow-up + M (45-48) Upsell por vendedor — AMARELOS */}
+                  {(() => {
+                    const fu = followupByName.get(seller.seller_id);
+                    const up = upsellByName.get(seller.seller_id);
+                    const chip = "rounded-full border border-amber-400/50 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300";
+                    return (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        <span
+                          className={chip}
+                          title="Ligações ATIVAS (saída = follow-up) feitas pelo vendedor. Atribuídas ao DONO do lead (sales_person_id), não a quem discou — pode divergir se vários usam o mesmo número da loja. Direção inferida pelo telefone. 'call_outcome=followup' só cobre ligações analisadas após 11/06."
+                        >
+                          <PhoneCall className="mr-0.5 inline h-2.5 w-2.5" />
+                          Follow-up <b className="text-amber-900 dark:text-amber-200">{fu?.active_calls ?? 0}</b>
+                          {fu && fu.followup_calls > 0 && <span className="ml-0.5 opacity-70">({fu.followup_calls})</span>}
+                        </span>
+                        <span
+                          className={chip}
+                          title={`Upsell por vendedor. Capturado do note do ShopMonkey no formato (UPSELL: item1, item2) — hoje ${up?.upsell_sm ?? 0} (a equipe ainda não adota o formato). Entre parênteses, a estimativa da IA (has_upsell), que é aproximada e tende a concentrar no vendedor dono do lead.`}
+                        >
+                          <PackagePlus className="mr-0.5 inline h-2.5 w-2.5" />
+                          Upsell <b className="text-amber-900 dark:text-amber-200">{up?.upsell_sm ?? 0}</b>
+                          {up && up.upsell_ia > 0 && <span className="ml-0.5 opacity-70">(IA {up.upsell_ia})</span>}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Qualidade do atendimento no chat (amostra auditada pela IA) */}
                   <div className="pt-3 border-t border-border space-y-2">
