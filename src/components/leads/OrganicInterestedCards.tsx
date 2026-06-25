@@ -61,7 +61,7 @@ export function OrganicInterestedCards({ dateFrom, dateTo }: Props) {
       />
 
       <Group
-        title='Tráfego (anúncios Meta — "I\'m interested")'
+        title={'Tráfego (anúncios Meta — "I\'m interested")'}
         kpis={trafego}
         tone="warning"
         glowColor="234, 179, 8"
