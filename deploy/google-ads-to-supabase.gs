@@ -77,9 +77,9 @@ function collectMetrics(customerId, d1, d2) {
       average_cpc_micros: clicks > 0 ? Math.round(costMicros / clicks) : 0
     });
     n++;
-    if (batch.length >= BATCH) { upsert('/google_ads_metrics', batch); batch = []; }
+    if (batch.length >= BATCH) { upsert('/google_ads_metrics?on_conflict=date,customer_id,campaign_id', batch); batch = []; }
   }
-  if (batch.length) upsert('/google_ads_metrics', batch);
+  if (batch.length) upsert('/google_ads_metrics?on_conflict=date,customer_id,campaign_id', batch);
   Logger.log('metrics: ' + n + ' linhas');
 }
 
@@ -107,9 +107,9 @@ function collectConversionActions(customerId, d1, d2) {
       conversions_value: toFloat(r.metrics.allConversionsValue)
     });
     n++;
-    if (batch.length >= BATCH) { upsert('/google_ads_conversion_actions', batch); batch = []; }
+    if (batch.length >= BATCH) { upsert('/google_ads_conversion_actions?on_conflict=date,customer_id,campaign_id,conversion_action_name', batch); batch = []; }
   }
-  if (batch.length) upsert('/google_ads_conversion_actions', batch);
+  if (batch.length) upsert('/google_ads_conversion_actions?on_conflict=date,customer_id,campaign_id,conversion_action_name', batch);
   Logger.log('conversion_actions: ' + n + ' linhas');
 }
 
