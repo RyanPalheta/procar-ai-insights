@@ -86,12 +86,71 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			// --- Tremor (@tremor/react) design tokens ---
+  			// O Tremor pinta tooltip/textos/bordas com tokens próprios (tremor-* e
+  			// dark-tremor-*) que nunca foram definidos -> tooltip sem fundo e fonte
+  			// escura no tema escuro. Mapeamos para as MESMAS variáveis do design
+  			// system (que já alternam light/dark via .dark); por isso os dois
+  			// conjuntos apontam para o mesmo hsl(var(--…)) e ficam corretos nos 2 temas.
+  			tremor: {
+  				brand: {
+  					faint: 'hsl(var(--primary) / 0.08)',
+  					muted: 'hsl(var(--primary) / 0.25)',
+  					subtle: 'hsl(var(--primary) / 0.6)',
+  					DEFAULT: 'hsl(var(--primary))',
+  					emphasis: 'hsl(var(--primary))',
+  					inverted: 'hsl(var(--primary-foreground))'
+  				},
+  				background: {
+  					muted: 'hsl(var(--muted))',
+  					subtle: 'hsl(var(--muted))',
+  					DEFAULT: 'hsl(var(--card))',
+  					emphasis: 'hsl(var(--foreground))'
+  				},
+  				border: { DEFAULT: 'hsl(var(--border))' },
+  				ring: { DEFAULT: 'hsl(var(--ring))' },
+  				content: {
+  					subtle: 'hsl(var(--muted-foreground) / 0.7)',
+  					DEFAULT: 'hsl(var(--muted-foreground))',
+  					emphasis: 'hsl(var(--foreground))',
+  					strong: 'hsl(var(--foreground))',
+  					inverted: 'hsl(var(--background))'
+  				}
+  			},
+  			'dark-tremor': {
+  				brand: {
+  					faint: 'hsl(var(--primary) / 0.08)',
+  					muted: 'hsl(var(--primary) / 0.25)',
+  					subtle: 'hsl(var(--primary) / 0.6)',
+  					DEFAULT: 'hsl(var(--primary))',
+  					emphasis: 'hsl(var(--primary))',
+  					inverted: 'hsl(var(--primary-foreground))'
+  				},
+  				background: {
+  					muted: 'hsl(var(--muted))',
+  					subtle: 'hsl(var(--muted))',
+  					DEFAULT: 'hsl(var(--card))',
+  					emphasis: 'hsl(var(--foreground))'
+  				},
+  				border: { DEFAULT: 'hsl(var(--border))' },
+  				ring: { DEFAULT: 'hsl(var(--ring))' },
+  				content: {
+  					subtle: 'hsl(var(--muted-foreground) / 0.7)',
+  					DEFAULT: 'hsl(var(--muted-foreground))',
+  					emphasis: 'hsl(var(--foreground))',
+  					strong: 'hsl(var(--foreground))',
+  					inverted: 'hsl(var(--background))'
+  				}
   			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			'tremor-small': '0.375rem',
+  			'tremor-default': 'var(--radius)',
+  			'tremor-full': '9999px'
   		},
   		keyframes: {
   			'accordion-down': {
@@ -154,7 +213,19 @@ export default {
   			md: 'var(--shadow-md)',
   			lg: 'var(--shadow-lg)',
   			xl: 'var(--shadow-xl)',
-  			'2xl': 'var(--shadow-2xl)'
+  			'2xl': 'var(--shadow-2xl)',
+  			'tremor-input': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+  			'tremor-card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+  			'tremor-dropdown': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  			'dark-tremor-input': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+  			'dark-tremor-card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+  			'dark-tremor-dropdown': '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)'
+  		},
+  		fontSize: {
+  			'tremor-label': '0.75rem',
+  			'tremor-default': ['0.875rem', { lineHeight: '1.25rem' }],
+  			'tremor-title': ['1.125rem', { lineHeight: '1.75rem' }],
+  			'tremor-metric': ['1.875rem', { lineHeight: '2.25rem' }]
   		}
   	}
   },
