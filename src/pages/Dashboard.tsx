@@ -952,7 +952,7 @@ export default function Dashboard() {
       {/* Conversas de dias anteriores em andamento (checklist B — 7-12) */}
       <OngoingConversationsCards dateFrom={range.fromIso} dateTo={range.toIso} />
 
-      {/* Orgânico "I'm interested" (checklist D — 16-18) — preparado, volume baixo */}
+      {/* Orgânico × Tráfego (checklist D — 16-18): orgânico = 1ª msg não-anúncio; tráfego = "I'm interested" (Meta) */}
       <OrganicInterestedCards dateFrom={range.fromIso} dateTo={range.toIso} />
 
       {/* Absoluto (checklist G — 25-27) — preparado, depende da tag/webhook da Kommo */}
