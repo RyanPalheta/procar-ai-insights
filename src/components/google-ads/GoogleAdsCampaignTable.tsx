@@ -18,7 +18,7 @@ interface GoogleAdsCampaignTableProps {
   campaigns: GoogleAdsCampaignRow[];
 }
 
-type SortField = "spend" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "roas";
+type SortField = "spend" | "impressions" | "clicks" | "ctr" | "cpc" | "conversions" | "cpa";
 
 function formatUSD(value: number): string {
   return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -98,7 +98,7 @@ export function GoogleAdsCampaignTable({ campaigns }: GoogleAdsCampaignTableProp
                     <TableHead className="text-right"><SortButton field="ctr">CTR</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="cpc">CPC</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="conversions">Conv.</SortButton></TableHead>
-                    <TableHead className="text-right"><SortButton field="roas">ROAS</SortButton></TableHead>
+                    <TableHead className="text-right"><SortButton field="cpa">CPA</SortButton></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -114,17 +114,8 @@ export function GoogleAdsCampaignTable({ campaigns }: GoogleAdsCampaignTableProp
                       <TableCell className="text-right font-mono text-xs tabular-nums">{campaign.ctr.toFixed(2)}%</TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">{formatUSD(campaign.cpc)}</TableCell>
                       <TableCell className="text-right font-mono text-xs tabular-nums">{Math.round(campaign.conversions)}</TableCell>
-                      <TableCell className="text-right">
-                        {campaign.roas > 0 ? (
-                          <Badge
-                            variant="outline"
-                            className={campaign.roas >= 3
-                              ? "tabular-nums bg-success/10 text-success border-success/25"
-                              : "tabular-nums bg-warning/10 text-warning border-warning/25"}
-                          >
-                            {campaign.roas.toFixed(2)}×
-                          </Badge>
-                        ) : "-"}
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {campaign.cpa > 0 ? formatUSD(campaign.cpa) : "-"}
                       </TableCell>
                     </TableRow>
                   ))}
