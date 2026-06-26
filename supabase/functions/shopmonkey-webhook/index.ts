@@ -133,7 +133,9 @@ Deno.serve(async (req) => {
         capi = await sendCapiEvent(supabase, {
           eventName: 'Schedule',
           sourceId: String(a.id),
-          eventTimeIso: a.startDate ?? a.createdDate ?? undefined,
+          // event_time = quando o agendamento foi MARCADO (passado), não a data do
+          // agendamento (futura -> Meta recusa). createdDate primeiro; startDate é fallback.
+          eventTimeIso: a.createdDate ?? a.startDate ?? undefined,
           customerId: a.customerId ?? null,
           ...cust,
         });
