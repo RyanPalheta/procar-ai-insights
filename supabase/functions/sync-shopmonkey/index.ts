@@ -14,6 +14,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 import { parseNote } from '../_shared/parse-note.ts';
+import { sendCapiEvent, shopmonkeyCustomerToMatch } from '../_shared/meta-capi.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -191,6 +192,64 @@ Deno.serve(async (req) => {
       if (error) throw new Error('upsert order: ' + error.message);
     }
 
+    // --- Rota B: dispara eventos de conversão ao Meta CAPI (REDE DE SEGURANÇA do
+    //     webhook real-time). Purchase p/ venda paga; Schedule p/ agendamento green.
+    //     Idempotente (dedup por meta_capi_event), guard de 7d (janela de atribuição),
+    //     cap por run, e nunca derruba o sync. ---
+    let capiSent = 0;
+    try {
+      const within7d = (iso?: string | null) =>
+        iso ? (Date.now() - new Date(iso).getTime()) < 7 * 86400000 : true;
+      const smCustomer = async (cid: string | null): Promise<Record<string, string | null>> => {
+        if (!cid) return {};
+        try {
+          const r = await fetch(`${SM}/v3/customer/${cid}`, { headers: smHeaders });
+          if (!r.ok) return {};
+          const cd = await r.json();
+          return shopmonkeyCustomerToMatch(cd.data ?? cd);
+        } catch { return {}; }
+      };
+      const sentSetFor = async (name: string, ids: string[]) => {
+        const set = new Set<string>();
+        for (let i = 0; i < ids.length; i += 200) {
+          const { data } = await supabase.from('meta_capi_event')
+            .select('source_id').eq('event_name', name).eq('status', 'sent').in('source_id', ids.slice(i, i + 200));
+          for (const r of data ?? []) set.add(r.source_id);
+        }
+        return set;
+      };
+      // Purchase: vendas pagas recentes ainda não enviadas.
+      if (saleRows.length) {
+        const sent = await sentSetFor('Purchase', saleRows.map((s) => s.id));
+        const pending = saleRows.filter((s) => !sent.has(s.id) && within7d(s.fully_paid_date)).slice(0, 15);
+        for (const s of pending) {
+          const r = await sendCapiEvent(supabase, {
+            eventName: 'Purchase', sourceId: String(s.id),
+            eventTimeIso: s.fully_paid_date ?? undefined,
+            valueCents: s.paid_cost_cents ?? s.total_cost_cents ?? 0,
+            customerId: s.customer_id ?? null, ...(await smCustomer(s.customer_id)),
+          });
+          if (r.ok) capiSent++;
+        }
+      }
+      // Schedule (MQL): agendamentos confirmados (green) recentes ainda não enviados.
+      const greens = apptRows.filter((a) => a.color === 'green');
+      if (greens.length) {
+        const sent = await sentSetFor('Schedule', greens.map((a) => a.id));
+        const pending = greens.filter((a) => !sent.has(a.id) && within7d(a.start_date ?? a.created_date)).slice(0, 15);
+        for (const a of pending) {
+          const r = await sendCapiEvent(supabase, {
+            eventName: 'Schedule', sourceId: String(a.id),
+            eventTimeIso: a.start_date ?? a.created_date ?? undefined,
+            customerId: a.customer_id ?? null, ...(await smCustomer(a.customer_id)),
+          });
+          if (r.ok) capiSent++;
+        }
+      }
+    } catch (e) {
+      console.error('CAPI backfill falhou (segue):', e instanceof Error ? e.message : e);
+    }
+
     // --- Clientes: telefone do customer ShopMonkey -> shopmonkey_customer.
     //     É a PONTE lead (chat/Kommo, phone_normalized) <-> venda paga, usada pela
     //     "conversão por orçamento pago" (gráficos de tempo de resposta/cotação).
@@ -248,6 +307,7 @@ Deno.serve(async (req) => {
       orcamentos_synced: orderRows.length,
       sales_synced: saleRows.length,
       customers_synced: customersFetched,
+      meta_capi_sent: capiSent,
       revenue_usd: revenue,
     });
   } catch (e) {
