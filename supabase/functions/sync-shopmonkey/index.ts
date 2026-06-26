@@ -236,11 +236,14 @@ Deno.serve(async (req) => {
       const greens = apptRows.filter((a) => a.color === 'green');
       if (greens.length) {
         const sent = await sentSetFor('Schedule', greens.map((a) => a.id));
-        const pending = greens.filter((a) => !sent.has(a.id) && within7d(a.start_date ?? a.created_date)).slice(0, 15);
+        // Janela de atribuição e event_time pela data da MARCAÇÃO (created_date, passado),
+        // não pela data do agendamento (start_date, futura -> Meta recusa erro 100). Isso
+        // também evita mandar marcações antigas (>7d), que o Meta rejeita por serem velhas.
+        const pending = greens.filter((a) => !sent.has(a.id) && within7d(a.created_date ?? a.start_date)).slice(0, 15);
         for (const a of pending) {
           const r = await sendCapiEvent(supabase, {
             eventName: 'Schedule', sourceId: String(a.id),
-            eventTimeIso: a.start_date ?? a.created_date ?? undefined,
+            eventTimeIso: a.created_date ?? a.start_date ?? undefined,
             customerId: a.customer_id ?? null, ...(await smCustomer(a.customer_id)),
           });
           if (r.ok) capiSent++;

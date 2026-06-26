@@ -111,7 +111,13 @@ export async function sendCapiEvent(sb: SupabaseClient, input: CapiInput): Promi
     if (fbc) ud.fbc = fbc;
     if (fbp) ud.fbp = fbp;
 
-    const eventTime = Math.floor(new Date(input.eventTimeIso ?? new Date().toISOString()).getTime() / 1000);
+    // Meta RECUSA event_time no futuro (erro 100 "data e hora do evento no futuro").
+    // Clampa ao "agora" no teto para nunca enviar timestamp futuro — ex.: Schedule cujo
+    // event_time venha da data do agendamento (à frente). Os callers já passam o momento
+    // da MARCAÇÃO (createdDate, passado); o clamp é a rede de segurança.
+    const nowSec = Math.floor(Date.now() / 1000);
+    const rawSec = Math.floor(new Date(input.eventTimeIso ?? new Date().toISOString()).getTime() / 1000);
+    const eventTime = Math.min(rawSec, nowSec);
     const event: Record<string, unknown> = {
       event_name: input.eventName,
       event_time: eventTime,
