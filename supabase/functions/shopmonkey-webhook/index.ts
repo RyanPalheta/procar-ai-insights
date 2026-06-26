@@ -11,6 +11,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 import { parseNote } from '../_shared/parse-note.ts';
+import { sendCapiEvent } from '../_shared/meta-capi.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,6 +89,30 @@ Deno.serve(async (req) => {
       return d?.data ?? d ?? null;
     };
 
+    // Dados do cliente ShopMonkey p/ match do CAPI (telefone SEMPRE; email quando houver).
+    const customerForCapi = async (customerId: string | null | undefined) => {
+      if (!customerId) return {} as Record<string, string | null>;
+      const c: any = await smGet(`/v3/customer/${customerId}`);
+      if (!c) return {};
+      const pn = c.phoneNumbers;
+      const phone = Array.isArray(pn) && pn.length ? (typeof pn[0] === 'object' ? pn[0].number : pn[0])
+        : (typeof c.phone === 'string' ? c.phone : null);
+      const em = c.emails;
+      const email = Array.isArray(em) && em.length ? (typeof em[0] === 'object' ? em[0].email : em[0])
+        : (typeof c.email === 'string' ? c.email : null);
+      const addr = (Array.isArray(c.addresses) && c.addresses[0]) ? c.addresses[0] : c;
+      return {
+        phone: phone ?? null,
+        email: email ?? null,
+        firstName: c.firstName ?? null,
+        lastName: c.lastName ?? null,
+        city: addr.city ?? null,
+        state: addr.state ?? null,
+        country: addr.country ?? 'us',
+        zip: addr.postalCode ?? addr.zip ?? null,
+      };
+    };
+
     const upsertAppointment = async (a: any) => {
       const p = parseNote(a.note);
       const isBlue = (a.color ?? '').toLowerCase() === 'blue';
@@ -101,7 +126,19 @@ Deno.serve(async (req) => {
         is_absoluto: p.isAbsoluto, phone_active_booking: p.phoneActiveBooking, synced_at: nowIso,
       };
       const { error } = await supabase.from('shopmonkey_appointment').upsert(row, { onConflict: 'id' });
-      return error ? { error: error.message } : { ok: 'appointment', id: a.id, color: a.color };
+      // Rota B: agendamento CONFIRMADO (green) -> evento Schedule (MQL) no Meta CAPI.
+      let capi: unknown;
+      if ((a.color ?? '').toLowerCase() === 'green') {
+        const cust = await customerForCapi(a.customerId);
+        capi = await sendCapiEvent(supabase, {
+          eventName: 'Schedule',
+          sourceId: String(a.id),
+          eventTimeIso: a.startDate ?? a.createdDate ?? undefined,
+          customerId: a.customerId ?? null,
+          ...cust,
+        });
+      }
+      return error ? { error: error.message } : { ok: 'appointment', id: a.id, color: a.color, capi };
     };
 
     const upsertOrder = async (o: any) => {
@@ -112,6 +149,7 @@ Deno.serve(async (req) => {
       };
       const { error: oErr } = await supabase.from('shopmonkey_order').upsert(orderRow, { onConflict: 'id' });
       let saleRes: unknown = 'not_paid';
+      let capiRes: unknown;
       if (o.paid) {
         const saleRow = {
           id: o.id, fully_paid_date: o.fullyPaidDate ?? null, paid_cost_cents: o.paidCostCents ?? null,
@@ -120,8 +158,20 @@ Deno.serve(async (req) => {
         };
         const { error: sErr } = await supabase.from('shopmonkey_sale').upsert(saleRow, { onConflict: 'id' });
         saleRes = sErr ? { error: sErr.message } : 'sale_upserted';
+
+        // Rota B: pedido PAGO -> evento Purchase no Meta CAPI (value USD, match telefone+email,
+        // ctwa_clid da ponte). Idempotente por order id.
+        const cust = await customerForCapi(o.customerId);
+        capiRes = await sendCapiEvent(supabase, {
+          eventName: 'Purchase',
+          sourceId: String(o.id),
+          eventTimeIso: o.fullyPaidDate ?? undefined,
+          valueCents: o.paidCostCents ?? o.totalCostCents ?? 0,
+          customerId: o.customerId ?? null,
+          ...cust,
+        });
       }
-      return { ok: 'order', id: o.id, paid: !!o.paid, order: oErr ? oErr.message : 'ok', sale: saleRes };
+      return { ok: 'order', id: o.id, paid: !!o.paid, order: oErr ? oErr.message : 'ok', sale: saleRes, capi: capiRes };
     };
 
     // Decide o tipo e processa.
