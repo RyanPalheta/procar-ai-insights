@@ -6,7 +6,7 @@ import {
   MousePointerClick,
   Percent,
   CircleDollarSign,
-  TrendingUp,
+  Coins,
   Target,
   LayoutGrid,
 } from "lucide-react";
@@ -101,15 +101,15 @@ export function GoogleAdsKPICards({ data }: GoogleAdsKPICardsProps) {
           }}
         />
         <KPICard
-          title="ROAS"
-          value={data.roas > 0 ? `${data.roas.toFixed(2)}x` : "N/A"}
-          icon={TrendingUp}
-          variant={data.roas >= 3 ? "success" : data.roas >= 1 ? "warning" : "default"}
-          description="Retorno sobre gasto"
+          title="CPA"
+          value={data.cpa > 0 ? formatUSD(data.cpa) : "—"}
+          icon={Coins}
+          variant="default"
+          description="Custo por conversao"
           info={{
-            description: "Retorno sobre o investimento: valor de conversao por dolar gasto.",
-            source: "os numeros vem direto do Google Ads (o valor das conversoes na sua conta), no periodo selecionado.",
-            calculation: "o valor gerado pelas conversoes dividido pelo total gasto, no periodo.",
+            description: "Quanto custa, em media, cada conversao (lead). O ROAS nao se aplica aqui porque as conversoes nao tem valor em $.",
+            source: "os numeros vem direto do Google Ads, no periodo selecionado.",
+            calculation: "o total gasto dividido pelo numero de conversoes, no periodo. Menor e melhor.",
           }}
         />
         <KPICard
