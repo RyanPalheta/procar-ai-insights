@@ -962,7 +962,7 @@ export default function Dashboard() {
           pedido da Pro Car (11/06): com a paridade automática (kommo_absent +
           reconcile horário), painel = Kommo por construção — o monitor ficou
           redundante. A reconciliação continua rodando no backend (crons). */}
-      <GoogleReviewsCard />
+      <GoogleReviewsCard dateFrom={range.fromIso} dateTo={range.toIso} periodLabel={range.label} />
 
       {/* Timeline Chart - Full Width */}
       <LeadsTimelineChart
