@@ -142,6 +142,10 @@ Deno.serve(async (req) => {
 
     // ── Build call record ──────────────────────────────────────────────────────
     const hasTranscript = !!body.transcription_text;
+    // Whisper (transcribe-call) é a FONTE DA VERDADE da transcrição quando há
+    // gravação. Ignoramos o transcription_text vindo do n8n (transcrição interna
+    // da Innovat, baixa qualidade) e re-transcrevemos o áudio com Whisper.
+    const hasRecording = !!(body.recording_sid || body.recording_url);
 
     const callData: Record<string, unknown> = {
       session_id:     body.session_id,
@@ -160,9 +164,10 @@ Deno.serve(async (req) => {
       twilio_call_sid: body.twilio_call_sid || null,
       // Metadata
       call_status:    body.call_direction === 'inbound' ? 'inbound' : (body.call_status || null),
-      // Transcription (optional — provided by n8n when available)
-      transcription_text:   body.transcription_text   || null,
-      transcription_status: body.transcription_status || (hasTranscript ? 'completed' : 'pending'),
+      // Transcription: com gravação → Whisper preenche depois (pending, ignora o
+      // texto do n8n). Sem gravação → aceita o texto pronto se vier.
+      transcription_text:   hasRecording ? null : (body.transcription_text || null),
+      transcription_status: hasRecording ? 'pending' : (body.transcription_status || (hasTranscript ? 'completed' : 'pending')),
     };
 
     console.log('[ingest-call] Inserting call:', callData);
@@ -183,19 +188,29 @@ Deno.serve(async (req) => {
 
     console.log('[ingest-call] Call created successfully:', data.call_id);
 
-    // ── Fire-and-forget analyze-call when transcript is ready ─────────────────
-    if (hasTranscript && data.call_id) {
+    // ── Fire-and-forget: Whisper é o padrão ───────────────────────────────────
+    // Com gravação → transcribe-call (Whisper) transcreve e depois dispara o
+    // analyze-call. Sem gravação, mas com texto pronto → vai direto pra auditoria.
+    if (data.call_id) {
       const supabaseUrl    = Deno.env.get('SUPABASE_URL') ?? '';
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      console.log(`[ingest-call] Triggering analyze-call for call_id: ${data.call_id}`);
-      fetch(`${supabaseUrl}/functions/v1/analyze-call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ call_id: data.call_id }),
-      }).catch(err => console.error('[ingest-call] analyze-call trigger error:', err));
+      const trigger = (fn: string) => {
+        console.log(`[ingest-call] Triggering ${fn} for call_id: ${data.call_id}`);
+        fetch(`${supabaseUrl}/functions/v1/${fn}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ call_id: data.call_id }),
+        }).catch(err => console.error(`[ingest-call] ${fn} trigger error:`, err));
+      };
+
+      if (hasRecording) {
+        trigger('transcribe-call');
+      } else if (hasTranscript) {
+        trigger('analyze-call');
+      }
     }
 
     return new Response(
