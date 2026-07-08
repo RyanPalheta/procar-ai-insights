@@ -68,15 +68,28 @@ async function resolveInnovatRecording(
   toNumber: string | null,
   aroundIso: string,
 ): Promise<{ cdrId: string; recordingRef: string } | null> {
-  const around = new Date(aroundIso);
-  // Ligações são ingeridas DEPOIS de acontecerem; janela ampla p/ garantir.
-  const start = new Date(around.getTime() - 2 * 24 * 3600 * 1000).toISOString();
-  const end = new Date(around.getTime() + 1 * 24 * 3600 * 1000).toISOString();
+  // Timestamp da ligação: os 10 primeiros dígitos do cdrId são o Unix (segundos)
+  // do início da chamada — dá pra mirar a janela com precisão. Fallback: created_at.
+  let centerMs = new Date(aroundIso).getTime();
+  const m = String(cdrId || '').match(/^(\d{10})/);
+  const hasTs = !!m;
+  if (m) {
+    const ts = parseInt(m[1], 10) * 1000;
+    if (ts > 1.5e12 && ts < 2.0e12) centerMs = ts;
+  }
+
+  // ARMADILHA Innovat: a listagem retorna VAZIO com limit alto (>~100). Mantemos
+  // limit=100 e janela CURTA: ±20min quando temos o timestamp do cdrId; senão
+  // (fallback created_at, que vem DEPOIS da ligação) olhamos até 4h atrás.
+  const startMs = hasTs ? centerMs - 20 * 60000 : centerMs - 4 * 3600 * 1000;
+  const endMs = hasTs ? centerMs + 20 * 60000 : centerMs + 15 * 60000;
+  const start = new Date(startMs).toISOString();
+  const end = new Date(endMs).toISOString();
 
   const url = `${ITP_BASE_URL}/portal/recordings`
     + `?startDate=${encodeURIComponent(start)}`
     + `&endDate=${encodeURIComponent(end)}`
-    + `&includeInternal=true&limit=500`;
+    + `&includeInternal=true&limit=100`;
 
   const resp = await fetch(url, { headers: { Authorization: `Bearer ${itpKey}` } });
   if (!resp.ok) {
@@ -99,8 +112,8 @@ async function resolveInnovatRecording(
         return (f && (rf === f || rt === f)) || (t && (rf === t || rt === t));
       })
       .sort((a, b) => {
-        const da = Math.abs(new Date(a.startedAt).getTime() - around.getTime());
-        const db = Math.abs(new Date(b.startedAt).getTime() - around.getTime());
+        const da = Math.abs(new Date(a.startedAt).getTime() - centerMs);
+        const db = Math.abs(new Date(b.startedAt).getTime() - centerMs);
         return da - db;
       });
     if (candidates[0]?.recordingRef) {
@@ -234,7 +247,7 @@ Deno.serve(async (req) => {
       throw new Error(`OpenAI transcription failed (${status}): ${errText.slice(0, 300)}`);
     }
 
-    const whisperData = await whisperResp.json();
+    const whisperData = await whisperResp!.json();
     const rawText: string = whisperData?.text || '';
     const language: string = whisperData?.language || '';
     const cleanText = collapseRepeats(rawText);
