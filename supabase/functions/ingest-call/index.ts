@@ -183,19 +183,31 @@ Deno.serve(async (req) => {
 
     console.log('[ingest-call] Call created successfully:', data.call_id);
 
-    // ── Fire-and-forget analyze-call when transcript is ready ─────────────────
-    if (hasTranscript && data.call_id) {
+    // ── Fire-and-forget: transcrição (Whisper) é o padrão ─────────────────────
+    // Se o n8n já mandou transcript → segue direto pra auditoria (analyze-call).
+    // Se veio só a gravação (recording_sid/url) SEM transcript → transcreve com
+    // Whisper via transcribe-call, que por sua vez dispara o analyze-call.
+    const hasRecording = !!(body.recording_sid || body.recording_url);
+    if (data.call_id) {
       const supabaseUrl    = Deno.env.get('SUPABASE_URL') ?? '';
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      console.log(`[ingest-call] Triggering analyze-call for call_id: ${data.call_id}`);
-      fetch(`${supabaseUrl}/functions/v1/analyze-call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ call_id: data.call_id }),
-      }).catch(err => console.error('[ingest-call] analyze-call trigger error:', err));
+      const trigger = (fn: string) => {
+        console.log(`[ingest-call] Triggering ${fn} for call_id: ${data.call_id}`);
+        fetch(`${supabaseUrl}/functions/v1/${fn}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ call_id: data.call_id }),
+        }).catch(err => console.error(`[ingest-call] ${fn} trigger error:`, err));
+      };
+
+      if (hasTranscript) {
+        trigger('analyze-call');
+      } else if (hasRecording) {
+        trigger('transcribe-call');
+      }
     }
 
     return new Response(
